@@ -5,11 +5,17 @@ organised by category. The keymap was unified in feature 020 with the
 goal of hardware-layout-aware single-key viewport navigation, symmetric
 mode toggles, and consistent short / long-press conventions.
 
-> **The tables below are generated.** Run `python tools/generateKeymap.py`
-> after changing any `@script` binding; the pre-commit hook and CI run it
-> with `--dry-run` and fail if the tables have drifted. The prose is
-> hand-written — edit it freely, but leave the
-> `<!-- BEGIN GENERATED -->` / `<!-- END GENERATED -->` markers alone.
+<!--
+MAINTAINERS: the tables between the BEGIN/END GENERATED markers below are
+produced by `python tools/generateKeymap.py` from the `@script` bindings in
+the source. Run it after adding, removing or retargeting any binding. The
+`keymap-docs` prek hook and CI run it with `--dry-run` and fail on drift.
+
+Everything outside the markers is hand-written prose — edit it freely, but
+leave the markers in place. See the script's module docstring for how tiers
+are derived and what it cannot see.
+-->
+
 
 ## At a glance
 
@@ -140,12 +146,19 @@ default keymap to free chord space for the viewport-pan additions.
 NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
-`tools/generateKeymap.py` fails if any gesture in this table is bound
-**globally** again — at Tier 0 or Tier 1 — so restoring one means moving
-its row out of here. A presentation may reuse a removed identifier
-without contradicting the table: `f2` was dropped as a driver-level
-backspace and is now `GraphicPresentation`'s pan-up, which is exactly the
-reuse per-presentation resolution exists to allow.
+A gesture listed here can still be in use by a single presentation —
+`f2` was dropped as a driver-level backspace and is now
+`GraphicPresentation`'s pan-up. What it no longer does is work in every
+mode.
+
+<!--
+MAINTAINERS: `tools/generateKeymap.py` fails if a gesture in this table is
+bound again at Tier 0 or Tier 1, so restoring one means moving its row out
+of here. The check is deliberately scoped to those two tiers — a
+presentation reusing the identifier (as GraphicPresentation does with `f2`)
+is the reuse per-presentation resolution exists to allow, not a conflict.
+-->
+
 
 ## Resolution order (technical)
 
@@ -169,10 +182,6 @@ resolve independently in steps 1–3.
   scripts** (the Tier 2 handlers in this document). It shows only Tier 0
   and Tier 1 entries. To rebind a presentation-level gesture, edit
   `%APPDATA%\nvda\gestures.ini` directly. This is an upstream NVDA
-  limitation that requires an NVDA-side change to fix. The generated
-  tables list what is *bound*, not what is *reachable through the UI*.
+  limitation that requires an NVDA-side change to fix. The tables above
+  list what is *bound*, not what is *reachable through the dialog*.
 - **Firmware-reserved `longPress(panLeft+panRight)`** can't be repurposed.
-- **Gestures built at runtime would be invisible to the generator.** Every
-  binding is currently a string literal on a `gesture=` keyword, which is
-  what makes static parsing safe. A computed binding would need documenting
-  by hand.
