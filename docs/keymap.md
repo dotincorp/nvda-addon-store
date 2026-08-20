@@ -141,7 +141,11 @@ NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
 `tools/generateKeymap.py` fails if any gesture in this table is bound
-again, so restoring one means moving its row out of here.
+**globally** again — at Tier 0 or Tier 1 — so restoring one means moving
+its row out of here. A presentation may reuse a removed identifier
+without contradicting the table: `f2` was dropped as a driver-level
+backspace and is now `GraphicPresentation`'s pan-up, which is exactly the
+reuse per-presentation resolution exists to allow.
 
 ## Resolution order (technical)
 

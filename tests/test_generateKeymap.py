@@ -8,6 +8,8 @@ real repository.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import sys
 import tempfile
 import textwrap
@@ -280,7 +282,12 @@ class TestMainExitCodes(unittest.TestCase):
 				gk.applyGeneratedSections(real, {name: "stale" for name in gk.SECTION_NAMES}),
 				encoding="utf-8",
 			)
-			self.assertEqual(gk.main(["--dry-run"], repo_root=fakeRoot, sourceRoot=REPO_ROOT), 1)
+			# --dry-run prints the whole diff; capture it so the suite stays readable.
+			buffer = io.StringIO()
+			with contextlib.redirect_stdout(buffer):
+				exitCode = gk.main(["--dry-run"], repo_root=fakeRoot, sourceRoot=REPO_ROOT)
+			self.assertEqual(exitCode, 1)
+			self.assertIn("stale", buffer.getvalue())
 
 
 if __name__ == "__main__":
