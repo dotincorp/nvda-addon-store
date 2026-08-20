@@ -31,7 +31,7 @@ TERMINATE_TIMEOUT_SECONDS = _state.TERMINATE_TIMEOUT_SECONDS
 
 def initialize():
 	"""Initialize and start the asyncio event loop."""
-	log.info("Initializing asyncio event loop")
+	log.debug("Initializing asyncio event loop")
 	_state.eventLoop = asyncio.new_event_loop()
 	asyncio.set_event_loop(_state.eventLoop)
 	_state.asyncioThread = Thread(target=_state.eventLoop.run_forever, daemon=True)
@@ -40,7 +40,7 @@ def initialize():
 
 def terminate():
 	"""Terminate the asyncio event loop and cancel all running tasks."""
-	log.info("Terminating asyncio event loop")
+	log.debug("Terminating asyncio event loop")
 
 	async def cancelAllTasks():
 		tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]

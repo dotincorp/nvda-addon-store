@@ -1252,7 +1252,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if self._libraryReady:
 			return
 		if self.graphicDisplay is None:
-			log.info("dotPad: no graphic display attached; skipping library construction")
+			log.debug("dotPad: no graphic display attached; skipping library construction")
 			return
 		worker = None
 		try:

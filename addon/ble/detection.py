@@ -181,7 +181,7 @@ class Detector:
 		"""
 		if self._isTerminated:
 			return
-		log.info("Terminating")
+		log.debug("dotPad: terminating BLE detection")
 		self._isTerminated = True
 		if self._scanner is not None:
 			stopScanner(self._scanner, wait=True)

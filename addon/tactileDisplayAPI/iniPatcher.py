@@ -325,6 +325,10 @@ def patchTactileDisplayAPIIni() -> dict[str, PatchResult]:
 			f"TactileDisplayAPI INI patch: {nWrote} wrote, {nUnchanged} unchanged, "
 			f"{nFailed} failed (see DEBUG for details)",
 		)
-	else:
+	elif nWrote:
 		log.info(f"TactileDisplayAPI INI patch: {nWrote} wrote, {nUnchanged} unchanged")
+	else:
+		# Steady state: every locale was already correct. Nothing happened, so
+		# there is nothing for a user to read in a default-level log.
+		log.debug(f"TactileDisplayAPI INI patch: {nUnchanged} unchanged")
 	return results
