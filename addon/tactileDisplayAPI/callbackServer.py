@@ -60,6 +60,7 @@ from typing import Any, Callable, cast
 from comtypes import COMObject  # pyright: ignore[reportUnknownVariableType]
 from logHandler import log
 
+from ..utils.logOnce import warnFailureOnce
 from .comInterface import ITactileDisplayCallbacks
 
 
@@ -67,11 +68,6 @@ from .comInterface import ITactileDisplayCallbacks
 # return S_OK so the library never sees a non-success result that would
 # change its control flow.
 _S_OK = 0
-
-# Per-exception-type dedup for the WARNING logs emitted by ``_translateText``.
-# Keeps the log readable when a misconfigured table or a missing NVDA module
-# would otherwise spam one line per focus change.
-_LOGGED_EXCEPTION_TYPES: set[type[BaseException]] = set()
 
 
 def _translateText(
@@ -109,7 +105,11 @@ def _translateText(
 		# the full NVDA env initialised — not always true at addon import time).
 		from ..utils.braille import translateTextWithCursor  # noqa: PLC0415
 	except Exception as exc:
-		_logTranslationFailureOnce(exc, "import utils.braille.translateTextWithCursor")
+		warnFailureOnce(
+			"GetTranslation: import utils.braille.translateTextWithCursor",
+			exc,
+			"returning empty output",
+		)
 		return ("", [], None)
 	try:
 		# Clamp cursorOffset into the valid range; pass None through so
@@ -120,7 +120,7 @@ def _translateText(
 		brailleString = "".join(chr(0x2800 + (cell & 0xFF)) for cell in cells)
 		return (brailleString, brailleToRawPos, brailleCursorPos)
 	except Exception as exc:
-		_logTranslationFailureOnce(exc, "translateTextWithCursor")
+		warnFailureOnce("GetTranslation: translateTextWithCursor", exc, "returning empty output")
 		return ("", [], None)
 
 
@@ -158,22 +158,6 @@ def _coerceCursorPointer(cursorOffset: object) -> int | None:
 		return int(cursorOffset)  # type: ignore[arg-type]
 	except (TypeError, ValueError):
 		return None
-
-
-def _logTranslationFailureOnce(exc: BaseException, site: str) -> None:
-	"""Log a translation failure at WARNING level, deduplicated by exception type."""
-	excType = type(exc)
-	if excType in _LOGGED_EXCEPTION_TYPES:
-		return
-	_LOGGED_EXCEPTION_TYPES.add(excType)
-	log.warning(
-		"GetTranslation: %s raised %s: %s (returning empty output; "
-		"further %s failures will be suppressed in this session)",
-		site,
-		excType.__name__,
-		exc,
-		excType.__name__,
-	)
 
 
 RenderCallable = Callable[[bytes], None]
@@ -364,7 +348,7 @@ class TactileDisplayCallbacks(COMObject):
 					log.debug(f"{target}DisplayUpdated: empty payload (length={lengthInt}); dropping")
 					return _S_OK
 				if data is None:
-					log.warning(f"{target}DisplayUpdated: null data pointer; dropping")
+					log.debugWarning(f"{target}DisplayUpdated: null data pointer; dropping")
 					return _S_OK
 				# Copy the bytes out of library-owned memory. After return,
 				# the library may reuse / free the buffer. `data` is typed

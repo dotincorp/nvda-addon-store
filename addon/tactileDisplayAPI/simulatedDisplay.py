@@ -170,7 +170,7 @@ def renderTactileBytes(payload: bytes) -> None:
 	expectedLen = physicalNumRows * physicalNumCols
 
 	if len(payload) != expectedLen:
-		log.warning(
+		log.debugWarning(
 			f"renderTactileBytes: payload length {len(payload)} != expected "
 			f"{expectedLen} ({physicalNumRows}r × {physicalNumCols}c); "
 			"rendering what fits, padding tail with zeros",

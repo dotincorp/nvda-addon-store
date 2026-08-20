@@ -931,7 +931,7 @@ class Display(AutoPropertyObject):
 					row.numTries = 0
 					continue
 				# Retry
-				log.warning(f"Retrying row {row.destination}")
+				log.debugWarning(f"Retrying row {row.destination}")
 				self.writeExternalRow(row)
 		self._driver._ackLock.release()  # type: ignore
 		self._writingQueuedRows = False
@@ -1869,7 +1869,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			if responseCode.isAck:
 				self._handleAck(destination=packet.destination)
 			elif responseCode.isNak:
-				log.warning(f"Received NAK response: {responseCode}")
+				log.debugWarning(f"Received NAK response: {responseCode}")
 				# A line was unable to display, rely on _sendQueuedPackets
 				# from the Display class to resend it if needed
 				# Send the next packet in the queue if any
@@ -1880,7 +1880,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		elif packet.packetType == PacketType.NTF_ERROR:
 			log.warning(f"Received error: {packet.args!r}")
 		else:
-			log.warning(f"Received unhandled command: {packet.packetType!r} {packet.args!r}")
+			log.debugWarning(f"Received unhandled command: {packet.packetType!r} {packet.args!r}")
 		self._readyToSend.set()
 
 	def _handleAck(self, destination: int):  # type: ignore
@@ -1913,7 +1913,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 		acceptedDestinations: Sequence[int] = range(minDestination, maxDestination)
 		if destination not in acceptedDestinations:
-			log.warning(
+			log.debugWarning(
 				f"Received ACK for unknown destination: {destination}, valid range is {minDestination}-{maxDestination}",
 			)
 			return
@@ -2403,7 +2403,7 @@ class InputGesture(braille.BrailleDisplayGesture):
 				try:
 					names.append(PerkinsKey(key).name)
 				except ValueError:
-					log.warning(f"Unknown Perkins key: {key}")
+					log.debugWarning(f"Unknown Perkins key: {key}")
 		baseId = "+".join(names)
 		self.id = self._formatLongPressId(baseId) if isLongPress else baseId
 
