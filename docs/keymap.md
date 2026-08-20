@@ -104,11 +104,8 @@ Defined in `addon/presentations/graphic.py`. Active only while this presentation
 
 | Gesture | Reason |
 |---|---|
-| `longPress(panLeft+panRight)` | Device firmware announces battery status. The addon cannot bind anything to this gesture — the firmware intercepts the keys before NVDA sees them. |
+| `longPress(panLeft+panRight)` | Device firmware announces battery status. If a function is mapped to this gesture, it will be executed but the firmware will keep reporting battery level as well. |
 
-You CAN assign a script to this gesture via NVDA's Input Gestures dialog
-(NVDA doesn't know it's firmware-reserved), but the assigned script will
-never fire because the firmware eats the keypress.
 
 ## Scripts without a default binding (user-assignable)
 
@@ -130,8 +127,8 @@ rarely.
 
 ## Removed gestures (rebinding via NVDA's Input Gestures dialog)
 
-Feature 020 dropped seven `kb:` keyboard-emulation gestures from the
-default keymap to free chord space for the viewport-pan additions.
+Earlier versions of this add-on had seven `kb:` keyboard-emulation gestures in the
+default keymap. Those have been removed to free chord space for the viewport-pan additions.
 
 | Old gesture | Old action | Rebinding path in NVDA's Input Gestures dialog |
 |---|---|---|
