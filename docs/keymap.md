@@ -181,4 +181,6 @@ resolve independently in steps 1–3.
   `%APPDATA%\nvda\gestures.ini` directly. This is an upstream NVDA
   limitation that requires an NVDA-side change to fix. The tables above
   list what is *bound*, not what is *reachable through the dialog*.
-- **Firmware-reserved `longPress(panLeft+panRight)`** can't be repurposed.
+- **`longPress(panLeft+panRight)` can be bound, but not reclaimed.** A
+  script mapped to it runs, and the firmware still announces battery level
+  alongside it. The addon leaves the gesture unbound for that reason.
