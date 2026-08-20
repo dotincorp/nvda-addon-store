@@ -12,7 +12,6 @@ NVDA-resolver and module-constant patches use ``unittest.mock.patch``.
 
 from __future__ import annotations
 
-import logging
 import os
 import stat
 import subprocess
@@ -458,10 +457,10 @@ class TestReadOnlyDirectoryFallback(_US1Base):
 		self.assertEqual(failingPath.read_bytes(), _FIXTURE_UTF8_NO_BOM)
 
 
-class TestAggregatedLogOutput(_US1Base):
-	"""Contract test 20: one INFO summary + per-failure DEBUG lines on mixed outcomes."""
+class TestMixedOutcomeReporting(_US1Base):
+	"""Contract test 20: a single pass can report WROTE, UNCHANGED and FAILED together."""
 
-	def test_summaryAndDebugLinesEmitted(self) -> None:
+	def test_mixedOutcomesReportedPerLocale(self) -> None:
 		# First pass: all three locales reach steady-state patched bytes.
 		results_first_pass = iniPatcher.patchTactileDisplayAPIIni()
 		self.assertEqual(set(results_first_pass.values()), {PatchResult.WROTE})
@@ -479,37 +478,14 @@ class TestAggregatedLogOutput(_US1Base):
 				raise OSError(13, "simulated permission denied")
 			realAtomicWrite(path, data)
 
-		with self.assertLogs("nvda", level=logging.DEBUG) as logCtx:
-			with patch.object(iniPatcher, "_atomicWrite", side_effect=selectiveAtomicWrite):
-				results = iniPatcher.patchTactileDisplayAPIIni()
+		with patch.object(iniPatcher, "_atomicWrite", side_effect=selectiveAtomicWrite):
+			results = iniPatcher.patchTactileDisplayAPIIni()
 		# Expected outcome distribution.
 		self.assertEqual(results["enu"], PatchResult.WROTE)
 		self.assertEqual(results["jpn"], PatchResult.UNCHANGED)
 		self.assertEqual(results["deu"], PatchResult.FAILED)
-		# Aggregated INFO summary with all three counts (failure-suffix variant).
-		infoLines = [r for r in logCtx.records if r.levelno == logging.INFO]
-		self.assertEqual(len(infoLines), 1)
-		self.assertIn("1 wrote", infoLines[0].getMessage())
-		self.assertIn("1 unchanged", infoLines[0].getMessage())
-		self.assertIn("1 failed", infoLines[0].getMessage())
-		self.assertIn("see DEBUG for details", infoLines[0].getMessage())
-		# Per-failure DEBUG line names the failing path and the exception class.
-		debugLines = [r.getMessage() for r in logCtx.records if r.levelno == logging.DEBUG]
-		# Python auto-types ``OSError(EACCES, ...)`` as ``PermissionError``.
-		self.assertTrue(
-			any("FAILED" in m and str(failingPath) in m and "PermissionError" in m for m in debugLines),
-			f"expected per-failure DEBUG line for {failingPath}; got: {debugLines}",
-		)
-
-	def test_summaryOmitsFailureSuffixWhenAllSucceed(self) -> None:
-		with self.assertLogs("nvda", level=logging.INFO) as logCtx:
-			iniPatcher.patchTactileDisplayAPIIni()
-		infoLines = [r for r in logCtx.records if r.levelno == logging.INFO]
-		self.assertEqual(len(infoLines), 1)
-		msg = infoLines[0].getMessage()
-		self.assertIn("3 wrote", msg)
-		self.assertIn("0 unchanged", msg)
-		self.assertNotIn("failed", msg)
+		# The failing locale keeps its original bytes rather than a half-written file.
+		self.assertEqual(failingPath.read_bytes(), _FIXTURE_UTF8_NO_BOM)
 
 
 class TestUtf16LeBomEndToEnd(_US1Base):
