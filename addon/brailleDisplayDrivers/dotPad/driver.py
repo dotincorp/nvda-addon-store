@@ -1193,13 +1193,13 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 						onReceive=self._onReceive,
 					)
 				except RuntimeError:
-					log.debugWarning("", exc_info=True)
+					log.debugWarning(f"dotPad: could not open BLE port {portName}", exc_info=True)
 					continue
 			else:
 				try:
 					self._dev = hwIo.Serial(portName, baudrate=SERIAL_BAUD_RATE, onReceive=self._onReceive)
 				except OSError:
-					log.debugWarning("", exc_info=True)
+					log.debugWarning(f"dotPad: could not open serial port {portName}", exc_info=True)
 					continue
 			self._sendPacket(Packet.makePacket(PacketType.REQ_BOARD_INFORMATION))
 			for _i in range(3):

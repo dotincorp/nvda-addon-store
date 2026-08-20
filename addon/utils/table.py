@@ -685,8 +685,6 @@ class Table(AutoPropertyObject):
 				# Focus mode or no TreeInterceptor (e.g., Word UIA tables):
 				# Use UIA Grid pattern to get cell and set document selection
 				if treeInterceptor is None:
-					from _ctypes import COMError
-
 					import UIAHandler
 
 					try:
@@ -704,10 +702,9 @@ class Table(AutoPropertyObject):
 										cellTextInfo.collapse()
 										document.selection = cellTextInfo
 										return
-					except COMError:
-						log.debug("UIA Grid pattern failed", exc_info=True)
 					except Exception:
-						log.debug("UIA Grid pattern failed", exc_info=True)
+						# COMError subclasses Exception, so one handler covers both.
+						log.debug(f"UIA Grid pattern failed for row {row}, col {col}", exc_info=True)
 
 				# Fallback: try setFocus on the original target object
 				if hasattr(targetObj, "setFocus"):
