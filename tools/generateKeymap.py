@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import ast
 import difflib
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -220,6 +221,22 @@ def parseGestureMapBindings(source: str, *, sourcePath: str) -> list[Binding]:
 	return bindings
 
 
+def presentationLabel(className: str) -> str:
+	"""Turn a presentation class name into a heading a reader recognises.
+
+	``GraphicPresentation`` -> "Graphic mode", ``ScreenCapturePresentation``
+	-> "Screen capture mode". These are the names the code comments and Dot's
+	QA reports already use, so deriving them beats a hand-maintained mapping
+	that a new presentation would not be in.
+
+	Acronyms would de-camel badly (``APIPresentation`` -> "A p i mode"). No
+	presentation is named that way; if one ever is, special-case it here.
+	"""
+	stem = className.removesuffix("Presentation") or className
+	spaced = re.sub(r"(?<!^)(?=[A-Z])", " ", stem)
+	return f"{spaced[:1].upper()}{spaced[1:].lower()} mode"
+
+
 def gestureSortKey(gesture: str) -> tuple[int, int, tuple[int, ...], str]:
 	"""Order gestures: short before long-press, singles before chords.
 
@@ -289,10 +306,11 @@ def buildSections(bindings: Iterable[Binding]) -> dict[str, str]:
 	tier2Parts: list[str] = []
 	for owner in tier2Owners:
 		ownerBindings = [b for b in bound if b.tier == 2 and b.owner == owner]
-		sourcePath = ownerBindings[0].sourcePath
+		# The class and file are traceability for maintainers, not something an
+		# end user reading a gesture reference needs, so they go in a comment.
+		provenance = f"<!-- {owner} in {ownerBindings[0].sourcePath} -->"
 		tier2Parts.append(
-			f"### `{owner}`\n\nDefined in `{sourcePath}`. Active only while this "
-			f"presentation is rendering.\n\n{renderBindingTable(ownerBindings)}",
+			f"### {presentationLabel(owner)}\n\n{provenance}\n\n{renderBindingTable(ownerBindings)}",
 		)
 	tier2Body = "\n\n".join(tier2Parts) if tier2Parts else "No presentation binds any gesture."
 

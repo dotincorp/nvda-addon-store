@@ -134,6 +134,28 @@ class TestGestureSorting(unittest.TestCase):
 		self.assertEqual(ordered, ["f1", "f3", "panLeft", "panRight"])
 
 
+class TestPresentationLabels(unittest.TestCase):
+	"""Class names become headings a reader recognises."""
+
+	def test_strips_presentation_suffix_and_appends_mode(self) -> None:
+		self.assertEqual(gk.presentationLabel("GraphicPresentation"), "Graphic mode")
+
+	def test_splits_camel_case(self) -> None:
+		self.assertEqual(
+			gk.presentationLabel("ScreenCapturePresentation"),
+			"Screen capture mode",
+		)
+
+	def test_handles_three_word_names(self) -> None:
+		self.assertEqual(
+			gk.presentationLabel("LibraryBraillePresentation"),
+			"Library braille mode",
+		)
+
+	def test_name_without_suffix_still_labels(self) -> None:
+		self.assertEqual(gk.presentationLabel("Presentation"), "Presentation mode")
+
+
 class TestMarkerReplacement(unittest.TestCase):
 	"""Only the region between markers is rewritten."""
 

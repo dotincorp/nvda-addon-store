@@ -71,17 +71,17 @@ explicit escape hatches.
 
 ## Tier 2 — Presentation scripts
 
-These bindings apply ONLY while the named presentation is the active one.
-For `GraphicPresentation` that is typically when focus is on a
-`Role.GRAPHIC` object, or after pressing `f2+f4`. The single-key direction
-mapping mirrors the hardware button layout; holding the same key for
-≥1.5s jumps to the edge in that direction.
+These bindings apply ONLY while the named mode is the active one. Graphic
+mode is typically active when focus is on a graphical object, or after
+pressing `f2+f4`. The single-key direction mapping mirrors the hardware
+button layout; holding the same key for 1.5s or longer jumps to the edge
+in that direction.
 
 <!-- BEGIN GENERATED: tier2 -->
 
-### `GraphicPresentation`
+### Graphic mode
 
-Defined in `addon/presentations/graphic.py`. Active only while this presentation is rendering.
+<!-- GraphicPresentation in addon/presentations/graphic.py -->
 
 | Gesture | Action |
 |---|---|
@@ -143,10 +143,9 @@ default keymap. Those have been removed to free chord space for the viewport-pan
 NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
-A gesture listed here can still be in use by a single presentation —
-`f2` was dropped as a driver-level backspace and is now
-`GraphicPresentation`'s pan-up. What it no longer does is work in every
-mode.
+A gesture listed here can still be in use inside a single mode — `f2` was
+dropped as a driver-level backspace and is now graphic mode's pan-up.
+What it no longer does is work in every mode.
 
 <!--
 MAINTAINERS: `tools/generateKeymap.py` fails if a gesture in this table is
