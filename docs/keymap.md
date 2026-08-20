@@ -5,18 +5,23 @@ organised by category. The keymap was unified in feature 020 with the
 goal of hardware-layout-aware single-key viewport navigation, symmetric
 mode toggles, and consistent short / long-press conventions.
 
+> **The tables below are generated.** Run `python tools/generateKeymap.py`
+> after changing any `@script` binding; the pre-commit hook and CI run it
+> with `--dry-run` and fail if the tables have drifted. The prose is
+> hand-written — edit it freely, but leave the
+> `<!-- BEGIN GENERATED -->` / `<!-- END GENERATED -->` markers alone.
+
 ## At a glance
 
 The Dot Pad device exposes four function keys (`f1`/`f2`/`f3`/`f4`) plus
 two pan keys (`panLeft`/`panRight`). Gestures fall into four tiers:
 
-- **Tier 0** — NVDA's standard text-scroll on `panLeft` / `panRight`. Active
-  in every mode. Fixed by NVDA's braille framework.
-- **Tier 1** — driver-level: multi-line scroll, navigator activation, mode
-  switches. Active in every mode (some keys can be overridden by the
-  active presentation).
-- **Tier 2** — `GraphicPresentation`-only: viewport pan, edge jumps, zoom.
-  Active only while a tactile graphic is being rendered.
+- **Tier 0** — NVDA's own global scripts, mapped by the driver's
+  `gestureMap`. These resolve last, so any tier above can override them.
+- **Tier 1** — driver-level: multi-line scroll, mode switches. Active in
+  every mode (some keys can be overridden by the active presentation).
+- **Tier 2** — presentation-level. Active only while that presentation is
+  rendering, and they win over tiers 0 and 1.
 - **Firmware-reserved** — handled by device firmware before NVDA sees the
   keys.
 
@@ -27,63 +32,67 @@ Conventions:
 - Mode-switch chords stay reachable from any presentation because the
   active presentation doesn't bind the long-press variants.
 
-## Tier 0 — Universal text scroll
+## Tier 0 — NVDA global scripts (driver `gestureMap`)
+
+<!-- BEGIN GENERATED: tier0 -->
 
 | Gesture | Action |
 |---|---|
+| `f3` | Activate the current navigator object |
 | `panLeft` | Scroll the 20-cell text braille display back |
 | `panRight` | Scroll the 20-cell text braille display forward |
 
-## Tier 1 — Multi-line scroll and mode switches (every mode)
+<!-- END GENERATED: tier0 -->
+
+## Tier 1 — Driver scripts (every mode)
+
+<!-- BEGIN GENERATED: tier1 -->
 
 | Gesture | Action |
 |---|---|
-| `f1` | Scroll the multi-line display back (delegates to active presentation) |
-| `f4` | Scroll the multi-line display forward |
-| `f3` | Activate the current navigator object (NVDA's `review_activate`) |
-| `f2+f4` | Force-render the navigator object as a **tactile graphic** (show as graphic) |
-| `f1+f3` | Force-render the navigator object as **braille** (show as braille) |
-| `longPress(f1+f3)` | Toggle screen capture mode |
-| `longPress(f2+f3)` | Force table mode (scan parent objects for a table) |
+| `f1` | Scrolls the multiline display backwards |
+| `f4` | Scrolls the multiline display forward |
+| `f1+f3` | Displays the review object as braille via the active braille presentation |
+| `f2+f4` | Displays the review object as tactile graphics via TactileDisplayAPI |
+| `longPress(f1+f3)` | Toggles between normal braille output and screen capture mode |
+| `longPress(f2+f3)` | Forces table mode by scanning parent objects for a table |
+
+<!-- END GENERATED: tier1 -->
 
 The `f1+f3` / `f2+f4` chords form a symmetric pair: one returns to braille,
 the other forces graphic. Both are reachable from any presentation as
 explicit escape hatches.
 
-## Tier 2 — Graphic mode viewport pan (single keys)
+## Tier 2 — Presentation scripts
 
-These bindings apply ONLY while `GraphicPresentation` is the active
-presentation (typically when focus is on a `Role.GRAPHIC` object or after
-pressing `f2+f4`). Short-press = page-step in the named direction.
+These bindings apply ONLY while the named presentation is the active one.
+For `GraphicPresentation` that is typically when focus is on a
+`Role.GRAPHIC` object, or after pressing `f2+f4`. The single-key direction
+mapping mirrors the hardware button layout; holding the same key for
+≥1.5s jumps to the edge in that direction.
 
-| Gesture | Action |
-|---|---|
-| `f1` | Pan viewport LEFT by one page-step |
-| `f2` | Pan viewport UP by one page-step |
-| `f3` | Pan viewport DOWN by one page-step |
-| `f4` | Pan viewport RIGHT by one page-step |
+<!-- BEGIN GENERATED: tier2 -->
 
-The single-key direction mapping mirrors the hardware button layout.
+### `GraphicPresentation`
 
-## Tier 2 — Graphic mode edge jumps (long-press)
-
-Hold the same single key for ≥1.5s to jump to the edge in the same
-direction.
+Defined in `addon/presentations/graphic.py`. Active only while this presentation is rendering.
 
 | Gesture | Action |
 |---|---|
-| `longPress(f1)` | Jump viewport to the LEFT edge (HOME) |
-| `longPress(f2)` | Jump viewport to the TOP edge |
-| `longPress(f3)` | Jump viewport to the BOTTOM edge |
-| `longPress(f4)` | Jump viewport to the RIGHT edge (END) |
+| `f1` | Pan the tactile graphic viewport left by one page-step |
+| `f2` | Pan the tactile graphic viewport up by one page-step |
+| `f3` | Pan the tactile graphic viewport down by one page-step |
+| `f4` | Pan the tactile graphic viewport right by one page-step |
+| `f1+f4` | Zoom the tactile graphic out |
+| `f2+f3` | Zoom the tactile graphic in |
+| `panLeft+panRight` | Recenter the tactile graphic viewport |
+| `f1+f2+f3+f4` | Invert the tactile graphic image (swap raised and blank dots) |
+| `longPress(f1)` | Jump the tactile graphic viewport to the left edge |
+| `longPress(f2)` | Jump the tactile graphic viewport to the top edge |
+| `longPress(f3)` | Jump the tactile graphic viewport to the bottom edge |
+| `longPress(f4)` | Jump the tactile graphic viewport to the right edge |
 
-## Tier 2 — Graphic mode zoom + recenter
-
-| Gesture | Action |
-|---|---|
-| `f2+f3` | Zoom IN |
-| `f1+f4` | Zoom OUT |
-| `panLeft+panRight` | Recenter viewport |
+<!-- END GENERATED: tier2 -->
 
 ## Firmware-reserved
 
@@ -101,9 +110,13 @@ The following scripts are registered with NVDA but have no default
 gesture. Open NVDA's Input Gestures dialog (NVDA+N → Preferences → Input
 gestures) → Dot Pad category and assign any gesture you prefer.
 
+<!-- BEGIN GENERATED: unbound -->
+
 | Script | Description |
 |---|---|
 | `script_refresh` | Refreshes the Dot Pad display |
+
+<!-- END GENERATED: unbound -->
 
 Auto-refresh handles the common refresh case on both D3 hardware-based
 displays and the 320A's software-based path; manual refresh is needed
@@ -127,6 +140,9 @@ default keymap to free chord space for the viewport-pan additions.
 NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
+`tools/generateKeymap.py` fails if any gesture in this table is bound
+again, so restoring one means moving its row out of here.
+
 ## Resolution order (technical)
 
 When the device fires a gesture, NVDA resolves it in this order:
@@ -146,8 +162,13 @@ resolve independently in steps 1–3.
 ## Known limitations
 
 - **NVDA's Input Gestures dialog doesn't enumerate presentation-level
-  scripts** (the Tier 2 viewport / zoom handlers in this document). It
-  shows only Tier 0 and Tier 1 entries. To rebind a presentation-level
-  gesture, edit `%APPDATA%\nvda\gestures.ini` directly. This is an upstream
-  NVDA limitation that requires an NVDA-side change to fix.
+  scripts** (the Tier 2 handlers in this document). It shows only Tier 0
+  and Tier 1 entries. To rebind a presentation-level gesture, edit
+  `%APPDATA%\nvda\gestures.ini` directly. This is an upstream NVDA
+  limitation that requires an NVDA-side change to fix. The generated
+  tables list what is *bound*, not what is *reachable through the UI*.
 - **Firmware-reserved `longPress(panLeft+panRight)`** can't be repurposed.
+- **Gestures built at runtime would be invisible to the generator.** Every
+  binding is currently a string literal on a `gesture=` keyword, which is
+  what makes static parsing safe. A computed binding would need documenting
+  by hand.
