@@ -185,7 +185,8 @@ class GraphicPresentation(Presentation):
 
 				def onLibraryFailure(exception: BaseException) -> None:
 					log.warning(
-						f"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: {exception!r}",
+						"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: %r",
+						exception,
 					)
 
 				worker.submitAndReport(

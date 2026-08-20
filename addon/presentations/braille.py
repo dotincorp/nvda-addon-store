@@ -196,7 +196,8 @@ class BraillePresentation(Presentation):
 					region.update()
 				except Exception:
 					log.debugWarning(
-						f"Region update failed for {region}, object probably died",
+						"Region update failed for %s, object probably died",
+						region,
 						exc_info=True,
 					)
 					continue
@@ -423,7 +424,7 @@ class LibraryBraillePresentation(Presentation):
 			log.debug("LibraryBraillePresentation: text-mode switch succeeded")
 
 		def onSwitchFailure(exc: BaseException) -> None:
-			log.warning(f"LibraryBraillePresentation: text-mode switch failed: {exc!r}")
+			log.warning("LibraryBraillePresentation: text-mode switch failed: %r", exc)
 
 		# Step 1: switch the library to text mode. Op 18 per the v1.16 docs.
 		worker.submitAndReport(
@@ -526,9 +527,7 @@ class LibraryBraillePresentation(Presentation):
 			return False
 
 		def onFailure(exc: BaseException) -> None:
-			log.warning(
-				f"LibraryBraillePresentation: ExecuteOperation({operation!r}) failed: {exc!r}",
-			)
+			log.warning("LibraryBraillePresentation: ExecuteOperation(%r) failed: %r", operation, exc)
 
 		worker.submitAndReport(
 			tda.executeOperation,
@@ -633,8 +632,9 @@ class BrailleProvider(PresentationProvider):
 		if driver is not None and getattr(driver, "_libraryFallbackAnnounced", False):
 			return
 		log.warning(
-			f"BrailleProvider: library mode requested but unavailable ({reason}); "
+			"BrailleProvider: library mode requested but unavailable (%s); "
 			"falling back to NVDA-driven braille presentation",
+			reason,
 		)
 		if driver is None:
 			return

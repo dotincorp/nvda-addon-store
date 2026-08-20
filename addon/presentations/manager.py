@@ -96,7 +96,7 @@ class PresentationManager:
 				self._activePresentation = self._forcedPresentation
 				return
 			else:
-				log.debug(f"Forced presentation {self._forcedPresentation.name} no longer valid")
+				log.debug("Forced presentation %s no longer valid", self._forcedPresentation.name)
 				self._forcedPresentation = None
 
 		# 2. Find first provider that can provide
@@ -108,7 +108,7 @@ class PresentationManager:
 
 		if matchingProvider is None:
 			if self._activePresentation is not None:
-				log.debug(f"No provider matched (was: {self._activePresentation.name})")
+				log.debug("No provider matched (was: %s)", self._activePresentation.name)
 			self._activePresentation = None
 			return
 
@@ -125,7 +125,7 @@ class PresentationManager:
 		presentation = matchingProvider.createPresentation(obj, self.display)
 		presentation.provider = matchingProvider
 		self._activePresentation = presentation
-		log.debug(f"Created new presentation: {presentation.name} (was: {previousName})")
+		log.debug("Created new presentation: %s (was: %s)", presentation.name, previousName)
 
 	def forcePresentation(self, providerName: str, obj: NVDAObject) -> bool:
 		"""Force a presentation type.

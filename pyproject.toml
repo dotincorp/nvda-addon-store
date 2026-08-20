@@ -65,6 +65,8 @@ ignore = [
 	"W191",
 ]
 logger-objects = ["logHandler.log"]
+# flake8-logging-format: keep log calls cheap and structured. See docs/logging.md.
+extend-select = ["G"]
 
 [tool.ruff.lint.per-file-ignores]
 # sconscripts contains many inbuilt functions not recognised by the lint,

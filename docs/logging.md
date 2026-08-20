@@ -65,9 +65,20 @@ identity, display geometry, and failures.
 - **`log.warning`** — degraded behaviour the user may actually perceive: output
   genuinely lost, a device-reported error, a wedged worker.
 - **`log.error` / `log.exception`** — a failure that broke something. Use
-  `exception` (or `exc_info=True`) whenever you are inside an `except` block,
+  `exception` whenever you are inside an `except` block (never
+  `error(..., exc_info=True)`; ruff's G201 catches that),
   and always give the message real content — a bare traceback with an empty
   message tells the reader nothing about which of several attempts failed.
+
+### `log.exception` cannot take lazy arguments
+
+NVDA's `Logger.exception` is `exception(msg, exc_info=True, **kwargs)` and calls
+`self._log(level, msg, (), ...)` with an empty args tuple. Its second positional
+parameter is `exc_info`, not a format argument, and any `%s` left in the message
+renders literally. So `log.exception` keeps its f-string, with a `# noqa: G004`
+and a comment saying why.
+
+Every other level takes `%`-args normally.
 
 ### Repeating warnings
 

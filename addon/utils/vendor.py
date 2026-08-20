@@ -71,7 +71,7 @@ def ensureVendorPath() -> None:
 	if vendorSubdir not in SUPPORTED_PLATFORMS:
 		from logHandler import log
 
-		log.error(f"Unsupported platform: {vendorSubdir}. Supported: {', '.join(SUPPORTED_PLATFORMS)}")
+		log.error("Unsupported platform: %s. Supported: %s", vendorSubdir, ", ".join(SUPPORTED_PLATFORMS))
 		raise RuntimeError(f"DotPad add-on does not support platform {vendorSubdir}")
 
 	vendorPath = Path(addon.path) / "_vendor" / vendorSubdir

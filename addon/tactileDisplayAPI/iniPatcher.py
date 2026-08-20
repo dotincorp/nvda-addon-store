@@ -271,9 +271,7 @@ def _patchOneIni(
 		_atomicWrite(iniPath, patchedBytes)
 		return PatchResult.WROTE
 	except Exception as exc:
-		log.debug(
-			f"TactileDisplayAPI INI patch: FAILED ({iniPath}) — {type(exc).__name__}: {exc}",
-		)
+		log.debug("TactileDisplayAPI INI patch: FAILED (%s) — %s: %s", iniPath, type(exc).__name__, exc)
 		return PatchResult.FAILED
 
 
@@ -295,7 +293,7 @@ def patchTactileDisplayAPIIni() -> dict[str, PatchResult]:
 			return {}
 		devModeRoot = _isDevMode(addonPath)
 		if devModeRoot is not None:
-			log.debug(f"TactileDisplayAPI INI patch: SKIPPED-DEV ({devModeRoot})")
+			log.debug("TactileDisplayAPI INI patch: SKIPPED-DEV (%s)", devModeRoot)
 			return {p.parent.name: PatchResult.SKIPPED for p in targets}
 		liblouisPath, tablesPath = _resolveNvdaLiblouis()
 		replacements: dict[tuple[str, str], str] = {
@@ -313,7 +311,9 @@ def patchTactileDisplayAPIIni() -> dict[str, PatchResult]:
 		# whatever its (unpatched) INI points at; the addon's own braille
 		# translation goes through NVDA's louisHelper regardless.
 		log.debug(
-			f"TactileDisplayAPI INI patch: aborted before per-locale loop — {type(exc).__name__}: {exc}",
+			"TactileDisplayAPI INI patch: aborted before per-locale loop — %s: %s",
+			type(exc).__name__,
+			exc,
 		)
 		return {}
 	# Aggregated summary log.
@@ -322,13 +322,15 @@ def patchTactileDisplayAPIIni() -> dict[str, PatchResult]:
 	nFailed = sum(1 for r in results.values() if r is PatchResult.FAILED)
 	if nFailed:
 		log.info(
-			f"TactileDisplayAPI INI patch: {nWrote} wrote, {nUnchanged} unchanged, "
-			f"{nFailed} failed (see DEBUG for details)",
+			"TactileDisplayAPI INI patch: %s wrote, %s unchanged, %s failed (see DEBUG for details)",
+			nWrote,
+			nUnchanged,
+			nFailed,
 		)
 	elif nWrote:
-		log.info(f"TactileDisplayAPI INI patch: {nWrote} wrote, {nUnchanged} unchanged")
+		log.info("TactileDisplayAPI INI patch: %s wrote, %s unchanged", nWrote, nUnchanged)
 	else:
 		# Steady state: every locale was already correct. Nothing happened, so
 		# there is nothing for a user to read in a default-level log.
-		log.debug(f"TactileDisplayAPI INI patch: {nUnchanged} unchanged")
+		log.debug("TactileDisplayAPI INI patch: %s unchanged", nUnchanged)
 	return results

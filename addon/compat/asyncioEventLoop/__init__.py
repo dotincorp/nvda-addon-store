@@ -44,7 +44,7 @@ def terminate():
 
 	async def cancelAllTasks():
 		tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-		log.debug(f"Stopping {len(tasks)} tasks")
+		log.debug("Stopping %s tasks", len(tasks))
 		[task.cancel() for task in tasks]
 		await asyncio.gather(*tasks, return_exceptions=True)
 		log.debug("Done stopping tasks")

@@ -345,10 +345,10 @@ class TactileDisplayCallbacks(COMObject):
 			try:
 				lengthInt = self._coerceLength(length)
 				if lengthInt <= 0:
-					log.debug(f"{target}DisplayUpdated: empty payload (length={lengthInt}); dropping")
+					log.debug("%sDisplayUpdated: empty payload (length=%s); dropping", target, lengthInt)
 					return _S_OK
 				if data is None:
-					log.debugWarning(f"{target}DisplayUpdated: null data pointer; dropping")
+					log.debugWarning("%sDisplayUpdated: null data pointer; dropping", target)
 					return _S_OK
 				# Copy the bytes out of library-owned memory. After return,
 				# the library may reuse / free the buffer. `data` is typed
@@ -358,7 +358,10 @@ class TactileDisplayCallbacks(COMObject):
 				payload = ctypes.string_at(data, lengthInt)  # pyright: ignore[reportArgumentType]
 				render(payload)
 			except Exception:
-				log.exception(f"{target}DisplayUpdated: exception in render path; swallowed")
+				# NVDA's Logger.exception takes exc_info as its second parameter and
+				# passes an empty args tuple to _log, so lazy %-args are impossible
+				# here -- an f-string is the only option. See docs/logging.md.
+				log.exception(f"{target}DisplayUpdated: exception in render path; swallowed")  # noqa: G004
 		return _S_OK
 
 	@staticmethod

@@ -309,7 +309,11 @@ class TablePresentation(Presentation):
 		navWindowHandle = getattr(navObj, "windowHandle", None)
 		if tableWindowHandle is not None and navWindowHandle is not None:
 			if tableWindowHandle != navWindowHandle:
-				log.debug(f"Table invalid: window handle mismatch ({tableWindowHandle} != {navWindowHandle})")
+				log.debug(
+					"Table invalid: window handle mismatch (%s != %s)",
+					tableWindowHandle,
+					navWindowHandle,
+				)
 				return False
 
 		# Check 2: For Excel, verify same worksheet (detects worksheet switch)
@@ -328,7 +332,9 @@ class TablePresentation(Presentation):
 					# Compare worksheet names (more reliable than COM object identity)
 					if tableWorksheet.Name != navWorksheet.Name:
 						log.debug(
-							f"Table invalid: worksheet changed ({tableWorksheet.Name} != {navWorksheet.Name})",
+							"Table invalid: worksheet changed (%s != %s)",
+							tableWorksheet.Name,
+							navWorksheet.Name,
 						)
 						return False
 			except Exception:

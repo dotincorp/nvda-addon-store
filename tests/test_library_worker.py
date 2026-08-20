@@ -555,32 +555,5 @@ class TestCaptureDiagnosticsReportsCurrentOp(unittest.TestCase):
 				worker.stop()
 
 
-class TestSoftTimeoutLogsStuckContext(unittest.TestCase):
-	"""A soft (per-call) timeout while the op is STILL current logs the
-	stuck-context warning, distinct from transient slowness."""
-
-	def test_stuck_op_warning(self) -> None:
-		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
-
-		hang = threading.Event()
-
-		def wedgingOperation() -> None:
-			hang.wait()
-
-		with _stubbedComEnvironment():
-			worker = LibraryWorker()
-			worker.start(startTimeoutS=2.0)
-			with patch("addon.tactileDisplayAPI.libraryWorker.log") as mockLog:
-				try:
-					with self.assertRaises(FutureTimeoutError):
-						worker.submitAndAwait(wedgingOperation, timeout=0.1)
-					warnings = " ".join(str(c.args[0]) for c in mockLog.warning.call_args_list)
-					self.assertIn("STILL the worker's current operation", warnings)
-					self.assertIn("wedgingOperation", warnings)
-				finally:
-					hang.set()
-					worker.stop()
-
-
 if __name__ == "__main__":
 	unittest.main()

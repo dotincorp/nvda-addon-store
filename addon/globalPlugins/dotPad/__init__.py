@@ -157,7 +157,7 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		exc = future.exception()
 		if exc is not None:
-			log.warning(f"dotPad: library viewer toggle failed: {exc}")
+			log.warning("dotPad: library viewer toggle failed: %s", exc)
 
 	def _applyLineSpacing(self) -> None:
 		"""Re-apply the line spacing setting to the running display and library.

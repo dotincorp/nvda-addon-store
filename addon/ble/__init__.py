@@ -44,7 +44,7 @@ def _setUpBle() -> tuple[Any | None, bool]:
 
 		ensureVendorPath()
 	except RuntimeError as e:
-		log.error(f"BLE not available: {e}")
+		log.error("BLE not available: %s", e)
 		return None, False
 	log.debug("BLE: NVDA has no hwIo.ble; using the vendored bleak")
 	return None, True

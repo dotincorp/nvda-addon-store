@@ -217,10 +217,9 @@ class TestProviderFallbackWhenLibraryNotReady(unittest.TestCase):
 			provider._doCreatePresentation(MagicMock(name="obj"), display)
 		self.assertTrue(driver._libraryFallbackAnnounced)
 
-	def test_fallback_does_not_spam_warning_after_first_announcement(self) -> None:
-		"""After the first fallback, subsequent ``_doCreatePresentation``
-		calls MUST NOT re-log the warning. Regression guard for the log
-		flood observed on hardware before this fix landed.
+	def test_fallback_announces_once_across_repeated_calls(self) -> None:
+		"""The user is told once, not on every presentation. Regression guard
+		for the flood observed on hardware before this fix landed.
 		"""
 		from addon.configuration import BrailleSource
 
@@ -233,34 +232,15 @@ class TestProviderFallbackWhenLibraryNotReady(unittest.TestCase):
 		with (
 			patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.LIBRARY),
 			patch("addon.presentations.braille._getActiveDotPadDriver", return_value=driver),
-			patch("addon.presentations.braille.log") as mockLog,
-			patch("wx.CallAfter"),
+			patch("wx.CallAfter") as mockCallAfter,
 		):
 			provider._doCreatePresentation(MagicMock(name="obj"), display)
 			provider._doCreatePresentation(MagicMock(name="obj"), display)
 			provider._doCreatePresentation(MagicMock(name="obj"), display)
 
-		# Warning logged exactly once across three fallback calls.
-		self.assertEqual(mockLog.warning.call_count, 1)
-
-	def test_fallback_logs_warning(self) -> None:
-		"""First fallback logs at warning level so diagnostics are visible."""
-		from addon.configuration import BrailleSource
-
-		provider = _makeProvider()
-		display = _makeDisplay()
-		driver = _makeReadyDriver()
-		driver._libraryReady = False
-
-		with (
-			patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.LIBRARY),
-			patch("addon.presentations.braille._getActiveDotPadDriver", return_value=driver),
-			patch("addon.presentations.braille.log") as mockLog,
-			patch("wx.CallAfter"),
-		):
-			provider._doCreatePresentation(MagicMock(name="obj"), display)
-
-		mockLog.warning.assert_called()
+		# ui.message is dispatched exactly once across three fallback calls.
+		self.assertEqual(mockCallAfter.call_count, 1)
+		self.assertTrue(driver._libraryFallbackAnnounced)
 
 
 class TestPresentationIsStillValidConfigAware(unittest.TestCase):
