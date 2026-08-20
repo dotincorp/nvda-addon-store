@@ -243,7 +243,6 @@ class Detector:
 		for peripheral in scanResults:
 			for driverName, matcher in self._matchersInScope(limitToDevices):
 				if matcher(peripheral):
-					log.debug(f"Found BLE device: {peripheral.name} for driver {driverName}")
 					yield (
 						driverName,
 						DeviceMatch(
@@ -257,7 +256,6 @@ class Detector:
 	def register(self, driverRegistrar: DriverRegistrar):
 		if self._isRegistered:
 			return
-		log.debug("Registering BLE detector with bdDetect")
 		driverRegistrar.addDeviceScanner(self.matches)
 		self._isRegistered = True
 

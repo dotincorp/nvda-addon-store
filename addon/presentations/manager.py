@@ -94,7 +94,6 @@ class PresentationManager:
 		if self._forcedPresentation:
 			if self._forcedPresentation.isStillValid(triggerReason):
 				self._activePresentation = self._forcedPresentation
-				log.debug(f"Reusing forced presentation: {self._forcedPresentation.name}")
 				return
 			else:
 				log.debug(f"Forced presentation {self._forcedPresentation.name} no longer valid")
@@ -119,7 +118,6 @@ class PresentationManager:
 			and self._activePresentation.provider is matchingProvider
 			and self._activePresentation.isStillValid(triggerReason)
 		):
-			log.debug(f"Reusing active presentation: {self._activePresentation.name}")
 			return
 
 		# 4. Create new presentation from matching provider

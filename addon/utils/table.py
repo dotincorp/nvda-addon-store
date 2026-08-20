@@ -312,17 +312,15 @@ class Table(AutoPropertyObject):
 		if firstRow is None:
 			firstRow = 0
 
-			log.debug(
-				f"First row before centering: {firstRow}, numVisibleRows: {numVisibleRows}, tableCurrentRow: {self.tableCurrentRow}",
-			)
 			if self.tableCurrentRow and self.tableCurrentRow not in range(
 				firstRow,
 				firstRow + numVisibleRows,
 			):
 				# Center the current row
-				log.debug(f"Centering current row {self.tableCurrentRow} in visible rows {numVisibleRows}")
 				firstRow = self.tableCurrentRow - (numVisibleRows // 2)
-				log.debug(f"First row after centering: {firstRow}")
+				log.debug(
+					f"Centering row {self.tableCurrentRow} in {numVisibleRows} visible rows: firstRow={firstRow}",
+				)
 
 				rowCount: int | None = None
 

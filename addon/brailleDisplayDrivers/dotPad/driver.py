@@ -143,13 +143,12 @@ def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
 	braille too (NVDA's ``inputTable`` is for input-side transcription, not
 	output, so reusing literary is the safest choice on the output side).
 
-	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Logs
-	at debug on success / warning on failure (one-time per driver life).
+	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Silence
+	means it landed; failure warns once per driver life.
 	"""
 	try:
 		# All three slots get NVDA's literary table. See docstring.
 		tda.setBrailleTables(tableName, tableName, tableName)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setBrailleTables({tableName!r}) succeeded")
 	except Exception:
 		log.warning(
 			f"dotPad: setBrailleTables({tableName!r}) failed; library will "
@@ -177,7 +176,6 @@ def _setRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = None)
 		tda.setRegisterEvents(True)  # type: ignore[attr-defined]
 		if worker is not None:
 			worker.noteUiaEventsEnabled()
-		log.debug("dotPad: setRegisterEvents(True) succeeded")
 	except Exception:
 		log.warning(
 			"dotPad: setRegisterEvents(True) failed; library-driven braille "
@@ -200,7 +198,6 @@ def _disableRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = N
 		tda.setRegisterEvents(False)  # type: ignore[attr-defined]
 		if worker is not None:
 			worker.noteUiaEventsDisabled()
-		log.debug("dotPad: setRegisterEvents(False) succeeded")
 	except Exception:
 		log.warning("dotPad: setRegisterEvents(False) failed", exc_info=True)
 
@@ -214,12 +211,11 @@ def _setShowBrailleOnScreenOnWorker(tda: object, enable: bool) -> None:
 	a prior session would see the menu item checked at startup but the viewer
 	would stay closed until they clicked off + on.
 
-	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Logs at
-	debug on success / warning on failure.
+	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Silence
+	means it landed; failure warns.
 	"""
 	try:
 		tda.showBrailleOnScreen(enable)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: showBrailleOnScreen({enable}) (driver-init sync) succeeded")
 	except Exception:
 		log.warning(
 			f"dotPad: showBrailleOnScreen({enable}) (driver-init sync) failed; "
@@ -240,7 +236,6 @@ def _setLineSpacingOnWorker(tda: object, paddingDots: int, forceSixDot: bool) ->
 	try:
 		tda.setBrailleLinePadding(paddingDots)  # type: ignore[attr-defined]
 		tda.forceSixDotBraille(forceSixDot)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setBrailleLinePadding({paddingDots}) forceSixDotBraille({forceSixDot}) succeeded")
 	except Exception:
 		log.warning(
 			f"dotPad: line-spacing calls (padding={paddingDots}, forceSixDot={forceSixDot}) failed; "
@@ -260,7 +255,6 @@ def _setHybridModeOnWorker(tda: object, enable: bool) -> None:
 	"""
 	try:
 		tda.setHybridPrintAndBrailleMode(enable)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setHybridPrintAndBrailleMode({enable}) succeeded")
 	except Exception:
 		log.warning(
 			f"dotPad: setHybridPrintAndBrailleMode({enable}) failed; hybrid print+braille "

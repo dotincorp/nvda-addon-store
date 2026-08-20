@@ -205,10 +205,10 @@ def renderBrailleBytes(payload: bytes) -> None:
 	``ShowMultilineText``, ``ShowStatusText``, or its multiline-text
 	pipeline. The addon does not call those methods in SimulateDisplay mode,
 	so this callback should not fire under normal operation. If it does
-	(e.g. via ``AddFocusedControl`` or library-internal triggers), we log
-	at debug and discard the bytes.
+	(e.g. via ``AddFocusedControl`` or library-internal triggers), we warn
+	into the debug log and discard the bytes.
 	"""
-	log.debug(f"renderBrailleBytes: ignoring {len(payload)} bytes (log-and-drop)")
+	log.debugWarning(f"renderBrailleBytes: ignoring {len(payload)} bytes (log-and-drop)")
 
 
 def getNVDABrailleTableIfAvailable() -> str | None:
