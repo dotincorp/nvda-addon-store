@@ -1,6 +1,6 @@
 [project]
 name = "dotPad"
-description = "Output braile text and graphics to Dot Pad braille displays."
+description = "Output braille text and graphics to Dot Pad braille displays."
 version = "0.9.0"
 maintainers = [
     {name = "Bram Duvigneau", email = "bram@bramd.nl"},

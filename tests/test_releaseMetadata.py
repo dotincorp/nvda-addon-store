@@ -103,6 +103,44 @@ class TestStoreChangelog(unittest.TestCase):
 		)
 
 
+class TestStoreTextHygiene(unittest.TestCase):
+	"""Text the add-on store renders verbatim carries no stray whitespace.
+
+	The store shows ``addon_changelog`` as-is, so whitespace inside the
+	literal reaches users. A tab did: the string's closing triple quote sat
+	on its own tab-indented line, so the value ended with a newline and a
+	tab, and that tab was published in ``addons/dotPad/0.9.90.json``.
+
+	The checks above could not catch it -- they all ``.strip()`` the value
+	before looking at it, which is right for a version header and exactly
+	wrong for this.
+	"""
+
+	def test_changelogHasNoSurroundingWhitespace(self) -> None:
+		changelog = str(_addonInfo()["addon_changelog"])
+		self.assertEqual(
+			changelog,
+			changelog.strip(),
+			"buildVars.addon_changelog begins or ends with whitespace, which the "
+			"add-on store publishes verbatim. Close the triple-quoted string on "
+			"the same line as its last bullet.",
+		)
+
+	def test_changelogLinesHaveNoTrailingWhitespace(self) -> None:
+		changelog = str(_addonInfo()["addon_changelog"])
+		offenders = [
+			(number, line)
+			for number, line in enumerate(changelog.splitlines(), start=1)
+			if line != line.rstrip()
+		]
+		self.assertEqual(
+			offenders,
+			[],
+			"buildVars.addon_changelog has lines ending in whitespace, which the "
+			f"add-on store publishes verbatim: {offenders}",
+		)
+
+
 class TestRepoChangelog(unittest.TestCase):
 	"""CHANGELOG.md keeps a landing zone for entries that have not shipped yet."""
 
