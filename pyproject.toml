@@ -99,7 +99,7 @@ l10n = [
 lint = [
     "prek==0.4.8",
     "pyright[nodejs]==1.1.408",
-    "ruff==0.14.11",
+    "ruff==0.16.5",
 ]
 # NVDA source and its dependencies, needed to import NVDA modules when
 # type-checking and when running the unit tests.
