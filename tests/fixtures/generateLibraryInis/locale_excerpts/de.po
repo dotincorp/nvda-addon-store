@@ -1,0 +1,13 @@
+# Minimal German translation excerpt.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "btn"
+msgstr "sch"
+
+msgid "chk"
+msgstr "kf"
+
+msgid "rbtn"
+msgstr "ofa"

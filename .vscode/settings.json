@@ -1,0 +1,35 @@
+{
+    "ruff.enable": true,
+    "editor.accessibilitySupport": "on",
+    "python.linting.flake8Enabled": false,
+    "python.linting.pylintEnabled": false,
+    "python.autoComplete.extraPaths": [
+        "../nvda/source",
+        "../nvda/miscDeps/python"
+    ],
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportUndefinedVariable": "none"
+    },
+    "python.analysis.extraPaths": [
+        "../nvda/source",
+        "../nvda/miscDeps/python"
+    ],
+    "python.defaultInterpreterPath": "${workspaceRoot}/../nvda/.venv/scripts/python.exe",
+    "python.envFile": "${workspaceFolder}/.env",
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true
+    },
+    "python.testing.unittestArgs": [
+        "-v",
+        "-t",
+        ".",
+        "-s",
+        "./tests",
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python.analysis.typeCheckingMode": "basic"
+}

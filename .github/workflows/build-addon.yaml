@@ -1,0 +1,24 @@
+name: Build addon
+on:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    build-addon:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7
+
+            - name: Build add-on
+              uses: ./.github/actions/build-addon
+              with:
+                version: ${{ github.sha }}
+
+            - name: Upload
+              uses: actions/upload-artifact@v7
+              with:
+                name: addon
+                path: "*.nvda-addon"
+                compression-level: 0

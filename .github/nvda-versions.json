@@ -1,0 +1,18 @@
+{
+	"versions": [
+		{
+			"name": "2026.1",
+			"ref": "release-2026.1"
+		},
+		{
+			"name": "2026.2",
+			"ref": "release-2026.2beta10",
+			"lint": true
+		},
+		{
+			"name": "alpha",
+			"ref": "master",
+			"experimental": true
+		}
+	]
+}

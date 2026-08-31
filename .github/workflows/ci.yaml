@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# The NVDA versions tested here live in .github/nvda-versions.json.
+# JSON has no comments, so the notes belong here:
+#   - Entries need only "name" and "ref"; bramd/prepare-nvda-source auto-detects the Python
+#     version and architecture from NVDA's .python-versions file (NVDA >= 2025.3).
+#   - "lint": true picks the single ref the lint job type-checks against. Keep it on the newest
+#     *stable* tag so alpha churn can never fail lint for reasons unrelated to the add-on.
+#   - "experimental": true makes a row informational (continue-on-error), for refs that move.
+#   - The "alpha" row tracks nvaccess/nvda master, which is the 2026.3 alpha line today. There is
+#     no "alpha" branch and no 2026.3 tags. Once 2026.3 branches to beta, master rolls to 2026.4 --
+#     at that point pin this row to release-2026.3betaN instead.
+
+jobs:
+  load-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      lint-version: ${{ steps.set-matrix.outputs.lint }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: set-matrix
+        run: |
+          echo "matrix=$(cat .github/nvda-versions.json | jq -c)" >> $GITHUB_OUTPUT
+          echo "lint=$(cat .github/nvda-versions.json | jq -c '.versions[] | select(.lint)')" >> $GITHUB_OUTPUT
+
+  # Warms the NVDA cache one build per ref, so the test and lint jobs below hit it instead of
+  # racing each other to build the same source tree concurrently.
+  prepare-nvda:
+    name: Prepare NVDA ${{ matrix.name }}
+    needs: load-matrix
+    runs-on: windows-2022
+    continue-on-error: ${{ matrix.experimental == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.load-matrix.outputs.matrix).versions }}
+
+    steps:
+      - name: Prepare NVDA source
+        uses: bramd/prepare-nvda-source@v1
+        with:
+          nvda-ref: ${{ matrix.ref }}
+          github-token: ${{ github.token }}
+
+  test:
+    name: Test NVDA ${{ matrix.name }}
+    needs: [load-matrix, prepare-nvda]
+    runs-on: windows-2022
+    continue-on-error: ${{ matrix.experimental == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.load-matrix.outputs.matrix).versions }}
+
+    steps:
+      - name: Clone add-on
+        uses: actions/checkout@v7
+        with:
+          path: add-on
+
+      - name: Prepare NVDA source
+        uses: bramd/prepare-nvda-source@v1
+        with:
+          nvda-ref: ${{ matrix.ref }}
+          github-token: ${{ github.token }}
+
+      - name: Run unittests
+        run: |
+          cd add-on
+          set PYTHONPATH=../nvda/source;../nvda/miscDeps/python
+          ..\nvda\.venv\scripts\python.exe -m unittest discover -s tests -t .
+        shell: cmd
+
+  lint:
+    name: Lint
+    needs: [load-matrix, prepare-nvda]
+    runs-on: windows-2022
+    # prek's default cache location is platform-dependent (%LOCALAPPDATA%\prek on
+    # Windows, ~/.cache/prek elsewhere), so pin it explicitly rather than relying
+    # on a path that would silently cache nothing. Same reasoning as the
+    # PRE_COMMIT_HOME this replaces.
+    env:
+      PREK_HOME: ${{ github.workspace }}\.cache\prek
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: add-on
+
+      - name: Prepare NVDA source
+        uses: bramd/prepare-nvda-source@v1
+        with:
+          nvda-ref: ${{ fromJSON(needs.load-matrix.outputs.lint-version).ref }}
+          github-token: ${{ github.token }}
+
+      - name: Cache add-on venv
+        uses: actions/cache@v6
+        with:
+          path: add-on/.venv
+          key: addon-venv-${{ runner.os }}-${{ fromJSON(needs.load-matrix.outputs.lint-version).name }}-${{ hashFiles('add-on/uv.lock') }}
+
+      - name: Install the project
+        run: |
+          cd add-on
+          uv sync --locked --all-extras --dev
+
+      - name: Cache prek environments
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.PREK_HOME }}
+          key: prek-1|${{ env.pythonLocation }}|${{ hashFiles('add-on/prek.toml') }}
+
+      # prek is pinned in the `lint` dependency group, so it comes from the
+      # synced venv rather than being resolved afresh here.
+      - name: Run prek
+        run: |
+          cd add-on
+          uv run prek run --show-diff-on-failure --color=always --all-files

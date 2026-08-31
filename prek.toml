@@ -1,0 +1,172 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+#
+# Ported from .pre-commit-config.yaml, following the layout of
+# nvaccess/AddonTemplate's prek.toml. Hooks that prek reimplements natively use
+# `repo = "builtin"` and need no environment setup; the rest still come from
+# their upstream repos.
+
+default_language_version = { python = "python3.13" }
+
+# Vendored third-party code and generated data files are not ours to lint.
+# `addon/tactileDisplayAPI/[a-z]{3}/` matches the per-locale library directories
+# (ara, chs, deu, enu, jpn, ...) shipped with the COM library drop.
+exclude = "^(addon/_vendor/|addon/tactileDisplayAPI/tables/|addon/tactileDisplayAPI/MathCATRules/|addon/tactileDisplayAPI/[a-z]{3}/|scripts/poc_)"
+
+[[repos]]
+repo = "meta"
+hooks = [
+  # ensures that exclude directives apply to any file in the repository.
+  { id = "check-useless-excludes" },
+  # ensures that the configured hooks apply to at least one file in the repository.
+  { id = "check-hooks-apply" },
+]
+
+# Built-in hooks reimplemented in Rust by prek. No repo clone or environment setup required.
+[[repos]]
+repo = "builtin"
+hooks = [
+  # Prevents commits to certain branches.
+  { id = "no-commit-to-branch", args = ["--branch", "main"] },
+  # Checks that large files have not been added. Default cut-off for "large" files is 500kb.
+  {
+    id = "check-added-large-files",
+    # POFiles and TTF fonts can't be made smaller.
+    exclude_types = ["pofile", "ttf"],
+    # Vendored TactileDisplayAPI binaries are necessarily large (the COM library
+    # plus its dependency DLLs); they are bundled because the addon runs without
+    # admin rights and cannot rely on a system-installed copy.
+    exclude = "^addon/tactileDisplayAPI/.*\\.dll$",
+  },
+  # Checks for filenames that will conflict on case insensitive filesystems (the majority of Windows filesystems, most of the time)
+  { id = "check-case-conflict" },
+  # Checks for artifacts from resolving merge conflicts.
+  { id = "check-merge-conflict" },
+  # Removes trailing whitespace.
+  {
+    id = "trailing-whitespace",
+    types_or = ["python", "c", "c++", "batch", "markdown", "toml", "yaml", "powershell"],
+  },
+  # Ensures all files end in 1 (and only 1) newline.
+  {
+    id = "end-of-file-fixer",
+    types_or = ["python", "c", "c++", "batch", "markdown", "toml", "yaml", "powershell"],
+  },
+  # Removes the UTF-8 BOM from files that have it.
+  # See https://github.com/nvaccess/nvda/blob/master/projectDocs/dev/codingStandards.md#encoding
+  {
+    id = "fix-byte-order-marker",
+    types_or = ["python", "c", "c++", "batch", "markdown", "toml", "yaml", "powershell"],
+  },
+  # Validates TOML files.
+  { id = "check-toml" },
+  # Validates YAML files.
+  { id = "check-yaml" },
+  # Ensures that links to lines in files under version control point to a particular commit.
+  { id = "check-vcs-permalinks" },
+]
+
+# These hooks use the upstream repo rather than prek's builtin equivalents:
+# - check-ast, debug-statements and name-tests-test have no builtin implementation.
+# - The builtin check-illegal-windows-names only matches files that already have
+#   illegal names, so check-hooks-apply reports it as unused on a clean repo;
+#   the upstream hook checks all files.
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v5.0.0"
+hooks = [
+  # Checks python syntax.
+  { id = "check-ast" },
+  # Checks Python files for debug statements, such as python's breakpoint function, or those inserted by some IDEs.
+  { id = "debug-statements" },
+  # Avoids using reserved Windows filenames.
+  { id = "check-illegal-windows-names" },
+  # Checks that tests are named test_*.py.
+  {
+    id = "name-tests-test",
+    args = ["--unittest"],
+    # Exclude Python files under `tests/` that aren't unittest files.
+    # This is a Python verbose regular expression.
+    # See https://docs.python.org/3/library/re.html#re.VERBOSE
+    exclude = """
+(?x)^tests/(
+  checkPot.py |  # Doesn't use unittest
+  system |  # Uses robot
+  # Test helpers
+  textProvider.py |
+  extensionPointTestHelpers.py |
+  objectProvider.py |
+  # Fixture data files masquerading as Python (parsed by ast, not run).
+  fixtures/.*
+)""",
+  },
+]
+
+[[repos]]
+repo = "https://github.com/asottile/add-trailing-comma"
+rev = "v3.2.0"
+hooks = [
+  # Ruff preserves indent/new-line formatting of function arguments, list items, and similar iterables,
+  # if a trailing comma is added.
+  # This adds a trailing comma to args/iterable items in case it was missed.
+  { id = "add-trailing-comma" },
+]
+
+[[repos]]
+# Keep in sync with the Ruff version resolved in uv.lock.
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.14.11"
+hooks = [
+  { id = "ruff", name = "lint with ruff", args = ["--fix"] },
+  { id = "ruff-format", name = "format with ruff" },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  # Run pyright from the project environment so uv.lock is the single source of
+  # truth for its version, rather than a separately-pinned hook `rev`.
+  {
+    id = "pyright",
+    name = "type check with pyright",
+    entry = "uv run pyright",
+    language = "system",
+    types = ["python"],
+  },
+
+  # Flags `from addon.X.Y import …` and `import addon.X.Y` in addon source.
+  # NVDA does not load addon files under an `addon` namespace at runtime —
+  # this pattern fails with `ModuleNotFoundError: No module named 'addon'`
+  # the moment the affected module is imported. Tests under tests/ are
+  # exempt because the unittest harness puts the repo root on sys.path.
+  # Uses pygrep (pure-Python regex) so the check works identically on
+  # Windows and Linux without shell-specific tooling.
+  {
+    id = "no-addon-prefix-import",
+    name = "Forbid `from addon.X.Y import ...` in addon source",
+    # Anchor to column 0: real top-level imports always start there. Docstring
+    # examples and indented function-local imports are excluded. The latter is
+    # acceptable scope for a regex check — they are not the bug class this hook
+    # exists to catch and they don't appear in the current codebase.
+    entry = '^(?:from\s+addon\.|import\s+addon\.)',
+    language = "pygrep",
+    types = ["python"],
+    files = '^addon/',
+  },
+
+  # Flags `import pytest` and `from pytest …` in the test suite. CI runs
+  # `python -m unittest discover -s tests -t .` and pytest is NOT installed
+  # in the CI environment — a test file with a top-level `import pytest`
+  # fails to load and every test inside is silently skipped. The addon uses
+  # `unittest.TestCase` exclusively; see `tests/test_packet.py` for the
+  # canonical style. Same pygrep pattern as `no-addon-prefix-import` above.
+  {
+    id = "no-pytest-in-tests",
+    name = "Forbid `import pytest` in tests/ (use unittest.TestCase)",
+    entry = '^(?:from\s+pytest\b|import\s+pytest\b)',
+    language = "pygrep",
+    types = ["python"],
+    files = '^tests/.*\.py$',
+  },
+]

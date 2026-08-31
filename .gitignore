@@ -1,0 +1,24 @@
+addon/doc/*.css
+addon/doc/en/
+addon/vendor/brltty/
+*_docHandler.py
+*.html
+manifest.ini
+*.mo
+*.pot
+*.py[co]
+*.nvda-addon
+.sconsign.dblite
+/[0-9]*.[0-9]*.[0-9]*.json
+tests/nvda.ini
+.aider*
+.worktrees/
+specs/*/_research/
+# Scratch space for vendor-drop inspection (e.g. unpacked TactileDisplayAPI zips)
+.scratch/
+__pycache__/
+.venv/
+.pytest_cache/
+# Local Claude Code state — machine-specific, not shared
+.claude/settings.local.json
+.claude/worktrees/

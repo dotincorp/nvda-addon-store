@@ -1,0 +1,69 @@
+# Based on nvdaes/nvdaAddonWorkflows/.github/workflows/automaticRelease.yaml@main
+
+name: pre-release
+
+on:
+  push:
+    branches:
+      - main
+
+# Repositories created after February 2023 default the GITHUB_TOKEN to read-only.
+# Creating and deleting a release, and deleting its tag, all need write. Declared
+# here rather than relying on the repository setting, which needs admin to change.
+permissions:
+  contents: write
+
+jobs:
+  # The nvdaaddons l10n mirror job that used to run here has been removed:
+  # translations now come from Crowdin via crowdinL10n.yml. It pulled from
+  # https://github.com/nvdaaddons/<repo>, which does not exist for this add-on,
+  # and reset addon/doc and addon/locale, neither of which is tracked here, so
+  # it only ever failed under continue-on-error.
+  pre-release:
+    name: Pre Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Per-commit builds live in a reserved 0.0.x band.
+      #
+      # NVDA parses an add-on version as 2-3 dot-separated integers
+      # (addonStore/models/version.py) and compares updates numerically, so the
+      # git sha this used to pass did not parse at all: every build was mutually
+      # incomparable, and NVDA could not tell a tester whether the build they had
+      # was older than the one they were installing.
+      #
+      # github.run_number is monotonic within a workflow file, so no two builds
+      # collide. Keeping major and minor at 0 guarantees these never outrank a
+      # real release (0.9.9x betas, 1.0.0 stable), which a date-derived version
+      # such as 2026.8.16 would do permanently. It does mean a dev build reads as
+      # "older" than the last release even when it carries newer code -- accepted:
+      # these are side-load test builds, and the release name plus notes carry the
+      # date and sha.
+      #
+      # If this workflow file is ever renamed or recreated, run_number restarts at
+      # 1 and the band stops being monotonic. Don't.
+      - name: Build add-on
+        uses: ./.github/actions/build-addon
+        with:
+          version: 0.0.${{ github.run_number }}
+
+      - name: Delete existing release and tag
+        run: |
+          gh release delete latest --yes || true
+          git push --delete origin latest || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: latest
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          name: Development Build
+          generate_release_notes: true
+          files: |
+            *.nvda-addon

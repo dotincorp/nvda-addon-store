@@ -1,0 +1,75 @@
+name: Crowdin l10n
+
+on:
+  workflow_dispatch:
+  # Enable the weekly schedule once this add-on has been registered in the
+  # nvdaaddons Crowdin project and the CROWDIN_TOKEN secret is configured.
+  # Until then this stays dispatch-only so a cron cannot fail every Monday.
+  # If we end up managing several add-ons, give each repository a different
+  # cron time: the random startup delay below reduces collisions but concurrent
+  # Crowdin sync jobs can still overlap.
+  # schedule:
+  #   # Every Monday at 00:00 UTC
+  #   - cron: '0 0 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  crowdinAuthToken: ${{ secrets.CROWDIN_TOKEN }}
+  GH_TOKEN: ${{ github.token }}
+  # 780748 is the shared NVDA add-ons community Crowdin project
+  # (https://crowdin.com/project/nvdaaddons), which is what we intend to use.
+  # Using it requires no repository variable at all — only the CROWDIN_TOKEN
+  # secret, issued after requesting developer access on the project. Set the
+  # CROWDIN_PROJECT_ID repository variable only to point at a different project.
+  CROWDIN_PROJECT_ID: ${{ vars.CROWDIN_PROJECT_ID || 780748 }}
+  L10N_UTIL_CONFIG: ${{ vars.L10N_UTIL_CONFIG || 'addon' }}
+  MIN_PERCENTAGE_TRANSLATED: ${{ vars.MIN_PERCENTAGE_TRANSLATED || 50 }}
+
+jobs:
+  crowdinSync:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Random startup delay (0-5 minutes)
+        if: github.event_name == 'schedule'
+        shell: pwsh
+        run: |
+          $delaySeconds = Get-Random -Minimum 0 -Maximum 301
+          Write-Host "Sleeping for $delaySeconds seconds..."
+          Start-Sleep -Seconds $delaySeconds
+      - name: Checkout add-on
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+      - name: Install dependencies
+        run: uv sync
+      - name: Install gettext
+        run: |
+          choco install -y gettext
+          # Add gettext to PATH for current and future steps
+          $gettextPath = "C:\Program Files\gettext-iconv\bin"
+          echo "$gettextPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Get add-on info
+        id: getAddonInfo
+        shell: pwsh
+        run: uv run ./.github/scripts/setOutputs.py
+      - name: Download l10nUtil
+        run: |
+          gh release download --repo nvaccess/nvdaL10n --pattern "l10nUtil.exe"
+      - name: Download translations from Crowdin
+        if: ${{ env.crowdinAuthToken }}
+        shell: pwsh
+        env:
+          ADDON_ID: ${{ steps.getAddonInfo.outputs.addonId }}
+        run: ./.github/scripts/crowdinSync.ps1

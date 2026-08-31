@@ -1,1 +1,0 @@
-# nvda-addon-store

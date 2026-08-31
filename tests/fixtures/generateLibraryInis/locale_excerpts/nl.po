@@ -1,0 +1,33 @@
+# Minimal Dutch translation excerpt for testing parse_po.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. Translators: Displayed in braille for an object which is a button.
+msgid "btn"
+msgstr "kn"
+
+#. Translators: Displayed in braille for an object which is a check box.
+msgid "chk"
+msgstr "slv"
+
+#. Translators: Displayed in braille for an object which is a radio button.
+msgid "rbtn"
+msgstr "kr"
+
+#. Translators: Untranslated entry — empty msgstr should NOT be returned.
+msgid "untranslated"
+msgstr ""
+
+#. Translators: Fuzzy entry — should be skipped by the parser.
+#, fuzzy
+msgid "fuzzy_entry"
+msgstr "wrong"
+
+#. Translators: Selected state.
+msgid "sel"
+msgstr "gsl"
+
+#. Translators: Read-only state.
+msgid "ro"
+msgstr "alv"

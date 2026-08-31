@@ -1,0 +1,42 @@
+name: Build Add-on
+description: Build the NVDA add-on with scons
+
+inputs:
+  version:
+    description: 'Version string for the build (optional)'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Install APT dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext
+      env:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Install the project
+      shell: bash
+      run: uv sync --no-dev --locked
+
+    - name: Build add-on
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          uv run --no-dev --group build scons version=${{ inputs.version }}
+        else
+          uv run --no-dev --group build scons
+        fi
