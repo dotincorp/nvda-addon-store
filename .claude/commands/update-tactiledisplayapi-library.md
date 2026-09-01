@@ -34,22 +34,40 @@ repo's bundled DLL. Note the silent run registers too: its last step is
 `regsvr32 /s .scratch\install\TactileDisplayAPI.dll`. Unregister afterwards with
 `regsvr32 /u /s <path>` (elevated) unless a system-wide install is wanted.
 
-**Read the version off the extracted DLL before naming anything:**
+**Record both versions before copying anything.** Copying overwrites the
+outgoing DLL, and after that its version is only recoverable from git:
 
 ```powershell
+# Incoming — what the download actually contains.
 (Get-Item .scratch\install\TactileDisplayAPI.dll).VersionInfo.FileVersion
+# Outgoing — what the tree bundles right now.
+git show HEAD:addon/tactileDisplayAPI/TactileDisplayAPI.dll > .scratch\old-tda.dll
+(Get-Item .scratch\old-tda.dll).VersionInfo.FileVersion
 ```
 
-The vendor announces each drop by email but ships it from one stable download
-URL, re-uploaded in place — sometimes without a follow-up announcement. The
-version in the mail is therefore a *lower bound*, not what you downloaded: the
-"1.0.36" announcement of 2026-08-29 served a DLL reporting `1.0.37.0`.
+Neither number can be taken from prose, and both have burned this procedure:
 
-Step 1 prints this version too, but by then the branch name, commit subject,
-`CHANGELOG.md` entry and PR title have usually been chosen from the mail. The
-changelog line is the only record users get of which closed-source binary they
-are running, so getting it from the artefact rather than the announcement is
-what this check is for.
+- **Incoming.** The vendor announces each drop by email but ships it from one
+  stable download URL, re-uploaded in place — sometimes with no follow-up
+  announcement. The version in the mail is a *lower bound*, not what you
+  downloaded: the "1.0.36" announcement of 2026-08-29 served a `1.0.37.0` DLL.
+- **Outgoing.** `CHANGELOG.md`'s `[Unreleased]` entry carries a "(from vX)" that
+  is **release-relative** — X is what the last *release* shipped, not what the
+  tree bundles now. Between releases the two diverge: while `[Unreleased]` read
+  "to v1.0.34 (from v1.0.23)", the bundled DLL was v1.0.34 and v1.0.23 was two
+  drops stale. Reading the "from" out of that line describes an upgrade that
+  isn't the one being made.
+
+Step 1 prints the incoming version too, but by then the branch name, commit
+subject, changelog entry and PR title have usually been chosen. Get both from
+the artefacts first, then write them down:
+
+- **`CHANGELOG.md`** is release-relative — keep its existing "(from vX)" and
+  only bump the "to" version, since users read it against the last release.
+- **The PR and commit** are tree-relative — they describe outgoing → incoming.
+
+They are different numbers whenever a release hasn't been cut since the last
+drop, and that is the normal case.
 
 **Copy to `addon/tactileDisplayAPI/`:**
 - `TactileDisplayAPI.dll`, `DotPadSDK-<version>.dll` (the vendor bumps this filename — delete the old one), companion DLLs (Mecab, TTBEngine, libmathcat_c)
