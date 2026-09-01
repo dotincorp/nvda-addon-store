@@ -34,6 +34,23 @@ repo's bundled DLL. Note the silent run registers too: its last step is
 `regsvr32 /s .scratch\install\TactileDisplayAPI.dll`. Unregister afterwards with
 `regsvr32 /u /s <path>` (elevated) unless a system-wide install is wanted.
 
+**Read the version off the extracted DLL before naming anything:**
+
+```powershell
+(Get-Item .scratch\install\TactileDisplayAPI.dll).VersionInfo.FileVersion
+```
+
+The vendor announces each drop by email but ships it from one stable download
+URL, re-uploaded in place — sometimes without a follow-up announcement. The
+version in the mail is therefore a *lower bound*, not what you downloaded: the
+"1.0.36" announcement of 2026-08-29 served a DLL reporting `1.0.37.0`.
+
+Step 1 prints this version too, but by then the branch name, commit subject,
+`CHANGELOG.md` entry and PR title have usually been chosen from the mail. The
+changelog line is the only record users get of which closed-source binary they
+are running, so getting it from the artefact rather than the announcement is
+what this check is for.
+
 **Copy to `addon/tactileDisplayAPI/`:**
 - `TactileDisplayAPI.dll`, `DotPadSDK-<version>.dll` (the vendor bumps this filename — delete the old one), companion DLLs (Mecab, TTBEngine, libmathcat_c)
 - `enu/TactileDisplayAPI.ini` (new vendor reference)
@@ -122,10 +139,22 @@ git show HEAD:addon/tactileDisplayAPI/enu/TactileDisplayAPI.ini > .scratch\old.i
 uv run python -c "import difflib; rd=lambda p:(lambda b: b.decode('utf-16' if b[:2] in (b'\xff\xfe',b'\xfe\xff') else 'utf-8-sig'))(open(p,'rb').read()).splitlines(); print('\n'.join(difflib.unified_diff(rd('.scratch/old.ini'), rd('addon/tactileDisplayAPI/enu/TactileDisplayAPI.ini'), lineterm='')))"
 ```
 
-Expect changed values in `[ControlTypes]` and `[StateFlags]`, plus whatever the
-new vendor reference itself changed in the passed-through sections (keymaps,
-`[Liblouis]` defaults). On a **regeneration-only** run — no vendor drop — churn
-outside `[ControlTypes]` / `[StateFlags]` means a parser bug; don't commit it.
+Expect changed values in `[ControlTypes]` and `[StateFlags]`, the forced keys in
+`[Settings]` (below), plus whatever the new vendor reference itself changed in
+the passed-through sections (keymaps, `[Liblouis]` defaults). On a
+**regeneration-only** run — no vendor drop — churn outside those three sections
+means a parser bug; don't commit it.
+
+`[Settings]` is generated from `SETTINGS_OVERRIDES` in
+`tools/generateLibraryInis.py`, a fixed table of keys the addon forces: the
+value is replaced when the vendor reference carries the key and appended inside
+the section when it does not. The values live there rather than hand-edited into
+`enu/TactileDisplayAPI.ini` precisely because that file *is* the generator's
+vendor reference — a drop overwrites it, and a hand-edit would be lost silently.
+So when a release note offers a new behaviour switch, add it to that table
+rather than to the ini. If the vendor ever drops the `[Settings]` section
+entirely the generator logs a warning and forces nothing, which is worth
+chasing rather than ignoring.
 
 Encoding is **not** taken from the vendor reference: `resolve_output_encoding`
 derives it from `LIBRARY_SUPPORTS_UNICODE_BRAILLE_IN_INI`, so the per-locale
