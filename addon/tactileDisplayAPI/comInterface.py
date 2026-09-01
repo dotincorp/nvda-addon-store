@@ -3,7 +3,7 @@
 # See the file COPYING.txt for more details.
 # Copyright (C) 2023-2026 Dot Incorporated
 
-"""comtypes interface declaration for ITactileDisplayAPI (v1.34).
+"""comtypes interface declaration for ITactileDisplayAPI (v1.37).
 
 This file is the single source of truth for the library's vtable layout.
 The interface was renamed ``ITactileDisplayImpl`` in the v1.22 typelib but
@@ -15,12 +15,17 @@ It inherits IUnknown (slots 0-2) and IDispatch (slots 3-6) from comtypes,
 so the ``_methods_`` list starts at vtable slot 7 (the first library-
 specific method, ``Connect``).
 
-v1.23 → v1.34 vtable change
+v1.23 → v1.37 vtable change
 -----------------------------
 None. ``validateComVtable.py --check`` reports both interfaces IN SYNC
-against the v1.0.34 typelib: ``ITactileDisplayAPI`` still has 33 methods
-(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The eleven
+against the v1.0.37 typelib: ``ITactileDisplayAPI`` still has 33 methods
+(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The fourteen
 intervening vendor releases were behaviour and rendering fixes only.
+
+v1.36 additionally exposes two behaviour switches through the ini's
+``[Settings]`` section rather than through new vtable slots —
+``EquationShowLabel`` and ``SuppressHybridBraille``; see
+``generateLibraryInis.py`` for the values this addon ships.
 
 v1.21 → v1.22/v1.23 vtable change
 -----------------------------------

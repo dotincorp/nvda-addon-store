@@ -536,6 +536,98 @@ class TestReplaceValue(unittest.TestCase):
 		self.assertEqual(new.raw_line, "  button = btn ; legacy alias\n")
 
 
+class TestSettingsOverrides(unittest.TestCase):
+	"""``apply_settings_overrides`` forces the addon's ``[Settings]`` values.
+
+	The vendor's ``enu`` reference doubles as the generator's input, so a vendor
+	drop overwrites anything hand-edited into it. These values are therefore
+	forced from the generator's own table, and must land whether or not the
+	reference happens to carry the key.
+	"""
+
+	def _settingsLines(self, records):
+		return [
+			(record.key, record.value)
+			for record in records
+			if record.section == gli.SETTINGS_SECTION and record.kind == "key_value"
+		]
+
+	def test_missing_keys_are_appended_inside_the_section(self):
+		records = gli.parse_ini(VENDOR_FIXTURE)
+		# Fixture has no [Settings] at all; synthesise one with an unrelated key.
+		records = [
+			gli.IniRecord("section_header", "Settings", "", "", "[Settings]\n"),
+			gli.IniRecord("key_value", "Settings", "ShowBrailleVisualizer", "0", "ShowBrailleVisualizer=0\n"),
+			gli.IniRecord("blank", "Settings", "", "", "\n"),
+			*records,
+		]
+		new_records, changed = gli.apply_settings_overrides(records)
+		self.assertEqual(
+			self._settingsLines(new_records),
+			[
+				("ShowBrailleVisualizer", "0"),
+				("EquationShowLabel", "0"),
+				("SuppressHybridBraille", "1"),
+			],
+		)
+		# The appended keys precede the blank line that closes the section.
+		emitted = gli.emit_ini(new_records)
+		self.assertIn("SuppressHybridBraille=1\n\n", emitted)
+		self.assertEqual(
+			set(changed),
+			{"[Settings]EquationShowLabel", "[Settings]SuppressHybridBraille"},
+		)
+
+	def test_present_key_with_wrong_value_is_replaced(self):
+		records = [
+			gli.IniRecord("section_header", "Settings", "", "", "[Settings]\r\n"),
+			gli.IniRecord("key_value", "Settings", "EquationShowLabel", "3", "EquationShowLabel=3\r\n"),
+			gli.IniRecord(
+				"key_value",
+				"Settings",
+				"SuppressHybridBraille",
+				"1",
+				"SuppressHybridBraille=1\r\n",
+			),
+		]
+		new_records, changed = gli.apply_settings_overrides(records)
+		self.assertEqual(
+			self._settingsLines(new_records),
+			[("EquationShowLabel", "0"), ("SuppressHybridBraille", "1")],
+		)
+		# Only the key that actually differed is reported as changed.
+		self.assertEqual(changed, ("[Settings]EquationShowLabel",))
+
+	def test_key_matching_is_case_insensitive(self):
+		records = [
+			gli.IniRecord("section_header", "Settings", "", "", "[Settings]\n"),
+			gli.IniRecord("key_value", "Settings", "equationshowlabel", "3", "equationshowlabel=3\n"),
+		]
+		new_records, _changed = gli.apply_settings_overrides(records)
+		# The vendor's spelling is kept; only the value is forced. No duplicate
+		# key is appended under the canonical spelling.
+		self.assertEqual(
+			self._settingsLines(new_records),
+			[("equationshowlabel", "0"), ("SuppressHybridBraille", "1")],
+		)
+
+	def test_reference_without_settings_section_is_left_alone(self):
+		records = gli.parse_ini(VENDOR_FIXTURE)
+		new_records, changed = gli.apply_settings_overrides(records)
+		self.assertEqual(gli.emit_ini(new_records), gli.emit_ini(records))
+		self.assertEqual(changed, ())
+
+	def test_overrides_reach_every_generated_locale(self):
+		"""End-to-end: the forced keys survive into the real per-locale files."""
+		for lcid in ("enu", "nld", "rus"):
+			path = REPO_ROOT / "addon" / "tactileDisplayAPI" / lcid / "TactileDisplayAPI.ini"
+			with self.subTest(lcid=lcid):
+				records = gli.parse_ini(path)
+				emitted = dict(self._settingsLines(records))
+				for key, value in gli.SETTINGS_OVERRIDES.items():
+					self.assertEqual(emitted.get(key), value)
+
+
 class TestUnescapePo(unittest.TestCase):
 	"""Feature 023 — ``_unescape_po`` resolves ``.po`` backslash-escape sequences
 	without corrupting non-ASCII Unicode codepoints.
