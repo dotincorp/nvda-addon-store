@@ -47,8 +47,7 @@ addon_info = AddonInfo(
 - Tactile graphic mode for images, with pan, zoom, recentre and image inversion
 - Table mode, including tables in virtual documents such as Google Docs
 - Connecting, disconnecting and switching between Bluetooth and USB displays is faster, and no longer freezes NVDA when a display is off or out of range
-- Requires NVDA 2026.1 or later
-	"""),
+- Requires NVDA 2026.1 or later"""),
 	# Author(s)
 	addon_author=f"{pyproject['project']['maintainers'][0]['name']} <{pyproject['project']['maintainers'][0]['email']}>",
 	# URL for the add-on documentation support
