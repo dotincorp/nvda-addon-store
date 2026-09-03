@@ -40,10 +40,22 @@ outgoing DLL, and after that its version is only recoverable from git:
 ```powershell
 # Incoming — what the download actually contains.
 (Get-Item .scratch\install\TactileDisplayAPI.dll).VersionInfo.FileVersion
+(Get-FileHash .scratch\install\TactileDisplayAPI.dll -Algorithm SHA256).Hash
 # Outgoing — what the tree bundles right now.
 git show HEAD:addon/tactileDisplayAPI/TactileDisplayAPI.dll > .scratch\old-tda.dll
 (Get-Item .scratch\old-tda.dll).VersionInfo.FileVersion
+(Get-FileHash .scratch\old-tda.dll -Algorithm SHA256).Hash
 ```
+
+**The version string is not a build identity — take the hash too.** The vendor
+rebuilds under an unchanged `FileVersion`: on 2026-09-03 the link served a
+`TactileDisplayAPI.dll` built three days after the one it served on 2026-09-01,
+512 bytes larger, both reporting `1.0.37.0` and neither announced. Only the main
+DLL differed; every companion DLL, the `enu` reference and `MathCATRules` were
+byte-identical. So a version comparison says "nothing to do" while the binary
+under it has changed. Compare hashes to decide whether a re-download is
+actually a new drop, and record the incoming hash in the commit message — it is
+the only durable way to say which of two same-versioned builds shipped.
 
 Neither number can be taken from prose, and both have burned this procedure:
 
