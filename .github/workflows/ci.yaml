@@ -18,12 +18,17 @@ on:
 #   - The "alpha" row tracks nvaccess/nvda master, which is the 2026.3 alpha line today. There is
 #     no "alpha" branch and no 2026.3 tags. Once 2026.3 branches to beta, master rolls to 2026.4 --
 #     at that point pin this row to release-2026.3betaN instead.
-#
-# Every Windows job runs on windows-2025-vs2026. That image ships Visual Studio 2026 already
-# carrying NVDA's .vsconfig components, including the VC 14.44 (v143) toolset the current stable
-# releases build with, so nothing has to be installed at runtime -- which is why
-# prepare-nvda-source's install-vs-components is left at its v2 default of false. Frontier NVDA
-# needs VS 2026 outright, and we only build modern NVDA, so one image covers every row.
+#   - "runner" picks the image for that ref, because which Visual Studio NVDA builds against is a
+#     property of the ref, not of the add-on. NVDA gained VS 2026 support between 2026.1 and
+#     2026.2: on windows-2025-vs2026, release-2026.1 aborts while reading its SConscript with
+#     "Could not find the Clang compiler" -- the Clang components are on that image, but 2026.1's
+#     build cannot locate them under the VS 2026 layout. So 2026.1 stays on windows-2022 and the
+#     newer refs use the image they actually target. Both images already carry NVDA's .vsconfig
+#     components, so prepare-nvda-source's install-vs-components stays at its v2 default of false
+#     either way.
+#     Keep one runner per ref: prepare-nvda-source's cache key is <os>-nvda-<python>-<arch>-<sha>
+#     and does not include the image, so the same ref built on two images would share one cache
+#     entry and silently restore the other image's tree.
 
 jobs:
   load-matrix:
@@ -43,7 +48,7 @@ jobs:
   prepare-nvda:
     name: Prepare NVDA ${{ matrix.name }}
     needs: load-matrix
-    runs-on: windows-2025-vs2026
+    runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
@@ -60,7 +65,7 @@ jobs:
   test:
     name: Test NVDA ${{ matrix.name }}
     needs: [load-matrix, prepare-nvda]
-    runs-on: windows-2025-vs2026
+    runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
@@ -89,7 +94,7 @@ jobs:
   lint:
     name: Lint
     needs: [load-matrix, prepare-nvda]
-    runs-on: windows-2025-vs2026
+    runs-on: ${{ fromJSON(needs.load-matrix.outputs.lint-version).runner }}
     # prek's default cache location is platform-dependent (%LOCALAPPDATA%\prek on
     # Windows, ~/.cache/prek elsewhere), so pin it explicitly rather than relying
     # on a path that would silently cache nothing. Same reasoning as the
