@@ -96,18 +96,24 @@ jobs:
         with:
           path: add-on
 
+      # The action installs uv with its cache enabled and exports UV_CACHE_DIR for the rest of the
+      # job, so the `uv sync` below shares that cache and its key. Listing our lockfile alongside
+      # NVDA's is what makes the key move when our dependencies do: a cache is only re-saved on a
+      # key miss, and a key derived solely from NVDA's lockfile stops changing once the ref is
+      # pinned — so nvda-misc-deps, which uv builds from git, was rebuilt on every run (~73s of an
+      # ~83s step) while the cache step still reported a hit.
       - name: Prepare NVDA source
         uses: bramd/prepare-nvda-source@v1
         with:
           nvda-ref: ${{ fromJSON(needs.load-matrix.outputs.lint-version).ref }}
           github-token: ${{ github.token }}
+          uv-cache-dependency-glob: |
+            nvda/uv.lock
+            add-on/uv.lock
 
-      - name: Cache add-on venv
-        uses: actions/cache@v6
-        with:
-          path: add-on/.venv
-          key: addon-venv-${{ runner.os }}-${{ fromJSON(needs.load-matrix.outputs.lint-version).name }}-${{ hashFiles('add-on/uv.lock') }}
-
+      # Deliberately no cache of add-on/.venv: `uv sync` recreates the environment ("Creating
+      # virtual environment at: .venv"), so a restored one is discarded unused. It cost a 95 MB
+      # restore per run and, because its key rarely changed, was never re-saved either.
       - name: Install the project
         run: |
           cd add-on
