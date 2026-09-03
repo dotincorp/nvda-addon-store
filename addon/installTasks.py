@@ -10,17 +10,17 @@ default, so a user who selects the "Automatic" display never gets a Dot Pad
 detected until they find the "Displays to detect automatically" list in NVDA's
 braille settings. On install we offer to enable it for them, once.
 
-NVDA also blinks the braille cursor by default, which rewrites the whole cell
-array twice a second. That is cheap on a refreshable line but not on the Dot
-Pad's piezo cells, and it buys nothing here because the add-on renders its own
-solid cursor. Blinking is a single global setting rather than a per-display one,
-so this too can only be offered as a question, once.
+NVDA also blinks the braille cursor by default. Dot Pad cells refresh slowly, and
+not reliably at all while they are being touched, so a blinking cursor is of
+little use on one. Blinking is a single global setting rather than a per-display
+one, so this too can only be offered as a question, once.
 """
 
 from typing import Any, cast
 
 import addonHandler
 import config
+from configobj.validate import Validator, VdtTypeError
 from logHandler import log
 
 try:
@@ -39,20 +39,23 @@ CONFIG_SECTION_NAME = "dotPad"
 AUTO_DETECT_PROMPT_SHOWN_SETTING_NAME = "autoDetectPromptShown"
 CURSOR_BLINK_PROMPT_SHOWN_SETTING_NAME = "cursorBlinkPromptShown"
 
-_TRUE_VALUES = frozenset(("true", "yes", "on", "1"))
+_VALIDATOR = Validator()
 
 
 def _isTrue(value: Any) -> bool:
-	"""Interpret a raw config value as a boolean.
+	"""Interpret a value read straight out of a profile as a boolean.
 
-	Values read straight from a profile are unvalidated strings, because the add-on's
-	config spec is only registered once the add-on itself loads.
+	Values in our own config section are still the raw strings ConfigObj parsed: the
+	spec that would coerce them is only registered once the add-on loads, which has
+	not happened yet during ``onInstall``. Since ``bool("False")`` is ``True``, they
+	cannot be taken at face value. The interpreting is left to ConfigObj's own
+	validator, so the spellings accepted here are the ones accepted everywhere else
+	in the configuration.
 	"""
-	if isinstance(value, bool):
-		return value
-	if isinstance(value, str):
-		return value.strip().lower() in _TRUE_VALUES
-	return bool(value)
+	try:
+		return bool(_VALIDATOR.check("boolean", value))
+	except VdtTypeError:
+		return False
 
 
 def _promptAlreadyShown(baseProfile: Any, settingName: str) -> bool:
@@ -194,8 +197,9 @@ def _askEnableAutomaticDetection() -> bool:
 		"Do you want to enable automatic detection of the Dot Pad?\n"
 		"You can change this later in NVDA's braille settings.",
 	)
-	# Translators: Title of the dialog shown when installing the add-on.
-	title = _("Dot Pad")
+	# Translators: Title of the dialog shown when installing the add-on, asking
+	# whether NVDA should detect Dot Pad displays automatically.
+	title = _("Dot Pad: automatic detection")
 	return _ask(message, title)
 
 
@@ -204,13 +208,14 @@ def _askDisableCursorBlink() -> bool:
 	message = _(
 		# Translators: Message of the dialog shown when installing the add-on,
 		# asking whether NVDA should stop blinking the braille cursor.
-		"The Dot Pad refreshes slowly, so a blinking braille cursor is distracting. "
+		"Dot Pad cells refresh slowly, so a blinking braille cursor does not work well. "
 		"Do you want to turn the blinking cursor off?\n"
 		"This applies to all braille displays. "
 		"You can change this later in NVDA's braille settings.",
 	)
-	# Translators: Title of the dialog shown when installing the add-on.
-	title = _("Dot Pad")
+	# Translators: Title of the dialog shown when installing the add-on, asking
+	# whether NVDA should stop blinking the braille cursor.
+	title = _("Dot Pad: blinking cursor")
 	return _ask(message, title)
 
 
