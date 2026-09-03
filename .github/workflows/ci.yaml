@@ -18,6 +18,12 @@ on:
 #   - The "alpha" row tracks nvaccess/nvda master, which is the 2026.3 alpha line today. There is
 #     no "alpha" branch and no 2026.3 tags. Once 2026.3 branches to beta, master rolls to 2026.4 --
 #     at that point pin this row to release-2026.3betaN instead.
+#
+# Every Windows job runs on windows-2025-vs2026. That image ships Visual Studio 2026 already
+# carrying NVDA's .vsconfig components, including the VC 14.44 (v143) toolset the current stable
+# releases build with, so nothing has to be installed at runtime -- which is why
+# prepare-nvda-source's install-vs-components is left at its v2 default of false. Frontier NVDA
+# needs VS 2026 outright, and we only build modern NVDA, so one image covers every row.
 
 jobs:
   load-matrix:
@@ -37,7 +43,7 @@ jobs:
   prepare-nvda:
     name: Prepare NVDA ${{ matrix.name }}
     needs: load-matrix
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
@@ -46,7 +52,7 @@ jobs:
 
     steps:
       - name: Prepare NVDA source
-        uses: bramd/prepare-nvda-source@v1
+        uses: bramd/prepare-nvda-source@v2
         with:
           nvda-ref: ${{ matrix.ref }}
           github-token: ${{ github.token }}
@@ -54,7 +60,7 @@ jobs:
   test:
     name: Test NVDA ${{ matrix.name }}
     needs: [load-matrix, prepare-nvda]
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
@@ -68,7 +74,7 @@ jobs:
           path: add-on
 
       - name: Prepare NVDA source
-        uses: bramd/prepare-nvda-source@v1
+        uses: bramd/prepare-nvda-source@v2
         with:
           nvda-ref: ${{ matrix.ref }}
           github-token: ${{ github.token }}
@@ -83,7 +89,7 @@ jobs:
   lint:
     name: Lint
     needs: [load-matrix, prepare-nvda]
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     # prek's default cache location is platform-dependent (%LOCALAPPDATA%\prek on
     # Windows, ~/.cache/prek elsewhere), so pin it explicitly rather than relying
     # on a path that would silently cache nothing. Same reasoning as the
@@ -97,19 +103,17 @@ jobs:
           path: add-on
 
       # The action installs uv with its cache enabled and exports UV_CACHE_DIR for the rest of the
-      # job, so the `uv sync` below shares that cache and its key. Listing our lockfile alongside
-      # NVDA's is what makes the key move when our dependencies do: a cache is only re-saved on a
-      # key miss, and a key derived solely from NVDA's lockfile stops changing once the ref is
-      # pinned — so nvda-misc-deps, which uv builds from git, was rebuilt on every run (~73s of an
-      # ~83s step) while the cache step still reported a hit.
+      # job, so the `uv sync` below shares that cache and its key. Appending our lockfile is what
+      # makes the key move when our dependencies do: a cache is only re-saved on a key miss, and a
+      # key derived solely from NVDA's lockfile stops changing once the ref is pinned — so
+      # nvda-misc-deps, which uv builds from git, was rebuilt on every run (~73s of an ~83s step)
+      # while the cache step still reported a hit.
       - name: Prepare NVDA source
-        uses: bramd/prepare-nvda-source@v1
+        uses: bramd/prepare-nvda-source@v2
         with:
           nvda-ref: ${{ fromJSON(needs.load-matrix.outputs.lint-version).ref }}
           github-token: ${{ github.token }}
-          uv-cache-dependency-glob: |
-            nvda/uv.lock
-            add-on/uv.lock
+          extra-uv-cache-dependency-glob: add-on/uv.lock
 
       # Deliberately no cache of add-on/.venv: `uv sync` recreates the environment ("Creating
       # virtual environment at: .venv"), so a restored one is discarded unused. It cost a 95 MB
