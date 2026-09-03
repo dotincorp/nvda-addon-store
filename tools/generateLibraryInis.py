@@ -259,9 +259,9 @@ SETTINGS_OVERRIDES: Final[Mapping[str, str]] = {
 	# line. Turn the library's label off and let NVDA own it.
 	"EquationShowLabel": "0",
 	# v1.36+. Same root cause: with zero text cells the library falls back to
-	# painting braille under the tactile representation, where it collides with
-	# the dot 7/8 markings and duplicates what NVDA already renders on the
-	# 20-cell line.
+	# painting braille under the tactile representation, where it runs together
+	# with the bottom of the characters above it and duplicates what NVDA
+	# already renders on the 20-cell line.
 	"SuppressHybridBraille": "1",
 }
 
