@@ -2,16 +2,19 @@
 	"versions": [
 		{
 			"name": "2026.1",
-			"ref": "release-2026.1"
+			"ref": "release-2026.1",
+			"runner": "windows-2022"
 		},
 		{
 			"name": "2026.2",
 			"ref": "release-2026.2beta10",
+			"runner": "windows-2025-vs2026",
 			"lint": true
 		},
 		{
 			"name": "alpha",
 			"ref": "master",
+			"runner": "windows-2025-vs2026",
 			"experimental": true
 		}
 	]
