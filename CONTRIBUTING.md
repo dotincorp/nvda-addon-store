@@ -30,6 +30,19 @@ against it — the hooks refuse commits made directly to `main`, so every change
 arrives through a pull request. Releases are cut from `main` by tag; see
 [`docs/releasing.md`](docs/releasing.md).
 
+## Documentation
+
+[`docs/userGuide.md`](docs/userGuide.md) is the user-facing document that ships
+with the add-on. The build copies it to `addon/doc/en/userGuide.md` and renders
+it to `userGuide.html`, which is what the add-on store's Help button opens
+(`buildVars.addon_docFileName`). It is also the single source the Crowdin sync
+turns into `dotPad.xliff` for translation, so edit it here in Markdown — never
+round-trip it through Word — and keep the Markdown plain: headings, paragraphs
+and simple lists. `buildVars.markdownExtensions` is empty, so the build renders
+with vanilla python-markdown, and the XLIFF segmenter expects the same flavour.
+
+Everything else under `docs/` is developer documentation and is not shipped.
+
 ## The development loop
 
 ```bash

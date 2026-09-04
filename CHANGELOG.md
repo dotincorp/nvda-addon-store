@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Changes destined for the next release.
 
 ### Added
+- A user guide is now bundled with the add-on and opens from the Help button in NVDA's add-on store. It covers connecting over Bluetooth and USB, the navigation buttons, the relevant NVDA braille settings, tactile graphics mode, Excel and Word integration, and the Dot Pad Display Viewer. It is translatable through NVDA's Crowdin project.
 - Support for NVDA 2026.1 and later (64-bit).
 - Installing the add-on now offers to enable automatic detection of the Dot Pad, which NVDA disables by default. The question is asked once; the setting can be changed later in NVDA's braille settings under "Displays to detect automatically".
 - Installing the add-on now also offers to turn off NVDA's blinking braille cursor, which is of little use on the Dot Pad's slow cells. NVDA has a single blinking setting for all braille displays, which the question says; it is asked once and can be changed later in NVDA's braille settings under "Blink cursor".
