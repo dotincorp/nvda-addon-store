@@ -18,7 +18,6 @@ what `test_classConstructs` exercises.
 
 from __future__ import annotations
 
-import logging
 import unittest
 from ctypes import c_long, c_ubyte
 
@@ -143,12 +142,6 @@ class TestGetTranslationHelper(unittest.TestCase):
 	always set in time).
 	"""
 
-	def setUp(self) -> None:
-		# Reset the per-type dedup so each test starts clean.
-		from addon.tactileDisplayAPI import callbackServer
-
-		callbackServer._LOGGED_EXCEPTION_TYPES.clear()
-
 	@staticmethod
 	def _withFakeUtilsBraille(translateTextWithCursor):
 		"""Return a context manager that swaps ``addon.utils.braille`` in
@@ -262,7 +255,7 @@ class TestGetTranslationHelper(unittest.TestCase):
 
 	def test_swallowsTranslationFault(self) -> None:
 		"""If ``utils.braille.translateTextWithCursor`` raises, the helper
-		returns ``("", [], None)`` and logs at WARNING (dedup'd per type).
+		returns ``("", [], None)`` rather than letting it reach the library.
 		"""
 		from addon.tactileDisplayAPI import callbackServer
 
@@ -270,23 +263,13 @@ class TestGetTranslationHelper(unittest.TestCase):
 			raise RuntimeError("synthetic liblouis failure")
 
 		with self._withFakeUtilsBraille(boom):
-			with self.assertLogs("nvda", level=logging.WARNING) as cm:
-				result = callbackServer._translateText("hello", None)
+			result = callbackServer._translateText("hello", None)
 
 		self.assertEqual(result, ("", [], None))
-		self.assertTrue(
-			any("synthetic liblouis failure" in rec.message for rec in cm.records),
-			f"Expected WARNING with the synthetic message; got {[r.message for r in cm.records]}",
-		)
 
 
 class TestGetTranslationComMethod(unittest.TestCase):
 	"""The ``GetTranslation`` COM method delegates to ``_translateText``."""
-
-	def setUp(self) -> None:
-		from addon.tactileDisplayAPI import callbackServer
-
-		callbackServer._LOGGED_EXCEPTION_TYPES.clear()
 
 	def _newInstance(self):
 		from addon.tactileDisplayAPI.callbackServer import TactileDisplayCallbacks

@@ -94,10 +94,9 @@ class PresentationManager:
 		if self._forcedPresentation:
 			if self._forcedPresentation.isStillValid(triggerReason):
 				self._activePresentation = self._forcedPresentation
-				log.debug(f"Reusing forced presentation: {self._forcedPresentation.name}")
 				return
 			else:
-				log.debug(f"Forced presentation {self._forcedPresentation.name} no longer valid")
+				log.debug("Forced presentation %s no longer valid", self._forcedPresentation.name)
 				self._forcedPresentation = None
 
 		# 2. Find first provider that can provide
@@ -109,7 +108,7 @@ class PresentationManager:
 
 		if matchingProvider is None:
 			if self._activePresentation is not None:
-				log.debug(f"No provider matched (was: {self._activePresentation.name})")
+				log.debug("No provider matched (was: %s)", self._activePresentation.name)
 			self._activePresentation = None
 			return
 
@@ -119,7 +118,6 @@ class PresentationManager:
 			and self._activePresentation.provider is matchingProvider
 			and self._activePresentation.isStillValid(triggerReason)
 		):
-			log.debug(f"Reusing active presentation: {self._activePresentation.name}")
 			return
 
 		# 4. Create new presentation from matching provider
@@ -127,7 +125,7 @@ class PresentationManager:
 		presentation = matchingProvider.createPresentation(obj, self.display)
 		presentation.provider = matchingProvider
 		self._activePresentation = presentation
-		log.debug(f"Created new presentation: {presentation.name} (was: {previousName})")
+		log.debug("Created new presentation: %s (was: %s)", presentation.name, previousName)
 
 	def forcePresentation(self, providerName: str, obj: NVDAObject) -> bool:
 		"""Force a presentation type.

@@ -143,18 +143,17 @@ def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
 	braille too (NVDA's ``inputTable`` is for input-side transcription, not
 	output, so reusing literary is the safest choice on the output side).
 
-	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Logs
-	at debug on success / warning on failure (one-time per driver life).
+	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Silence
+	means it landed; failure warns once per driver life.
 	"""
 	try:
 		# All three slots get NVDA's literary table. See docstring.
 		tda.setBrailleTables(tableName, tableName, tableName)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setBrailleTables({tableName!r}) succeeded")
 	except Exception:
 		log.warning(
-			f"dotPad: setBrailleTables({tableName!r}) failed; library will "
-			"keep its default table. Multi-line braille output may not match "
-			"NVDA's configured shape.",
+			"dotPad: setBrailleTables(%r) failed; library will keep its default table. "
+			"Multi-line braille output may not match NVDA's configured shape.",
+			tableName,
 			exc_info=True,
 		)
 
@@ -177,7 +176,6 @@ def _setRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = None)
 		tda.setRegisterEvents(True)  # type: ignore[attr-defined]
 		if worker is not None:
 			worker.noteUiaEventsEnabled()
-		log.debug("dotPad: setRegisterEvents(True) succeeded")
 	except Exception:
 		log.warning(
 			"dotPad: setRegisterEvents(True) failed; library-driven braille "
@@ -200,7 +198,6 @@ def _disableRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = N
 		tda.setRegisterEvents(False)  # type: ignore[attr-defined]
 		if worker is not None:
 			worker.noteUiaEventsDisabled()
-		log.debug("dotPad: setRegisterEvents(False) succeeded")
 	except Exception:
 		log.warning("dotPad: setRegisterEvents(False) failed", exc_info=True)
 
@@ -214,17 +211,17 @@ def _setShowBrailleOnScreenOnWorker(tda: object, enable: bool) -> None:
 	a prior session would see the menu item checked at startup but the viewer
 	would stay closed until they clicked off + on.
 
-	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Logs at
-	debug on success / warning on failure.
+	Same fire-and-forget shape as ``_setRegisterEventsOnWorker``. Silence
+	means it landed; failure warns.
 	"""
 	try:
 		tda.showBrailleOnScreen(enable)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: showBrailleOnScreen({enable}) (driver-init sync) succeeded")
 	except Exception:
 		log.warning(
-			f"dotPad: showBrailleOnScreen({enable}) (driver-init sync) failed; "
-			"library viewer state may not match the menu / config. "
-			"Toggling the Tools-menu item off + on will retry.",
+			"dotPad: showBrailleOnScreen(%s) (driver-init sync) failed; library viewer "
+			"state may not match the menu / config. Toggling the Tools-menu item off + "
+			"on will retry.",
+			enable,
 			exc_info=True,
 		)
 
@@ -240,11 +237,11 @@ def _setLineSpacingOnWorker(tda: object, paddingDots: int, forceSixDot: bool) ->
 	try:
 		tda.setBrailleLinePadding(paddingDots)  # type: ignore[attr-defined]
 		tda.forceSixDotBraille(forceSixDot)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setBrailleLinePadding({paddingDots}) forceSixDotBraille({forceSixDot}) succeeded")
 	except Exception:
 		log.warning(
-			f"dotPad: line-spacing calls (padding={paddingDots}, forceSixDot={forceSixDot}) failed; "
-			"spacing may not match the setting.",
+			"dotPad: line-spacing calls (padding=%s, forceSixDot=%s) failed; spacing may not match the setting.",
+			paddingDots,
+			forceSixDot,
 			exc_info=True,
 		)
 
@@ -260,12 +257,12 @@ def _setHybridModeOnWorker(tda: object, enable: bool) -> None:
 	"""
 	try:
 		tda.setHybridPrintAndBrailleMode(enable)  # type: ignore[attr-defined]
-		log.debug(f"dotPad: setHybridPrintAndBrailleMode({enable}) succeeded")
 	except Exception:
 		log.warning(
-			f"dotPad: setHybridPrintAndBrailleMode({enable}) failed; hybrid print+braille "
-			"mode may not match the setting. Library-driven braille mode continues to work "
+			"dotPad: setHybridPrintAndBrailleMode(%s) failed; hybrid print+braille mode "
+			"may not match the setting. Library-driven braille mode continues to work "
 			"without hybrid output.",
+			enable,
 			exc_info=True,
 		)
 
@@ -821,8 +818,11 @@ class Display(AutoPropertyObject):
 		numInternalCols = int((((numCols * cellWidth) - 2) / (2 + horizontalCellSpacing)) + 1)
 		self.externalCells = int(numRows * numCols) * [0]
 		log.debug(
-			f"Display initialized with {numRows} rows and {numCols} columns, "
-			f"{numInternalRows} internal rows and {numInternalCols} columns",
+			"Display initialized with %s rows and %s columns, %s internal rows and %s columns",
+			numRows,
+			numCols,
+			numInternalRows,
+			numInternalCols,
 		)
 		self.externalRows = externalRows = []
 		self._cellsLock = threading.Lock()
@@ -926,12 +926,12 @@ class Display(AutoPropertyObject):
 		for row in self.externalRows:
 			if row.awaitingAck and row.lastWritten and (time.time() - row.lastWritten) > 0.04:
 				if not row.numTries < 3:
-					log.warning(f"Giving up on row {row.destination} after {row.numTries} tries")
+					log.warning("Giving up on row %s after %s tries", row.destination, row.numTries)
 					row.awaitingAck = False
 					row.numTries = 0
 					continue
 				# Retry
-				log.warning(f"Retrying row {row.destination}")
+				log.debugWarning("Retrying row %s", row.destination)
 				self.writeExternalRow(row)
 		self._driver._ackLock.release()  # type: ignore
 		self._writingQueuedRows = False
@@ -1174,7 +1174,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# suppress the probe packet for the ones after it.
 			self._displayGone = False
 			self._consecutiveRenderTimeouts = 0
-			log.debug(f"Trying port {portType}, {portId}")
+			log.debug("Trying port %s, %s", portType, portId)
 			# NVDA types DeviceMatch.type as Literal["hid", "serial", "custom"], which
 			# does not know about the "BLE" type our own detector registers, so pyright
 			# reads this comparison as always-False. The write side of the same mismatch
@@ -1193,13 +1193,13 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 						onReceive=self._onReceive,
 					)
 				except RuntimeError:
-					log.debugWarning("", exc_info=True)
+					log.debugWarning("dotPad: could not open BLE port %s", portName, exc_info=True)
 					continue
 			else:
 				try:
 					self._dev = hwIo.Serial(portName, baudrate=SERIAL_BAUD_RATE, onReceive=self._onReceive)
 				except OSError:
-					log.debugWarning("", exc_info=True)
+					log.debugWarning("dotPad: could not open serial port %s", portName, exc_info=True)
 					continue
 			self._sendPacket(Packet.makePacket(PacketType.REQ_BOARD_INFORMATION))
 			for _i in range(3):
@@ -1209,7 +1209,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				else:
 					self._readyToSend.set()
 			if self._boardInformation:
-				log.info(f"Found device connected via {portType} ({portName})")
+				log.info("Found device connected via %s (%s)", portType, portName)
 				break
 			self._dev.close()
 		else:
@@ -1252,7 +1252,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if self._libraryReady:
 			return
 		if self.graphicDisplay is None:
-			log.info("dotPad: no graphic display attached; skipping library construction")
+			log.debug("dotPad: no graphic display attached; skipping library construction")
 			return
 		worker = None
 		try:
@@ -1274,7 +1274,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			lineCount = 0
 			displayName = str(getattr(self, "_deviceName", "") or "DotPad")
 			args = (displayName, tactileDotsX, tactileDotsY, totalBrailleCellCount, lineCount)
-			log.debug(f"dotPad: setting up library singleton with args={args}")
+			log.debug("dotPad: setting up library singleton with args=%s", args)
 
 			# Rewrite per-locale TactileDisplayAPI.ini files to point at
 			# NVDA's bundled liblouis before the library reads its INI during
@@ -1357,7 +1357,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				configuration.getViewerOnScreen(fromCache=True),
 			)
 			log.debug("dotPad: library singleton ready (SimulateDisplay registered)")
-			log.info(f"dotPad: TactileDisplayAPI library {tda.libraryDescription}")
+			log.info("dotPad: TactileDisplayAPI library %s", tda.libraryDescription)
 		except Exception:
 			log.exception("dotPad: library singleton setup failed; graphic mode disabled")
 			# Best-effort: stop the worker if we managed to start it.
@@ -1467,8 +1467,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		# escalation budget.
 		if not self._waitForQueueDrain(TERMINATE_DRAIN_TIMEOUT_SECONDS):
 			log.debugWarning(
-				f"dotPad: clear packets not flushed within {TERMINATE_DRAIN_TIMEOUT_SECONDS}s; "
-				"terminating anyway",
+				"dotPad: clear packets not flushed within %ss; terminating anyway",
+				TERMINATE_DRAIN_TIMEOUT_SECONDS,
 			)
 
 		# Step 6: Signal sender thread to exit and wait -- bounded, like step 5. The
@@ -1482,8 +1482,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._queuedPacketsSenderThread.join(TERMINATE_JOIN_TIMEOUT_SECONDS)
 		if self._queuedPacketsSenderThread.is_alive():
 			log.debugWarning(
-				f"dotPad: packet sender did not exit within {TERMINATE_JOIN_TIMEOUT_SECONDS}s; "
-				"terminating anyway",
+				"dotPad: packet sender did not exit within %ss; terminating anyway",
+				TERMINATE_JOIN_TIMEOUT_SECONDS,
 			)
 
 		# Step 7: Clean up display references
@@ -1706,14 +1706,12 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			self._consecutiveRenderTimeouts += 1
 			if self._consecutiveRenderTimeouts >= MAX_CONSECUTIVE_RENDER_TIMEOUTS:
 				log.warning(
-					f"dotPad: no response after {self._consecutiveRenderTimeouts} render timeouts; "
-					"releasing the display",
+					"dotPad: no response after %s render timeouts; releasing the display",
+					self._consecutiveRenderTimeouts,
 				)
 				self._reportDisplayUnavailable()
 				return False
-			log.debugWarning(
-				f"dotPad: line did not render within {renderTimeout:.1f}s, retrying last packet",
-			)
+			log.debugWarning("dotPad: line did not render within %.1fs, retrying last packet", renderTimeout)
 			self._resendLastPacket()
 			deadline = time.monotonic() + renderTimeout
 		return False
@@ -1771,10 +1769,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		while packet.bytesExpected > 0:
 			packet = Packet(packet + self._dev.read(packet.bytesExpected))
 		if not packet.isComplete:
-			log.debugWarning(f"Incomplete packet received: {packet!r}, ignoring")
+			log.debugWarning("Incomplete packet received: %r, ignoring", packet)
 			return
 		if not packet.isValid:
-			log.debugWarning(f"Invalid packet received: {packet!r}, ignoring")
+			log.debugWarning("Invalid packet received: %r, ignoring", packet)
 			return
 		self._handleResponse(packet)
 
@@ -1798,7 +1796,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				text=textDisplayDescriptor,
 				graphic=graphicDisplayDescriptor,
 			)
-			log.debug(f"Board information: {info}")
+			log.debug("Board information: %s", info)
 			self._boardInformation = info
 			if textDisplayDescriptor.columnCount > 0:
 				if self.supportsHardwareBasedAutoRefresh:
@@ -1839,12 +1837,12 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				self._renderer = PresentationRenderer(self.graphicDisplay)
 		elif packet.packetType == PacketType.RSP_FIRMWARE_VERSION:
 			self._firmwareVersion = packet.args.decode("ascii")
-			log.debug(f"Firmware version: {self._firmwareVersion}")
+			log.debug("Firmware version: %s", self._firmwareVersion)
 		elif packet.packetType == PacketType.RSP_DEVICE_NAME:
 			self._deviceName = packet.args.decode("ascii")
-			log.debug(f"Device name: {self._deviceName}")
+			log.debug("Device name: %s", self._deviceName)
 			if self.supportsHardwareBasedAutoRefresh:
-				log.debug(f"D3 hardware detected ({self._deviceName}), software auto-refresh disabled")
+				log.debug("D3 hardware detected (%s), software auto-refresh disabled", self._deviceName)
 		elif packet.packetType == PacketType.NTF_DISPLAY_LINE:
 			# TODO: This is an ACK for a command, but not handle it using NVDA's
 			# ACK handling, since this triggers the writing of any queued braille cells
@@ -1863,13 +1861,14 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				responseCode = ResponseCode.fromCode(packet.args[0])
 			except ValueError:
 				log.debugWarning(
-					f"Unknown response code while handling ACK/NAK response: {packet.args[0]}, assuming NAK",
+					"Unknown response code while handling ACK/NAK response: %s, assuming NAK",
+					packet.args[0],
 				)
 				responseCode = ResponseCode.NAK
 			if responseCode.isAck:
 				self._handleAck(destination=packet.destination)
 			elif responseCode.isNak:
-				log.warning(f"Received NAK response: {responseCode}")
+				log.debugWarning("Received NAK response: %s", responseCode)
 				# A line was unable to display, rely on _sendQueuedPackets
 				# from the Display class to resend it if needed
 				# Send the next packet in the queue if any
@@ -1878,9 +1877,9 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		elif packet.packetType and packet.packetType.code[0] == PacketType.NTF_KEYS_SCROLL.code[0]:
 			self._handleKeyPress(packet.packetType.code[1], packet.args)
 		elif packet.packetType == PacketType.NTF_ERROR:
-			log.warning(f"Received error: {packet.args!r}")
+			log.warning("Received error: %r", packet.args)
 		else:
-			log.warning(f"Received unhandled command: {packet.packetType!r} {packet.args!r}")
+			log.debugWarning("Received unhandled command: %r %r", packet.packetType, packet.args)
 		self._readyToSend.set()
 
 	def _handleAck(self, destination: int):  # type: ignore
@@ -1913,8 +1912,11 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 		acceptedDestinations: Sequence[int] = range(minDestination, maxDestination)
 		if destination not in acceptedDestinations:
-			log.warning(
-				f"Received ACK for unknown destination: {destination}, valid range is {minDestination}-{maxDestination}",
+			log.debugWarning(
+				"Received ACK for unknown destination: %s, valid range is %s-%s",
+				destination,
+				minDestination,
+				maxDestination,
 			)
 			return
 		offset: int = destination - getattr(display, "startDestination", 0)
@@ -1968,7 +1970,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		try:
 			group: KeyGroup = KeyGroup(group_num)
 		except ValueError:
-			log.debugWarning(f"Unknown key group: {group_num}")
+			log.debugWarning("Unknown key group: %s", group_num)
 			return
 
 		keysPressedBitString: bytes = b""
@@ -2067,13 +2069,15 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			if not self._lastSentPacketNumTries < 3:
 				# Give up on the packet
 				log.debugWarning(
-					f"Giving up on packet: {packet}, number of tries: {self._lastSentPacketNumTries}",
+					"Giving up on packet: %s, number of tries: %s",
+					packet,
+					self._lastSentPacketNumTries,
 				)
 				self._lastSentPacket = None
 				self._lastSentPacketNumTries = 0
 				self._readyToSend.set()
 				return
-			log.debug(f"Resending last packet: {packet}")
+			log.debug("Resending last packet: %s", packet)
 			self._queuePacket(packet)
 			self._lastSentPacketNumTries += 1
 
@@ -2403,7 +2407,7 @@ class InputGesture(braille.BrailleDisplayGesture):
 				try:
 					names.append(PerkinsKey(key).name)
 				except ValueError:
-					log.warning(f"Unknown Perkins key: {key}")
+					log.debugWarning("Unknown Perkins key: %s", key)
 		baseId = "+".join(names)
 		self.id = self._formatLongPressId(baseId) if isLongPress else baseId
 
