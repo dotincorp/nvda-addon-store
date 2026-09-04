@@ -84,7 +84,7 @@ extend-select = ["G"]
 # Build the add-on
 build = [
     "markdown==3.10",
-    "scons==4.10.1",
+    "scons==4.11.1",
 ]
 # Translation management, used by the Crowdin sync workflow's scripts.
 l10n = [
