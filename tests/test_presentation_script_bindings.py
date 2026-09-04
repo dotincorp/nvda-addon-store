@@ -127,8 +127,8 @@ class TestDriverGetScriptDelegates(unittest.TestCase):
 	def test_driver_getScript_falls_through_when_presentation_returns_none(self) -> None:
 		"""When the active presentation returns ``None``, the driver falls
 		through to its own ``ScriptableObject.getScript`` lookup. We use a
-		gesture identifier the driver itself binds (``br(dotpad):f1+f3``
-		→ ``script_brailleDisplay``, added by feature 020) so we can verify
+		gesture identifier the driver itself binds (``br(dotpad):f2+f4``
+		→ ``script_brailleDisplay``) so we can verify
 		the fallthrough yielded a real driver script — not just ``None``.
 		"""
 		driver = _makeDriver()
@@ -137,14 +137,14 @@ class TestDriverGetScriptDelegates(unittest.TestCase):
 		driver._renderer.presentationManager.activePresentation = activePresentation
 
 		gesture = MagicMock(name="gesture")
-		gesture.normalizedIdentifiers = ["br(dotpad):f1+f3"]
+		gesture.normalizedIdentifiers = ["br(dotpad):f2+f4"]
 
 		result = driver.getScript(gesture)
 
 		activePresentation.getScript.assert_called_once_with(gesture)
 		self.assertIsNotNone(
 			result,
-			"Driver's own script_brailleDisplay is bound to f1+f3; fallthrough must surface it.",
+			"Driver's own script_brailleDisplay is bound to f2+f4; fallthrough must surface it.",
 		)
 		# The returned object is a bound method whose underlying function
 		# is script_brailleDisplay.
@@ -158,7 +158,7 @@ class TestDriverGetScriptDelegates(unittest.TestCase):
 		driver._renderer.presentationManager.activePresentation = None
 
 		gesture = MagicMock(name="gesture")
-		gesture.normalizedIdentifiers = ["br(dotpad):f1+f3"]
+		gesture.normalizedIdentifiers = ["br(dotpad):f2+f4"]
 
 		result = driver.getScript(gesture)
 

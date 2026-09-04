@@ -58,24 +58,34 @@ Conventions:
 |---|---|
 | `f1` | Scrolls the multiline display backwards |
 | `f4` | Scrolls the multiline display forward |
-| `f1+f3` | Displays the review object as braille via the active braille presentation |
-| `f2+f4` | Displays the review object as tactile graphics via TactileDisplayAPI |
+| `f1+f3` | Displays the review object as tactile graphics via TactileDisplayAPI |
+| `f2+f3` | Displays the review object as tactile graphics via TactileDisplayAPI |
+| `f2+f4` | Displays the review object as braille via the active braille presentation |
 | `longPress(f1+f3)` | Toggles between normal braille output and screen capture mode |
 | `longPress(f2+f3)` | Forces table mode by scanning parent objects for a table |
 
 <!-- END GENERATED: tier1 -->
 
-The `f1+f3` / `f2+f4` chords form a symmetric pair: one returns to braille,
-the other forces graphic. Both are reachable from any presentation as
-explicit escape hatches.
+The `f1+f3` / `f2+f4` chords form a symmetric pair: one forces graphic,
+the other returns to braille. Both are reachable from any presentation as
+explicit escape hatches. `f2+f3` is a second way into graphic mode — it is
+the chord JAWS uses, and once a graphic is on screen graphic mode claims it
+for zoom-in, so it only enters when no graphic is active.
+
+This pairing, and every non-long-press binding below, matches the
+`[DotPad320X Keys]` map the bundled library ships, so TactileDisplayAPI,
+JAWS and NVDA agree on one set of chords. The library's own map is not
+consulted at runtime — the addon reads its keys itself and calls
+`ExecuteOperation` — so the two are kept in step by hand.
 
 ## Tier 2 — Presentation scripts
 
 These bindings apply ONLY while the named mode is the active one. Graphic
 mode is typically active when focus is on a graphical object, or after
-pressing `f2+f4`. The single-key direction mapping mirrors the hardware
+pressing `f1+f3`. The single-key direction mapping mirrors the hardware
 button layout; holding the same key for 1.5s or longer jumps to the edge
-in that direction.
+in that direction. The four small-step pans (`panLeft+f1`, `panRight+f4`,
+`f1+f2`, `f3+f4`) move the viewport by a few dots rather than a page.
 
 <!-- BEGIN GENERATED: tier2 -->
 
@@ -89,9 +99,13 @@ in that direction.
 | `f2` | Pan the tactile graphic viewport up by one page-step |
 | `f3` | Pan the tactile graphic viewport down by one page-step |
 | `f4` | Pan the tactile graphic viewport right by one page-step |
+| `f1+f2` | Pan the tactile graphic viewport up by a few dots |
 | `f1+f4` | Zoom the tactile graphic out |
 | `f2+f3` | Zoom the tactile graphic in |
+| `f3+f4` | Pan the tactile graphic viewport down by a few dots |
+| `panLeft+f1` | Pan the tactile graphic viewport left by a few dots |
 | `panLeft+panRight` | Recenter the tactile graphic viewport |
+| `panRight+f4` | Pan the tactile graphic viewport right by a few dots |
 | `f1+f2+f3+f4` | Invert the tactile graphic image (swap raised and blank dots) |
 | `longPress(f1)` | Jump the tactile graphic viewport to the left edge |
 | `longPress(f2)` | Jump the tactile graphic viewport to the top edge |
@@ -144,8 +158,9 @@ NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
 A gesture listed here can still be in use inside a single mode — `f2` was
-dropped as a driver-level backspace and is now graphic mode's pan-up.
-What it no longer does is work in every mode.
+dropped as a driver-level backspace and is now graphic mode's pan-up, and
+`f1+f2`, `f3+f4`, `f1+panLeft` and `f4+panRight` are now graphic mode's
+small-step pans. What they no longer do is work in every mode.
 
 <!--
 MAINTAINERS: `tools/generateKeymap.py` fails if a gesture in this table is

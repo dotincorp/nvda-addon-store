@@ -74,6 +74,24 @@ class TestGraphicPresentationGestures(unittest.TestCase):
 				f"{gesture} bound to wrong handler",
 			)
 
+	def test_smallStep_chord_bindings(self):
+		"""The four small-step pans from the library's [DotPad320X Keys] map."""
+		presentation = self._makePresentation()
+		expected = {
+			"br(dotPad):panLeft+f1": "script_panViewportLeftSmall",
+			"br(dotPad):panRight+f4": "script_panViewportRightSmall",
+			"br(dotPad):f1+f2": "script_panViewportUpSmall",
+			"br(dotPad):f3+f4": "script_panViewportDownSmall",
+		}
+		for gesture, expectedName in expected.items():
+			scriptObj = presentation.getScript(_MockGesture(gesture))
+			self.assertIsNotNone(scriptObj, f"no handler for {gesture}")
+			self.assertEqual(
+				getattr(scriptObj, "__name__", ""),
+				expectedName,
+				f"{gesture} bound to wrong handler",
+			)
+
 	def test_carryForward_chord_bindings(self):
 		"""Recenter, zoom in/out unchanged from feature 016."""
 		presentation = self._makePresentation()
@@ -92,11 +110,14 @@ class TestGraphicPresentationGestures(unittest.TestCase):
 			)
 
 	def test_removed_chord_bindings_return_none(self):
-		"""The four chord bindings removed in feature 020 must return None."""
+		"""Chords feature 020 took off graphic mode must still return None.
+
+		``f1+f2`` and ``f3+f4`` were re-bound in the TactileDisplayAPI keymap
+		unification — as small-step up/down pans, not as the page-steps they
+		once were — so only the two that moved to the driver are listed here.
+		"""
 		presentation = self._makePresentation()
 		removed = [
-			"br(dotPad):f1+f2",  # was script_panViewportLeft on chord
-			"br(dotPad):f3+f4",  # was script_panViewportRight on chord
 			"br(dotPad):f1+f3",  # was script_panViewportTop on chord (now driver-level)
 			"br(dotPad):f2+f4",  # was script_panViewportBottom on chord (now driver-level)
 		]
@@ -122,13 +143,20 @@ class TestDriverScriptGestures(unittest.TestCase):
 		self.assertIn("br(dotPad):longPress(f2+f3)", gestures)
 		self.assertNotIn("br(dotPad):f2+f3", gestures)
 
-	def test_graphicDisplay_stays_on_short_chord(self):
+	def test_graphicDisplay_bound_to_both_enter_chords(self):
+		"""Both chords the library's ``[DotPad320X Keys]`` map uses to enter
+		tactile-graphic mode reach ``script_graphicDisplay``: ``f1+f3`` and the
+		``f2+f3`` JAWS also uses.
+		"""
 		gestures = _gestureIdentifiersFor(BrailleDisplayDriver.script_graphicDisplay)
-		self.assertIn("br(dotPad):f2+f4", gestures)
-
-	def test_brailleDisplay_bound_to_f1_plus_f3(self):
-		gestures = _gestureIdentifiersFor(BrailleDisplayDriver.script_brailleDisplay)
 		self.assertIn("br(dotPad):f1+f3", gestures)
+		self.assertIn("br(dotPad):f2+f3", gestures)
+		self.assertNotIn("br(dotPad):f2+f4", gestures)
+
+	def test_brailleDisplay_bound_to_f2_plus_f4(self):
+		gestures = _gestureIdentifiersFor(BrailleDisplayDriver.script_brailleDisplay)
+		self.assertIn("br(dotPad):f2+f4", gestures)
+		self.assertNotIn("br(dotPad):f1+f3", gestures)
 
 	def test_refresh_has_no_default_binding(self):
 		"""script_refresh keeps its @script registration but loses its default gesture."""

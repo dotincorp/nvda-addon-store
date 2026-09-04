@@ -246,9 +246,13 @@ class GraphicPresentation(Presentation):
 	# is active; driver gestures take over otherwise.
 	#
 	# Layout: single-key f1/f2/f3/f4 = page-step LEFT/UP/DOWN/RIGHT
-	# (mnemonic for the hardware button layout). longPress of the same
-	# key = jump to the corresponding edge (HOME/TOP/BOTTOM/END). Zoom
-	# on f1+f4 (out) / f2+f3 (in). Recenter on panLeft+panRight.
+	# (mnemonic for the hardware button layout). Small steps on
+	# panLeft+f1 / panRight+f4 (left/right) and f1+f2 / f3+f4 (up/down).
+	# longPress of a single key = jump to the corresponding edge
+	# (HOME/TOP/BOTTOM/END). Zoom on f1+f4 (out) / f2+f3 (in). Recenter
+	# on panLeft+panRight. Everything but the long presses matches the
+	# [DotPad320X Keys] map the library ships, so TactileDisplayAPI, JAWS
+	# and NVDA agree on one set of chords.
 
 	@script(
 		# Translators: description of the pan-left command on the tactile graphic.
@@ -285,6 +289,42 @@ class GraphicPresentation(Presentation):
 	)
 	def script_panViewportRight(self, _gesture: inputCore.InputGesture) -> None:
 		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_RIGHT)
+
+	@script(
+		# Translators: description of the small pan-left command on the tactile graphic.
+		description=_("Pan the tactile graphic viewport left by a few dots"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panLeft+f1",
+	)
+	def script_panViewportLeftSmall(self, _gesture: inputCore.InputGesture) -> None:
+		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_LEFT_SMALL)
+
+	@script(
+		# Translators: description of the small pan-up command on the tactile graphic.
+		description=_("Pan the tactile graphic viewport up by a few dots"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f1+f2",
+	)
+	def script_panViewportUpSmall(self, _gesture: inputCore.InputGesture) -> None:
+		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_UP_SMALL)
+
+	@script(
+		# Translators: description of the small pan-down command on the tactile graphic.
+		description=_("Pan the tactile graphic viewport down by a few dots"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f3+f4",
+	)
+	def script_panViewportDownSmall(self, _gesture: inputCore.InputGesture) -> None:
+		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_DOWN_SMALL)
+
+	@script(
+		# Translators: description of the small pan-right command on the tactile graphic.
+		description=_("Pan the tactile graphic viewport right by a few dots"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panRight+f4",
+	)
+	def script_panViewportRightSmall(self, _gesture: inputCore.InputGesture) -> None:
+		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_RIGHT_SMALL)
 
 	@script(
 		# Translators: description of the jump-to-left-edge command on the tactile graphic.

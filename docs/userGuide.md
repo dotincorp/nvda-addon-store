@@ -98,9 +98,11 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 
 - Left Pan + F1 Key: Move the viewport left a few dots in graphics mode.
 - Right Pan + F4 Key: Pan the graphic right a few dots in graphics mode.
-- F1+F3: Braille mode. Long press for screen capture mode.
-- F2+F4: Convert the letter, emoji, graphic or selection to a tactile image.
-- F2+F3: When showing a tactile image, zoom in (magnify the image).
+- F1+F2: Move the viewport up a few dots in graphics mode.
+- F3+F4: Move the viewport down a few dots in graphics mode.
+- F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
+- F2+F4: Braille mode.
+- F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
 
@@ -167,14 +169,14 @@ You can write the following example expressions to demonstrate math graphs in Mi
 To view math graphs on the Dot Pad:
 
 1. Use the keyboard to arrow down to the target equation in your document.
-2. With your cursor resting on the equation, press F2+F4 on the Dot Pad to enter tactile viewer mode.
+2. With your cursor resting on the equation, press F1+F3 on the Dot Pad to enter tactile viewer mode.
 3. Zoom in by pressing F2+F3 on the Dot Pad.
 4. Zoom out by pressing F1+F4 on the Dot Pad.
-5. When finished, press F1+F3 on the Dot Pad to exit the viewer and return to standard braille output.
+5. When finished, press F2+F4 on the Dot Pad to exit the viewer and return to standard braille output.
 
 ### Rendering Tactile Print
 
-You can also feel a tactile representation of print characters by pressing F2+F4. Dot Pad will render the character at the cursor. You can zoom in with F2+F3, and out with F1+F4. You can invert the tactile image by pressing all four function keys together.
+You can also feel a tactile representation of print characters by pressing F1+F3. Dot Pad will render the character at the cursor. You can zoom in with F2+F3, and out with F1+F4. You can invert the tactile image by pressing all four function keys together.
 
 ## Focus Tracking
 
@@ -192,9 +194,9 @@ Button map reference, standard mode:
 - Right Pan Key (Triangular): Scroll forward through single-line braille text displayed in the 20-cell text area.
 - F1 Key: Scroll back in the 300-cell multiline area, or move to the previous chart data point.
 - F4 Key: Scroll forward in the 300-cell multiline area, or move to the next chart data point.
-- F1+F3: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.
+- F2+F4: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.
 - F3 Key: Serves as the hardware enter button, or executes the currently focused navigator object.
-- F2+F4: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.
+- F1+F3 or F2+F3: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.
 
 Button map reference, tactile graphics mode. When the review mode is explicitly set to tactile graphics, the button configuration adjusts to let you navigate and manipulate the viewport of the graphic or math equation directly from the hardware:
 
@@ -204,6 +206,10 @@ Button map reference, tactile graphics mode. When the review mode is explicitly 
 - F4 Key: Pan the tactile graphic view one step to the right.
 - F2 Key: Pan the tactile graphic view one step up.
 - F3 Key: Pan the tactile graphic view one step down.
+- Left Pan + F1 Key: Pan the tactile graphic view left by a few dots.
+- Right Pan + F4 Key: Pan the tactile graphic view right by a few dots.
+- F1+F2: Pan the tactile graphic view up by a few dots.
+- F3+F4: Pan the tactile graphic view down by a few dots.
 - Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation.
 
 ## Dot Pad Display Viewer
