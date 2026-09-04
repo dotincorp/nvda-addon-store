@@ -15,14 +15,14 @@ $addonId = $rawAddonId.Trim()
 # --- STEP 1: PREPARATION AND SOURCE UPDATE ---
 
 $xliffFile = "./$addonId.xliff"
-$mdFile = "./readme.md"
+$mdFile = "./docs/userGuide.md"
 
 if (Test-Path $mdFile) {
     if (Test-Path $xliffFile) {
         $tempXliff = [System.IO.Path]::GetTempFileName()
         try {
             Copy-Item "$addonId.xliff" $tempXliff -Force
-            Write-Host "DEBUG: Updating XLIFF source based on readme.md..."
+            Write-Host "DEBUG: Updating XLIFF source based on $mdFile..."
             ./l10nUtil.exe md2xliff $mdFile $xliffFile -o $tempXliff
         }
         finally {
@@ -32,7 +32,7 @@ if (Test-Path $mdFile) {
         }
     }
     else {
-        Write-Host "DEBUG: XLIFF template not found. Creating new one from readme.md..."
+        Write-Host "DEBUG: XLIFF template not found. Creating new one from $mdFile..."
         ./l10nUtil.exe md2xliff $mdFile $xliffFile
     }
 }
@@ -100,7 +100,7 @@ foreach ($dir in Get-ChildItem -Path "_addonL10n/$addonId" -Directory) {
     $remotePo = Join-Path $dir.FullName "$addonId.po"
 
     $localMdDir = "addon/doc/$langCode"
-    $localMd = "$localMdDir/readme.md"
+    $localMd = "$localMdDir/userGuide.md"
 
     $localPoPath = "addon/locale/$langCode/LC_MESSAGES/nvda.po"
 

@@ -61,6 +61,16 @@ uv run scons pot      # generate the translation pot file
 The build system is configured in `sconstruct` and `buildVars.py`. Project metadata
 comes from `pyproject.toml`.
 
+## Documentation
+
+`docs/userGuide.md` is the user-facing guide shipped with the add-on: the build
+copies it to `addon/doc/en/userGuide.md`, renders it to `userGuide.html`
+(`buildVars.addon_docFileName`, what the add-on store's Help button opens), and the
+Crowdin sync turns it into `dotPad.xliff` for translation. Keep it plain Markdown —
+headings, paragraphs and simple lists — because `buildVars.markdownExtensions` is
+empty and the XLIFF segmenter expects the same. Everything else under `docs/` is
+developer documentation and is not shipped.
+
 ## Code Quality
 
 ### Linting and Formatting

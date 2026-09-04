@@ -55,7 +55,7 @@ addon_info = AddonInfo(
 	# URL for the add-on repository where the source code can be found
 	addon_sourceURL="https://github.com/dotincorp/nvda-addon-store/",
 	# Documentation file name
-	addon_docFileName="readme.html",
+	addon_docFileName="userGuide.html",
 	# Minimum NVDA version supported (e.g. "2018.3.0", minor version is optional)
 	addon_minimumNVDAVersion="2026.1",
 	# Last NVDA version supported/tested

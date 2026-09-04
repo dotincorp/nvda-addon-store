@@ -125,10 +125,13 @@ for licenceFile in (Path("COPYING.txt"), Path("THIRD_PARTY_NOTICES.md")):
 		licenceTarget = env.Command(str(licencePath), str(licenceFile), Copy("$TARGET", "$SOURCE"))
 		env.Depends(addon, licenceTarget)
 
-if (readmeFile := Path("readme.md")).is_file():
-	readmePath = docsDir / buildVars.baseLanguage / readmeFile
-	readmeTarget = env.Command(str(readmePath), str(readmeFile), Copy("$TARGET", "$SOURCE"))
-	env.Depends(addon, readmeTarget)
+# The user guide is the document the add-on store's Help button opens
+# (buildVars.addon_docFileName). Its translations arrive from Crowdin already in
+# addon/doc/<lang>/, so only the English source needs copying in from docs/.
+if (userGuideFile := Path("docs/userGuide.md")).is_file():
+	userGuidePath = docsDir / buildVars.baseLanguage / userGuideFile.name
+	userGuideTarget = env.Command(str(userGuidePath), str(userGuideFile), Copy("$TARGET", "$SOURCE"))
+	env.Depends(addon, userGuideTarget)
 
 for mdFile in env.Glob(docsDir / "*/*.md"):
 	# the title of the html file is translated based on the contents of something in the moFile for a language.
