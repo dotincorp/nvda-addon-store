@@ -132,6 +132,7 @@ HYBRID_PRINT_AND_BRAILLE_SETTING_NAME = "hybridPrintAndBraille"
 MULTILINE_BRAILLE_SPACING_SETTING_NAME = "multilineBrailleSpacing"
 # Written by installTasks.onInstall; see addon/installTasks.py.
 AUTO_DETECT_PROMPT_SHOWN_SETTING_NAME = "autoDetectPromptShown"
+CURSOR_BLINK_PROMPT_SHOWN_SETTING_NAME = "cursorBlinkPromptShown"
 
 CONFIG_SPEC = {
 	AUTO_REFRESH_SETTING_NAME: "integer(default=3, min=0, max=3)",
@@ -146,6 +147,7 @@ CONFIG_SPEC = {
 	HYBRID_PRINT_AND_BRAILLE_SETTING_NAME: "boolean(default=False)",
 	MULTILINE_BRAILLE_SPACING_SETTING_NAME: "integer(default=0, min=0, max=2)",
 	AUTO_DETECT_PROMPT_SHOWN_SETTING_NAME: "boolean(default=False)",
+	CURSOR_BLINK_PROMPT_SHOWN_SETTING_NAME: "boolean(default=False)",
 }
 
 

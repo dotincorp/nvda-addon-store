@@ -12,6 +12,7 @@ Changes destined for the next release.
 ### Added
 - Support for NVDA 2026.1 and later (64-bit).
 - Installing the add-on now offers to enable automatic detection of the Dot Pad, which NVDA disables by default. The question is asked once; the setting can be changed later in NVDA's braille settings under "Displays to detect automatically".
+- Installing the add-on now also offers to turn off NVDA's blinking braille cursor, which is of little use on the Dot Pad's slow cells. NVDA has a single blinking setting for all braille displays, which the question says; it is asked once and can be changed later in NVDA's braille settings under "Blink cursor".
 - Long press gesture support: gestures held for 1.5+ seconds produce `longPress(keys)` format, preventing accidental display refreshes during battery status checks.
 - Table mode: configurable automatic navigator movement after scrolling. Users can choose to move the navigator to the first visible cell, center cell, or leave it unchanged (default).
 - Table mode: force table presentation when on a table cell, with deep parent scanning to find tables that aren't auto-detected. Shows table content with active cell marking.
