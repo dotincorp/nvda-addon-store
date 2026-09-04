@@ -214,7 +214,7 @@ Note that the NVDA braille viewer, also available from the Tools menu, only show
 
 ## Getting Help
 
-For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's general settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text.
+For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's general settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.
 
 For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/).
 

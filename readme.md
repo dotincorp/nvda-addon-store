@@ -54,11 +54,6 @@ Install the `.nvda-addon` file from the
 [releases page](https://github.com/dotincorp/nvda-addon-store/releases), or
 through NVDA's add-on store.
 
-NVDA does not detect Dot Pad displays automatically by default, so the add-on
-asks during installation whether you want to enable automatic detection of the
-Dot Pad. The question is only asked once. See the
-[user guide](docs/userGuide.md) for connecting the display afterwards.
-
 ## Building from source
 
 Requires Python 3.13 (64-bit) and [uv](https://docs.astral.sh/uv/).
@@ -92,8 +87,8 @@ standards and branch conventions.
 
 Please open an issue on the
 [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA
-log at debug level is usually essential — set the logging level in NVDA's general
-settings, reproduce the problem, then attach the log.
+log at debug level is usually essential; the user guide explains how to produce
+one.
 
 **Do not attach crash dumps (`nvda_crash.dmp`) to a public issue.** They contain a
 raw image of NVDA's memory, which can include the contents of documents you had
