@@ -1,0 +1,1392 @@
+<?xml version="1.0"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en">
+<file id="userGuide.md" original="https://raw.githubusercontent.com/dotincorp/nvda-addon-store/784029c6bdfb8a0608aad0d3d3a19fdd63c100f1/docs/userGuide.md">
+<skeleton>
+# $(ID:2aa53b96-9234-4f54-bae8-cb0fe2a53823)
+
+## $(ID:d395b773-f4ba-48d7-9371-22329e4781f4)
+
+$(ID:a72bfb4f-676e-40e0-ad52-ab63b1340140)
+
+$(ID:ed14c887-9884-4eae-8439-199bde854494)
+
+$(ID:6abaea46-2cdf-44de-9990-7cb340039857)
+
+$(ID:278d9c4d-10e4-4191-9973-8eb0bbcf5da9)
+
+$(ID:addad968-f4e3-467b-803d-7076e4d6da0a)
+
+## $(ID:2f27bba3-034b-4aff-a016-1745ad61db03)
+
+$(ID:492f7c62-aa0f-4889-8756-c4e34805b0eb)
+
+### $(ID:0e322532-fbe8-48ab-a302-eb5d805029ab)
+
+$(ID:3591683f-3a57-4096-9fed-cde7a79dc580)
+$(ID:a3072ef5-4d8d-4864-ad21-cdf5a0780357)
+
+### $(ID:79168025-3809-4999-83a5-710f9c7840f9)
+
+$(ID:43adcb62-456e-4d63-92e7-66187eee55e9)
+
+$(ID:b6d8b822-779b-470a-90e6-29f637a1c83b)
+$(ID:77d8dc73-fe02-4a8f-9ba6-cfb7a49a7631)
+$(ID:59b5ceb7-cc6a-4b15-8765-91598c80175f)
+$(ID:b33ddf8b-6965-45f8-a9d4-d73cf100111f)
+$(ID:2055e028-cf2a-46be-ac31-94bf65db50a9)
+$(ID:25bc9cc6-a90c-46c5-96bb-c20a93053a88)
+
+$(ID:4d42604e-0c03-48fc-a13c-baa56750156d)
+
+### $(ID:7b2aba26-fc2b-49be-af62-c535950860f4)
+
+$(ID:87a1e60c-f9ba-48d3-a830-902a64b9cfe3)
+$(ID:a4f2826d-a4c2-435b-bca4-5dcccb5fb798)
+
+## $(ID:43e717a2-fa7e-4fde-a4a1-b3a736e45543)
+
+$(ID:79e444db-4178-451a-b258-82ada33cfccc)
+
+### $(ID:1604d6c8-d222-450a-9848-1ce2c10fec3c)
+
+$(ID:1e12fe57-99bd-4a9e-869f-1ad1284a54bb)
+
+1. $(ID:c8e9fec8-b23b-4542-97f4-706a7eb91d94)
+2. $(ID:c9c565e6-52b3-43b4-bc51-30955baa4973)
+3. $(ID:171f26fe-e077-49d2-b1e2-089e985888d9)
+4. $(ID:3a07cc64-741b-415d-adb5-70f0fe2ab56d)
+5. $(ID:34067a5b-de3c-4f69-999e-4a2fdeef85f0)
+6. $(ID:74d06b3b-96fe-4362-af9b-0cde991ee487)
+7. $(ID:b2d1681c-904a-4b63-b467-6d631de6dd47)
+
+$(ID:97eead3c-9e00-4f85-bc62-46ea3cd54236)
+
+$(ID:921fb3ba-d2af-4767-8f14-2929e6e09ab3)
+
+### $(ID:cd9405c6-432e-447b-b915-8b87de1ad95f)
+
+1. $(ID:2b2f784d-75e2-4782-983e-bcf96e5061ed)
+2. $(ID:9fcd86a9-84ec-4a0d-9a00-bde1ab39afa6)
+3. $(ID:ec4ff223-af41-44ce-b601-9e0ee1f9b389)
+4. $(ID:04e645ee-8555-4fe0-b9d9-adddeb57aa39)
+$(ID:6a144a6c-0d7c-4cef-b82c-131405bbcf85)
+$(ID:6b43a547-3d3b-4575-a4b2-cb28659629b6)
+5. $(ID:ae701772-1485-467b-88d8-d2e89ee80bc5)
+
+$(ID:351d1786-b912-43b9-be9e-07eeba495db1)
+
+### $(ID:c9f484ed-0b2f-4e72-a9c7-b8ea967929fe)
+
+$(ID:447771d8-5ad4-44d3-9b64-f45b3772d73d)
+$(ID:06c29269-6f63-46d0-81fc-3acac2ba1abe)
+
+$(ID:5084e9ae-7bec-4b64-8a9f-3382bec2ef47)
+
+## $(ID:aab93fcb-bbba-41e3-9fb2-7ec4b071812e)
+
+$(ID:b613991f-eada-400c-a591-a7311dba6af6)
+
+$(ID:84e49450-7f72-4080-afa3-5ed092db922b)
+
+### $(ID:73d30dcb-b8c9-47a9-bad3-8a48612291c2)
+
+$(ID:392ac9ea-91fc-4e88-a42e-7493a78ec153)
+$(ID:fb3c8fd3-0996-4435-be81-7f1bd8b04e14)
+$(ID:5f5d6648-1aa6-4ab8-b954-be18a8d4f26d)
+$(ID:33eba9b3-ca03-48d8-89cf-63fde2585896)
+$(ID:c9fc446d-c142-4b6a-b0cd-ed54b3370069)
+$(ID:d51033c7-2901-49ec-95ee-a35b435d5935)
+$(ID:06a689f6-fa88-458c-a3ed-10e6185ce3cd)
+
+### $(ID:476f0435-4966-4176-b494-186b6d86dd76)
+
+$(ID:1496b8dc-335f-41e0-95b4-aeee9fb79c1a)
+$(ID:cb1ed42a-8f76-4e60-a6bc-425f0e76e3a5)
+$(ID:68e72984-01e9-41ad-8eb3-37fad911e2bf)
+$(ID:2c88b5e0-7b8a-4a61-85f9-131cdd581b6f)
+$(ID:81fe6a18-4cb0-4645-beef-71824dfcaca4)
+$(ID:e8dd2d2a-5c91-4c13-a68b-c7e1dce282ad)
+$(ID:72af16ef-f21f-4e47-a5b5-295872420f84)
+
+## $(ID:a625cda9-ec1a-44e5-8161-3bfce4a259f1)
+
+$(ID:15c82dee-64d8-4092-aa33-7606b21509bb)
+
+### $(ID:9665605a-a347-4be0-9826-75dd21420d61)
+
+$(ID:6d6c653b-ea64-4fa5-9b05-bfceb3d56cc2)
+
+### $(ID:dbd249ce-fc00-47f5-881d-574fc4ff6ef5)
+
+$(ID:db51ebc9-8750-4780-808f-8494954f7527)
+
+### $(ID:84b6740d-913f-4e26-bf1c-f03f70367a58)
+
+$(ID:23ccc193-3a95-48a1-9eb0-882134061674)
+
+### $(ID:498ab4bf-4d30-43e9-a890-b6c0111edf84)
+
+$(ID:b492ec9f-39c9-477d-987d-fa2806743e13)
+
+### $(ID:32651a5c-9ace-424f-bba1-8ca4d05850b6)
+
+$(ID:30667f0d-cc86-48a9-b0c7-f9ed486d83e4)
+
+$(ID:d07ce934-e2b0-4169-be63-83bf6a687fe8)
+
+### $(ID:d480b850-f7d4-4f16-975d-5e446b395d2d)
+
+$(ID:b9332a8c-ed4e-4e6b-898d-3bbcb35bb693)
+
+## $(ID:75af7d8f-a957-44db-baac-72505ae48419)
+
+$(ID:d78fcfab-8bb4-4710-8913-722778217f82)
+
+### $(ID:8de662fb-4796-4973-a39d-2a69e5a0f492)
+
+$(ID:367d96ca-b1a2-4ca1-a13a-0ce22fe2b67b)
+
+### $(ID:4de8c8b5-d614-4083-b189-2782eaba76f9)
+
+$(ID:c8d368c1-55ab-4bae-8555-8ccd3e5cc719)
+
+### $(ID:940b2c43-abe4-4964-8064-fc1088964fba)
+
+$(ID:3b0cc8e2-b076-4300-9a23-219571118ea4)
+
+$(ID:025fe931-8f6c-420d-81f0-c92a2965061b)
+
+1. $(ID:93028a20-4444-4725-84e7-28031dba2740)
+2. $(ID:2e344193-247e-401c-a636-c4ca26194d8c)
+
+$(ID:daea4a2c-32c7-431c-ba32-709e7ca182f9)
+
+$(ID:687d1998-87f5-4be5-bee9-cb2a96800164)
+$(ID:c0b48383-0e23-4a89-b3e2-b83091b43dc7)
+$(ID:83e95610-904a-48cf-84cc-0bd0ac562a7b)
+$(ID:8d27e7b8-bdf6-438c-a7e8-708f235d7449)
+$(ID:328375b3-937b-443d-9894-f8eacc7bf039)
+$(ID:949498c6-973f-4cd7-b7ae-9da1918a7ba0)
+
+$(ID:912eaf06-a657-4256-9bb0-83dbeacd3e27)
+
+1. $(ID:823bdad5-9ca9-4ff9-85f0-2655503eada0)
+2. $(ID:ce1df497-03a0-4a49-9b2b-a67b937acda9)
+3. $(ID:8892b90b-adb9-4a7c-a5d8-957e21a9b2dc)
+4. $(ID:ae2d9cac-8eda-41b8-8b45-fc0e2d80421b)
+5. $(ID:0444a18c-3457-4444-a901-ad33ae3efc90)
+
+### $(ID:dc9537a6-aa71-4495-8f10-a08346e978ab)
+
+$(ID:ff54f5ed-29b9-45fe-8dfe-fb12bdc4cb49)
+
+## $(ID:927ffdbb-109b-4152-b1ae-2c59cfc5f5ba)
+
+$(ID:ba8f5ec7-73f7-4cb9-958f-d3ad3c817815)
+
+## $(ID:0a7c3b3a-17e0-43b8-8668-a0d45f8442d9)
+
+$(ID:b3ed68d4-2507-4002-9f25-26b1a51b59f2)
+
+$(ID:6b47d433-2df0-4f78-a1d5-fe9d60207127)
+
+$(ID:dbc97f74-6c79-41cf-8b8b-dc59c2c1c495)
+
+$(ID:dfa88ae0-bfa9-4170-ae3b-a62e2b260bdd)
+$(ID:aa59f669-67e7-4eb9-9c29-5af81364de0c)
+$(ID:c8ee6051-f196-4aef-8b57-e0db66f21066)
+$(ID:d1f7b019-346b-4810-9f61-287e4b271bf0)
+$(ID:7a5a6c01-fbe1-4cb8-ac36-22b310554c27)
+$(ID:3a26be32-725c-4b84-aeee-0121e7423a3f)
+$(ID:35d58c0a-77a5-4c44-8211-067c560c70d6)
+
+$(ID:d00185d1-6496-4efb-928a-1a4bac18e7b4)
+
+$(ID:86d9f671-f8c3-4fa4-9978-5fd4b9ab6550)
+$(ID:20ce69ec-55d4-4aa6-906b-a03d6e5102e4)
+$(ID:9bb2b4cf-0750-4c1a-94aa-1d3f3ab83550)
+$(ID:21226f99-2ab9-431a-88df-a8cad9eaabfe)
+$(ID:4c2198c7-39e1-46d5-99fa-98ed3b72cc4d)
+$(ID:a4baaf52-1e91-4b06-a23a-8c03505e1d41)
+$(ID:225a1334-e810-418b-a3ee-28a4b84b8557)
+
+## $(ID:1fe704e6-be8c-460d-8257-f4f8ae2e7f68)
+
+$(ID:0e02c7ed-97c8-468f-b83a-0920755554ab)
+
+$(ID:8bb945a3-7801-4ce7-8ee9-a99a1b7d3371)
+
+## $(ID:e5705d09-abc8-4d0a-9fe9-73326424e626)
+
+$(ID:3716dde4-b925-44a4-b9ef-eacf91943c3f)
+
+$(ID:43eb7cd9-ab8b-45ad-a02f-fefb196ada1b)
+
+## $(ID:21123549-695d-4493-8e2d-d01d55ee689c)
+
+$(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
+
+</skeleton>
+<unit id="2aa53b96-9234-4f54-bae8-cb0fe2a53823">
+<notes>
+<note appliesTo="source">line: 2</note>
+<note appliesTo="source">prefix: # </note>
+</notes>
+<segment>
+<source>NVDA Dot Pad Add-on Guide</source>
+</segment>
+</unit>
+<unit id="d395b773-f4ba-48d7-9371-22329e4781f4">
+<notes>
+<note appliesTo="source">line: 4</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Summary</source>
+</segment>
+</unit>
+<unit id="a72bfb4f-676e-40e0-ad52-ab63b1340140">
+<notes>
+<note appliesTo="source">line: 6</note>
+</notes>
+<segment>
+<source>The NVDA add-on for Dot Pad is the means by which we get NVDA to optimally display braille and tactile graphics on the Dot Pad. You need to install the add-on: without it, NVDA won't be able to take advantage of the Dot Pad's multiline and tactile graphics capabilities.</source>
+</segment>
+</unit>
+<unit id="ed14c887-9884-4eae-8439-199bde854494">
+<notes>
+<note appliesTo="source">line: 8</note>
+</notes>
+<segment>
+<source>Traditionally, screen readers would send a single line of text to the braille display. Panning the display would reposition the display to show parts of that line (since a display typically shows far fewer characters than a visual line on a computer screen), and then move the cursor to the next or prior line in the document and show the next display's worth of text. In the multiline braille display world, it is not enough just to send a line of text to the display and have it wrapped across the multiple lines of the display, potentially leaving the rest of the display empty. Rather, the screen reader must retrieve as many paragraphs of text as will fit on the display. It must then ensure that when panning the display, the cursor is moved such that subsequent text retrieval results in the reading experience being continuous, like reading a book, whether panning forward or backward through the text. This must happen regardless of whether braille is shown using the computer braille code, which has a one-for-one correspondence with print characters, or whether the user has elected to display contracted braille, where one symbol may represent multiple print characters. In either case, what corresponds to a line of text on a braille display will almost never correspond to the same onscreen print line. This problem is exacerbated in the multiline braille context. The add-on handles the text retrieval, formatting, translation and panning such that the user experience is optimal when reading on the Dot Pad with NVDA.</source>
+</segment>
+</unit>
+<unit id="6abaea46-2cdf-44de-9990-7cb340039857">
+<notes>
+<note appliesTo="source">line: 10</note>
+</notes>
+<segment>
+<source>The add-on also allows letters, emoji and graphics to be rendered as tactile images on the Dot Pad in a way which makes sense to the braille reader. Tactile graphics may be enlarged, reduced and inverted for ease of comprehension. Math equations in Microsoft Word and charts in Excel are also automatically converted to an appropriate tactile image. Axes, tick marks and labels will be properly generated, and where necessary, translated and formatted.</source>
+</segment>
+</unit>
+<unit id="278d9c4d-10e4-4191-9973-8eb0bbcf5da9">
+<notes>
+<note appliesTo="source">line: 12</note>
+</notes>
+<segment>
+<source>The add-on also provides other modes to assist with learning braille. It allows the number of lines of multiline braille to be configured from double spaced (5 lines), to 8 lines of 8-dot braille, to 10 lines of 6-dot braille for an optimal reading experience. There is also a hybrid print and braille mode for those learning print or braille, such that a word is shown in braille as well as tactile print letters as the user navigates through a document.</source>
+</segment>
+</unit>
+<unit id="addad968-f4e3-467b-803d-7076e4d6da0a">
+<notes>
+<note appliesTo="source">line: 14</note>
+</notes>
+<segment>
+<source>Finally, the add-on provides an onscreen braille visualizer for teachers and trainers to see a representation of what is being sent to the Dot Pad.</source>
+</segment>
+</unit>
+<unit id="2f27bba3-034b-4aff-a016-1745ad61db03">
+<notes>
+<note appliesTo="source">line: 16</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Dot Pad Overview</source>
+</segment>
+</unit>
+<unit id="492f7c62-aa0f-4889-8756-c4e34805b0eb">
+<notes>
+<note appliesTo="source">line: 18</note>
+</notes>
+<segment>
+<source>Dot Pad is a tactile information display capable of rendering braille text and tactile graphics simultaneously. You should orient Dot Pad with the body inclined downward toward you.</source>
+</segment>
+</unit>
+<unit id="0e322532-fbe8-48ab-a302-eb5d805029ab">
+<notes>
+<note appliesTo="source">line: 20</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Displays</source>
+</segment>
+</unit>
+<unit id="3591683f-3a57-4096-9fed-cde7a79dc580">
+<notes>
+<note appliesTo="source">line: 22</note>
+</notes>
+<segment>
+<source>- Braille Reading line closest to you, consisting of 20 braille cells arranged in a horizontal frame for text output.</source>
+</segment>
+</unit>
+<unit id="a3072ef5-4d8d-4864-ad21-cdf5a0780357">
+<notes>
+<note appliesTo="source">line: 23</note>
+</notes>
+<segment>
+<source>- Graphic Display Area (Multiline): The largest area on the front, consisting of 300 8-dot braille cells densely packed for precise tactile graphics and multiline braille.</source>
+</segment>
+</unit>
+<unit id="79168025-3809-4999-83a5-710f9c7840f9">
+<notes>
+<note appliesTo="source">line: 25</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Navigation Buttons</source>
+</segment>
+</unit>
+<unit id="43adcb62-456e-4d63-92e7-66187eee55e9">
+<notes>
+<note appliesTo="source">line: 27</note>
+</notes>
+<segment>
+<source>You will find six buttons between the two displays, arranged from left to right:</source>
+</segment>
+</unit>
+<unit id="b6d8b822-779b-470a-90e6-29f637a1c83b">
+<notes>
+<note appliesTo="source">line: 29</note>
+</notes>
+<segment>
+<source>- Pan Left (Triangular shape)</source>
+</segment>
+</unit>
+<unit id="77d8dc73-fe02-4a8f-9ba6-cfb7a49a7631">
+<notes>
+<note appliesTo="source">line: 30</note>
+</notes>
+<segment>
+<source>- F1 Function Key (Oval shape with tactile indicator)</source>
+</segment>
+</unit>
+<unit id="59b5ceb7-cc6a-4b15-8765-91598c80175f">
+<notes>
+<note appliesTo="source">line: 31</note>
+</notes>
+<segment>
+<source>- F2 Function Key (Oval shape)</source>
+</segment>
+</unit>
+<unit id="b33ddf8b-6965-45f8-a9d4-d73cf100111f">
+<notes>
+<note appliesTo="source">line: 32</note>
+</notes>
+<segment>
+<source>- F3 Function Key (Oval shape)</source>
+</segment>
+</unit>
+<unit id="2055e028-cf2a-46be-ac31-94bf65db50a9">
+<notes>
+<note appliesTo="source">line: 33</note>
+</notes>
+<segment>
+<source>- F4 Function Key (Oval shape with tactile indicator)</source>
+</segment>
+</unit>
+<unit id="25bc9cc6-a90c-46c5-96bb-c20a93053a88">
+<notes>
+<note appliesTo="source">line: 34</note>
+</notes>
+<segment>
+<source>- Pan Right (Triangular shape)</source>
+</segment>
+</unit>
+<unit id="4d42604e-0c03-48fc-a13c-baa56750156d">
+<notes>
+<note appliesTo="source">line: 36</note>
+</notes>
+<segment>
+<source>Note that the tactile markings are only present on the newer Dot Pad X hardware, not on the Dot Pad 320A.</source>
+</segment>
+</unit>
+<unit id="7b2aba26-fc2b-49be-af62-c535950860f4">
+<notes>
+<note appliesTo="source">line: 38</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Ports and Switches</source>
+</segment>
+</unit>
+<unit id="87a1e60c-f9ba-48d3-a830-902a64b9cfe3">
+<notes>
+<note appliesTo="source">line: 40</note>
+</notes>
+<segment>
+<source>- Left Side (Data Connection): Features a USB-C port labeled on Dot Pad X with the braille letter "d". This port is dedicated solely to data connections with screen readers and firmware updates, and does not support charging. Connect your USB cable here to communicate with NVDA.</source>
+</segment>
+</unit>
+<unit id="a4f2826d-a4c2-435b-bca4-5dcccb5fb798">
+<notes>
+<note appliesTo="source">line: 41</note>
+</notes>
+<segment>
+<source>- Right Side (Charging Only): Features a USB-C port labeled on Dot Pad X with the braille letter "p", dedicated solely to power and charging. You can find the power switch toward you.</source>
+</segment>
+</unit>
+<unit id="43e717a2-fa7e-4fde-a4a1-b3a736e45543">
+<notes>
+<note appliesTo="source">line: 43</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Connecting Dot Pad to NVDA</source>
+</segment>
+</unit>
+<unit id="79e444db-4178-451a-b258-82ada33cfccc">
+<notes>
+<note appliesTo="source">line: 45</note>
+</notes>
+<segment>
+<source>You can connect Dot Pad to NVDA either wirelessly via Bluetooth Low Energy (BLE) or using a wired USB-C connection. With the NVDA Dot Pad add-on installed, follow these steps.</source>
+</segment>
+</unit>
+<unit id="1604d6c8-d222-450a-9848-1ce2c10fec3c">
+<notes>
+<note appliesTo="source">line: 47</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Automatic Connection</source>
+</segment>
+</unit>
+<unit id="1e12fe57-99bd-4a9e-869f-1ad1284a54bb">
+<notes>
+<note appliesTo="source">line: 49</note>
+</notes>
+<segment>
+<source>During the installation of the Dot Pad add-on it asks you to enable automatic detection of the Dot Pad display. If you answered "Yes" to this and have restarted NVDA to finish the installation, the Dot Pad should be connected automatically on power on. If the Dot Pad is not automatically detected, follow these steps:</source>
+</segment>
+</unit>
+<unit id="c8e9fec8-b23b-4542-97f4-706a7eb91d94">
+<notes>
+<note appliesTo="source">line: 51</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>Turn off or disconnect any other braille displays that are connected to the computer.</source>
+</segment>
+</unit>
+<unit id="c9c565e6-52b3-43b4-bc51-30955baa4973">
+<notes>
+<note appliesTo="source">line: 52</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>Power on the Dot Pad. If you are using the USB-C method, ensure to use the data port on the left.</source>
+</segment>
+</unit>
+<unit id="171f26fe-e077-49d2-b1e2-089e985888d9">
+<notes>
+<note appliesTo="source">line: 53</note>
+<note appliesTo="source">prefix: 3. </note>
+</notes>
+<segment>
+<source>Press NVDA+control+a to open the braille display selection dialog.</source>
+</segment>
+</unit>
+<unit id="3a07cc64-741b-415d-adb5-70f0fe2ab56d">
+<notes>
+<note appliesTo="source">line: 54</note>
+<note appliesTo="source">prefix: 4. </note>
+</notes>
+<segment>
+<source>Ensure "Automatic" is selected. This should be the first option in the list.</source>
+</segment>
+</unit>
+<unit id="34067a5b-de3c-4f69-999e-4a2fdeef85f0">
+<notes>
+<note appliesTo="source">line: 55</note>
+<note appliesTo="source">prefix: 5. </note>
+</notes>
+<segment>
+<source>Press tab to go to the "Displays to detect automatically" list.</source>
+</segment>
+</unit>
+<unit id="74d06b3b-96fe-4362-af9b-0cde991ee487">
+<notes>
+<note appliesTo="source">line: 56</note>
+<note appliesTo="source">prefix: 6. </note>
+</notes>
+<segment>
+<source>Ensure Dot Pad is checked in this list. If it is not, use the space bar to toggle the checkbox on.</source>
+</segment>
+</unit>
+<unit id="b2d1681c-904a-4b63-b467-6d631de6dd47">
+<notes>
+<note appliesTo="source">line: 57</note>
+<note appliesTo="source">prefix: 7. </note>
+</notes>
+<segment>
+<source>Press enter or click the "OK" button to confirm.</source>
+</segment>
+</unit>
+<unit id="97eead3c-9e00-4f85-bc62-46ea3cd54236">
+<notes>
+<note appliesTo="source">line: 59</note>
+</notes>
+<segment>
+<source>From now on any Dot Pad connected over USB or in Bluetooth range will automatically connect. Unfortunately, it is not possible to enable automatic detection only for USB or Bluetooth. If you need to pin the Bluetooth connection to a specific display in an environment where multiple Dot Pads are present, follow the manual connection steps below.</source>
+</segment>
+</unit>
+<unit id="921fb3ba-d2af-4767-8f14-2929e6e09ab3">
+<notes>
+<note appliesTo="source">line: 61</note>
+</notes>
+<segment>
+<source>If the automatic detection is used, the display switches automatically between USB and Bluetooth. NVDA should switch in a few seconds after plugging the USB-C cable into the left port of the Dot Pad, and the Dot Pad will vibrate to confirm the Bluetooth connection is disconnected. Conversely, after unplugging the USB cable, NVDA will start searching for devices and pick up the Dot Pad over Bluetooth in a few seconds.</source>
+</segment>
+</unit>
+<unit id="cd9405c6-432e-447b-b915-8b87de1ad95f">
+<notes>
+<note appliesTo="source">line: 63</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Manual Connection</source>
+</segment>
+</unit>
+<unit id="2b2f784d-75e2-4782-983e-bcf96e5061ed">
+<notes>
+<note appliesTo="source">line: 65</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>Power on Dot Pad. If you are using the USB-C method, connect Dot Pad using the data port on the lefthand side. If you are connecting via Bluetooth, make a note of the last four digits of your Dot Pad Bluetooth name that are displayed once Dot Pad is powered on.</source>
+</segment>
+</unit>
+<unit id="9fcd86a9-84ec-4a0d-9a00-bde1ab39afa6">
+<notes>
+<note appliesTo="source">line: 66</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>Open NVDA's braille display selection dialog by pressing NVDA+control+a.</source>
+</segment>
+</unit>
+<unit id="ec4ff223-af41-44ce-b601-9e0ee1f9b389">
+<notes>
+<note appliesTo="source">line: 67</note>
+<note appliesTo="source">prefix: 3. </note>
+</notes>
+<segment>
+<source>Select Dot Pad from the list of available braille displays.</source>
+</segment>
+</unit>
+<unit id="04e645ee-8555-4fe0-b9d9-adddeb57aa39">
+<notes>
+<note appliesTo="source">line: 68</note>
+<note appliesTo="source">prefix: 4. </note>
+</notes>
+<segment>
+<source>Press the tab key to move to the Port list, and select the appropriate port:</source>
+</segment>
+</unit>
+<unit id="6a144a6c-0d7c-4cef-b82c-131405bbcf85">
+<notes>
+<note appliesTo="source">line: 69</note>
+</notes>
+<segment>
+<source>    - For Bluetooth: Select the unique Bluetooth name of your Dot Pad.</source>
+</segment>
+</unit>
+<unit id="6b43a547-3d3b-4575-a4b2-cb28659629b6">
+<notes>
+<note appliesTo="source">line: 70</note>
+</notes>
+<segment>
+<source>    - For USB: Select the appropriate USB port.</source>
+</segment>
+</unit>
+<unit id="ae701772-1485-467b-88d8-d2e89ee80bc5">
+<notes>
+<note appliesTo="source">line: 71</note>
+<note appliesTo="source">prefix: 5. </note>
+</notes>
+<segment>
+<source>Press enter or click OK to confirm.</source>
+</segment>
+</unit>
+<unit id="351d1786-b912-43b9-be9e-07eeba495db1">
+<notes>
+<note appliesTo="source">line: 73</note>
+</notes>
+<segment>
+<source>A physical vibration from the Dot Pad will confirm a successful connection, and braille output will begin immediately.</source>
+</segment>
+</unit>
+<unit id="c9f484ed-0b2f-4e72-a9c7-b8ea967929fe">
+<notes>
+<note appliesTo="source">line: 75</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Connection Notes</source>
+</segment>
+</unit>
+<unit id="447771d8-5ad4-44d3-9b64-f45b3772d73d">
+<notes>
+<note appliesTo="source">line: 77</note>
+</notes>
+<segment>
+<source>- Automatic Connection: NVDA can automatically connect to any recognized, active Dot Pad in the vicinity if you check the Dot Pad checkbox in the list of displays to detect automatically, under NVDA's braille settings.</source>
+</segment>
+</unit>
+<unit id="06c29269-6f63-46d0-81fc-3acac2ba1abe">
+<notes>
+<note appliesTo="source">line: 78</note>
+</notes>
+<segment>
+<source>- Wired Priority: If you have Dot Pad checked under NVDA's automatic search list, the system will dynamically prioritize the wired USB connection whenever the cable is plugged in.</source>
+</segment>
+</unit>
+<unit id="5084e9ae-7bec-4b64-8a9f-3382bec2ef47">
+<notes>
+<note appliesTo="source">line: 80</note>
+</notes>
+<segment>
+<source>Note that you cannot connect via Bluetooth and USB simultaneously.</source>
+</segment>
+</unit>
+<unit id="aab93fcb-bbba-41e3-9fb2-7ec4b071812e">
+<notes>
+<note appliesTo="source">line: 82</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Controlling NVDA with Navigation Buttons</source>
+</segment>
+</unit>
+<unit id="b613991f-eada-400c-a591-a7311dba6af6">
+<notes>
+<note appliesTo="source">line: 84</note>
+</notes>
+<segment>
+<source>You can use the buttons on Dot Pad to navigate Windows and control NVDA without touching your keyboard. However, you will need to use your computer keyboard for typing and some Windows commands.</source>
+</segment>
+</unit>
+<unit id="84e49450-7f72-4080-afa3-5ed092db922b">
+<notes>
+<note appliesTo="source">line: 86</note>
+</notes>
+<segment>
+<source>A long press means pressing and holding the mentioned buttons for 1.5 seconds or more. Note that all commands can be changed, or new commands can be assigned to button combinations, using NVDA's Input Gestures dialog. Please refer to NVDA's own user guide for information on assigning input gestures.</source>
+</segment>
+</unit>
+<unit id="73d30dcb-b8c9-47a9-bad3-8a48612291c2">
+<notes>
+<note appliesTo="source">line: 88</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Panning</source>
+</segment>
+</unit>
+<unit id="392ac9ea-91fc-4e88-a42e-7493a78ec153">
+<notes>
+<note appliesTo="source">line: 90</note>
+</notes>
+<segment>
+<source>- Left Pan Key (Triangular): Scroll back through the braille text in the 20-cell area.</source>
+</segment>
+</unit>
+<unit id="fb3c8fd3-0996-4435-be81-7f1bd8b04e14">
+<notes>
+<note appliesTo="source">line: 91</note>
+</notes>
+<segment>
+<source>- Right Pan Key (Triangular): Scroll forward through the braille text in the 20-cell area.</source>
+</segment>
+</unit>
+<unit id="5f5d6648-1aa6-4ab8-b954-be18a8d4f26d">
+<notes>
+<note appliesTo="source">line: 92</note>
+</notes>
+<segment>
+<source>- F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.</source>
+</segment>
+</unit>
+<unit id="33eba9b3-ca03-48d8-89cf-63fde2585896">
+<notes>
+<note appliesTo="source">line: 93</note>
+</notes>
+<segment>
+<source>- F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.</source>
+</segment>
+</unit>
+<unit id="c9fc446d-c142-4b6a-b0cd-ed54b3370069">
+<notes>
+<note appliesTo="source">line: 94</note>
+</notes>
+<segment>
+<source>- F3 Key:</source>
+</segment>
+</unit>
+<unit id="d51033c7-2901-49ec-95ee-a35b435d5935">
+<notes>
+<note appliesTo="source">line: 95</note>
+</notes>
+<segment>
+<source>    - In braille mode: Activate or execute the currently focused navigator object, equivalent to NVDA+enter.</source>
+</segment>
+</unit>
+<unit id="06a689f6-fa88-458c-a3ed-10e6185ce3cd">
+<notes>
+<note appliesTo="source">line: 96</note>
+</notes>
+<segment>
+<source>    - In a tactile graphic: Scroll the graphic down.</source>
+</segment>
+</unit>
+<unit id="476f0435-4966-4176-b494-186b6d86dd76">
+<notes>
+<note appliesTo="source">line: 98</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Multi Key Commands</source>
+</segment>
+</unit>
+<unit id="1496b8dc-335f-41e0-95b4-aeee9fb79c1a">
+<notes>
+<note appliesTo="source">line: 100</note>
+</notes>
+<segment>
+<source>- Left Pan + F1 Key: Move the viewport left a few dots in graphics mode.</source>
+</segment>
+</unit>
+<unit id="cb1ed42a-8f76-4e60-a6bc-425f0e76e3a5">
+<notes>
+<note appliesTo="source">line: 101</note>
+</notes>
+<segment>
+<source>- Right Pan + F4 Key: Pan the graphic right a few dots in graphics mode.</source>
+</segment>
+</unit>
+<unit id="68e72984-01e9-41ad-8eb3-37fad911e2bf">
+<notes>
+<note appliesTo="source">line: 102</note>
+</notes>
+<segment>
+<source>- F1+F3: Braille mode. Long press for screen capture mode.</source>
+</segment>
+</unit>
+<unit id="2c88b5e0-7b8a-4a61-85f9-131cdd581b6f">
+<notes>
+<note appliesTo="source">line: 103</note>
+</notes>
+<segment>
+<source>- F2+F4: Convert the letter, emoji, graphic or selection to a tactile image.</source>
+</segment>
+</unit>
+<unit id="81fe6a18-4cb0-4645-beef-71824dfcaca4">
+<notes>
+<note appliesTo="source">line: 104</note>
+</notes>
+<segment>
+<source>- F2+F3: When showing a tactile image, zoom in (magnify the image).</source>
+</segment>
+</unit>
+<unit id="e8dd2d2a-5c91-4c13-a68b-c7e1dce282ad">
+<notes>
+<note appliesTo="source">line: 105</note>
+</notes>
+<segment>
+<source>- F1+F4: When showing a tactile image, zoom out (shrink the image).</source>
+</segment>
+</unit>
+<unit id="72af16ef-f21f-4e47-a5b5-295872420f84">
+<notes>
+<note appliesTo="source">line: 106</note>
+</notes>
+<segment>
+<source>- F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.</source>
+</segment>
+</unit>
+<unit id="a625cda9-ec1a-44e5-8161-3bfce4a259f1">
+<notes>
+<note appliesTo="source">line: 108</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>NVDA Braille Settings</source>
+</segment>
+</unit>
+<unit id="15c82dee-64d8-4092-aa33-7606b21509bb">
+<notes>
+<note appliesTo="source">line: 110</note>
+</notes>
+<segment>
+<source>NVDA controls the braille translation engine, converting your screen's text into braille data for the Dot Pad. These advanced features and structural behaviors are managed within NVDA's braille settings.</source>
+</segment>
+</unit>
+<unit id="9665605a-a347-4be0-9826-75dd21420d61">
+<notes>
+<note appliesTo="source">line: 112</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Dual Display Separation (System Focus vs. Navigator Object)</source>
+</segment>
+</unit>
+<unit id="6d6c653b-ea64-4fa5-9b05-bfceb3d56cc2">
+<notes>
+<note appliesTo="source">line: 114</note>
+</notes>
+<segment>
+<source>By default, the NVDA Dot Pad driver maps the single-line 20-cell display to follow the system focus, where your typing cursor or tab key is. Meanwhile, the multiline 300-cell display either shows multiline text from the system caret, or text from the navigator object and review cursor, depending on the Multiline Source setting in the Dot Pad settings panel. This lets you either review full multiline text, or independently look at two different screen areas simultaneously, depending on the view.</source>
+</segment>
+</unit>
+<unit id="dbd249ce-fc00-47f5-881d-574fc4ff6ef5">
+<notes>
+<note appliesTo="source">line: 116</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Braille Tethering (NVDA+control+t)</source>
+</segment>
+</unit>
+<unit id="db51ebc9-8750-4780-808f-8494954f7527">
+<notes>
+<note appliesTo="source">line: 118</note>
+</notes>
+<segment>
+<source>This setting determines which cursor's content outputs to your braille device. When using the Dot Pad, it is recommended to set braille tethering to "System Focus". This naturally reinforces the separation of the 20-cell display for focus text and the 300-cell display for multiline context.</source>
+</segment>
+</unit>
+<unit id="84b6740d-913f-4e26-bf1c-f03f70367a58">
+<notes>
+<note appliesTo="source">line: 120</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Follow Cursor Toggle</source>
+</segment>
+</unit>
+<unit id="23ccc193-3a95-48a1-9eb0-882134061674">
+<notes>
+<note appliesTo="source">line: 122</note>
+</notes>
+<segment>
+<source>By pressing NVDA+7 (toggle "Follow system focus") and NVDA+6 (toggle "Follow System Caret"), you can freeze the text on your multiline graphic display. This allows you to reference a webpage or document in the multiline area while actively typing into a text editor on the single-line display.</source>
+</segment>
+</unit>
+<unit id="498ab4bf-4d30-43e9-a890-b6c0111edf84">
+<notes>
+<note appliesTo="source">line: 124</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Blinking Cursor</source>
+</segment>
+</unit>
+<unit id="b492ec9f-39c9-477d-987d-fa2806743e13">
+<notes>
+<note appliesTo="source">line: 126</note>
+</notes>
+<segment>
+<source>By default NVDA blinks the braille cursor. Dot Pad cells refresh slowly, and not reliably at all while you are touching them, so a blinking cursor is of little use. During the installation of the add-on it asks you whether to turn the blinking cursor off. NVDA has a single blink setting for all braille displays, so answering "Yes" turns blinking off on every display you use. Like the automatic detection question it is only asked once, and you can change it at any time with the "Blink cursor" checkbox in NVDA's braille settings.</source>
+</segment>
+</unit>
+<unit id="32651a5c-9ace-424f-bba1-8ca4d05850b6">
+<notes>
+<note appliesTo="source">line: 128</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Microsoft Excel and PowerPoint Chart Conversion</source>
+</segment>
+</unit>
+<unit id="30667f0d-cc86-48a9-b0c7-f9ed486d83e4">
+<notes>
+<note appliesTo="source">line: 130</note>
+</notes>
+<segment>
+<source>When you navigate to a chart area in Excel or PowerPoint, using control+alt+5 or NVDA's elements list (NVDA+f7), the add-on automatically translates the chart data into a bar graph layout rendered dynamically on the 300-cell multiline graphic display.</source>
+</segment>
+</unit>
+<unit id="d07ce934-e2b0-4169-be63-83bf6a687fe8">
+<notes>
+<note appliesTo="source">line: 132</note>
+</notes>
+<segment>
+<source>Note that other chart types will render as a bar graph as well. This is a limitation we hope to resolve soon.</source>
+</segment>
+</unit>
+<unit id="d480b850-f7d4-4f16-975d-5e446b395d2d">
+<notes>
+<note appliesTo="source">line: 134</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Input Gestures Customization</source>
+</segment>
+</unit>
+<unit id="b9332a8c-ed4e-4e6b-898d-3bbcb35bb693">
+<notes>
+<note appliesTo="source">line: 136</note>
+</notes>
+<segment>
+<source>If you want to change what the F1 to F4 or panning keys do, go to NVDA menu, Preferences, Input Gestures. Under the feature categories, you can select "Add" and press any button combination on the Dot Pad to remap it to a new NVDA command.</source>
+</segment>
+</unit>
+<unit id="75af7d8f-a957-44db-baac-72505ae48419">
+<notes>
+<note appliesTo="source">line: 138</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Tactile Graphics Mode</source>
+</segment>
+</unit>
+<unit id="d78fcfab-8bb4-4710-8913-722778217f82">
+<notes>
+<note appliesTo="source">line: 140</note>
+</notes>
+<segment>
+<source>This add-on includes Dot's Tactile Display API library to introduce seamless, real-time tactile graphics directly into the Windows environment, allowing blind users to physically feel layout shapes, diagrams and formatting structure.</source>
+</segment>
+</unit>
+<unit id="8de662fb-4796-4973-a39d-2a69e5a0f492">
+<notes>
+<note appliesTo="source">line: 142</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Microsoft Excel Data and Table Mode</source>
+</segment>
+</unit>
+<unit id="367d96ca-b1a2-4ca1-a13a-0ce22fe2b67b">
+<notes>
+<note appliesTo="source">line: 144</note>
+</notes>
+<segment>
+<source>When interacting with spreadsheets, the add-on maps distinct information across your dual displays. The 300-cell graphical display transforms spreadsheet data into a physical, tactile table layout, allowing you to feel cell barriers and vertical alignments. Simultaneously, the exact structural text content of the currently focused cell is shown in braille on the 20-cell text display.</source>
+</segment>
+</unit>
+<unit id="4de8c8b5-d614-4083-b189-2782eaba76f9">
+<notes>
+<note appliesTo="source">line: 146</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Tactile Letter and Shape Rendering (Hybrid Mode)</source>
+</segment>
+</unit>
+<unit id="c8d368c1-55ab-4bae-8555-8ccd3e5cc719">
+<notes>
+<note appliesTo="source">line: 148</note>
+</notes>
+<segment>
+<source>By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window.</source>
+</segment>
+</unit>
+<unit id="940b2c43-abe4-4964-8064-fc1088964fba">
+<notes>
+<note appliesTo="source">line: 150</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Tactile Graphs in Microsoft Word</source>
+</segment>
+</unit>
+<unit id="3b0cc8e2-b076-4300-9a23-219571118ea4">
+<notes>
+<note appliesTo="source">line: 152</note>
+</notes>
+<segment>
+<source>You can use math expressions directly inside applications to render cartesian graphs on the fly.</source>
+</segment>
+</unit>
+<unit id="025fe931-8f6c-420d-81f0-c92a2965061b">
+<notes>
+<note appliesTo="source">line: 154</note>
+</notes>
+<segment>
+<source>In Microsoft Word:</source>
+</segment>
+</unit>
+<unit id="93028a20-4444-4725-84e7-28031dba2740">
+<notes>
+<note appliesTo="source">line: 156</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>Press alt+= to enable the standard equation editor.</source>
+</segment>
+</unit>
+<unit id="2e344193-247e-401c-a636-c4ca26194d8c">
+<notes>
+<note appliesTo="source">line: 157</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>Type in your desired expression. NVDA will automatically output the text based on your output settings for math.</source>
+</segment>
+</unit>
+<unit id="daea4a2c-32c7-431c-ba32-709e7ca182f9">
+<notes>
+<note appliesTo="source">line: 159</note>
+</notes>
+<segment>
+<source>You can write the following example expressions to demonstrate math graphs in Microsoft Word:</source>
+</segment>
+</unit>
+<unit id="687d1998-87f5-4be5-bee9-cb2a96800164">
+<notes>
+<note appliesTo="source">line: 161</note>
+</notes>
+<segment>
+<source>- Linear function: y = x</source>
+</segment>
+</unit>
+<unit id="c0b48383-0e23-4a89-b3e2-b83091b43dc7">
+<notes>
+<note appliesTo="source">line: 162</note>
+</notes>
+<segment>
+<source>- Quadratic function (parabola): y = x^2</source>
+</segment>
+</unit>
+<unit id="83e95610-904a-48cf-84cc-0bd0ac562a7b">
+<notes>
+<note appliesTo="source">line: 163</note>
+</notes>
+<segment>
+<source>- Square root function: y = sqrt(x)</source>
+</segment>
+</unit>
+<unit id="8d27e7b8-bdf6-438c-a7e8-708f235d7449">
+<notes>
+<note appliesTo="source">line: 164</note>
+</notes>
+<segment>
+<source>- Cubic function: y = x^3</source>
+</segment>
+</unit>
+<unit id="328375b3-937b-443d-9894-f8eacc7bf039">
+<notes>
+<note appliesTo="source">line: 165</note>
+</notes>
+<segment>
+<source>- Sinusoidal function (wave): y = sin(x)</source>
+</segment>
+</unit>
+<unit id="949498c6-973f-4cd7-b7ae-9da1918a7ba0">
+<notes>
+<note appliesTo="source">line: 166</note>
+</notes>
+<segment>
+<source>- Rational function: y = 1/x</source>
+</segment>
+</unit>
+<unit id="912eaf06-a657-4256-9bb0-83dbeacd3e27">
+<notes>
+<note appliesTo="source">line: 168</note>
+</notes>
+<segment>
+<source>To view math graphs on the Dot Pad:</source>
+</segment>
+</unit>
+<unit id="823bdad5-9ca9-4ff9-85f0-2655503eada0">
+<notes>
+<note appliesTo="source">line: 170</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>Use the keyboard to arrow down to the target equation in your document.</source>
+</segment>
+</unit>
+<unit id="ce1df497-03a0-4a49-9b2b-a67b937acda9">
+<notes>
+<note appliesTo="source">line: 171</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>With your cursor resting on the equation, press F2+F4 on the Dot Pad to enter tactile viewer mode.</source>
+</segment>
+</unit>
+<unit id="8892b90b-adb9-4a7c-a5d8-957e21a9b2dc">
+<notes>
+<note appliesTo="source">line: 172</note>
+<note appliesTo="source">prefix: 3. </note>
+</notes>
+<segment>
+<source>Zoom in by pressing F2+F3 on the Dot Pad.</source>
+</segment>
+</unit>
+<unit id="ae2d9cac-8eda-41b8-8b45-fc0e2d80421b">
+<notes>
+<note appliesTo="source">line: 173</note>
+<note appliesTo="source">prefix: 4. </note>
+</notes>
+<segment>
+<source>Zoom out by pressing F1+F4 on the Dot Pad.</source>
+</segment>
+</unit>
+<unit id="0444a18c-3457-4444-a901-ad33ae3efc90">
+<notes>
+<note appliesTo="source">line: 174</note>
+<note appliesTo="source">prefix: 5. </note>
+</notes>
+<segment>
+<source>When finished, press F1+F3 on the Dot Pad to exit the viewer and return to standard braille output.</source>
+</segment>
+</unit>
+<unit id="dc9537a6-aa71-4495-8f10-a08346e978ab">
+<notes>
+<note appliesTo="source">line: 176</note>
+<note appliesTo="source">prefix: ### </note>
+</notes>
+<segment>
+<source>Rendering Tactile Print</source>
+</segment>
+</unit>
+<unit id="ff54f5ed-29b9-45fe-8dfe-fb12bdc4cb49">
+<notes>
+<note appliesTo="source">line: 178</note>
+</notes>
+<segment>
+<source>You can also feel a tactile representation of print characters by pressing F2+F4. Dot Pad will render the character at the cursor. You can zoom in with F2+F3, and out with F1+F4. You can invert the tactile image by pressing all four function keys together.</source>
+</segment>
+</unit>
+<unit id="927ffdbb-109b-4152-b1ae-2c59cfc5f5ba">
+<notes>
+<note appliesTo="source">line: 180</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Focus Tracking</source>
+</segment>
+</unit>
+<unit id="ba8f5ec7-73f7-4cb9-958f-d3ad3c817815">
+<notes>
+<note appliesTo="source">line: 182</note>
+</notes>
+<segment>
+<source>Graphics mode allows the Dot Pad to automatically follow your system cursor events without requiring manually typed coordinates. If your NVDA review cursor diverges from the system focus, such as when exploring a virtual document on a web page, the add-on switches to bounding-box rendering to keep you oriented.</source>
+</segment>
+</unit>
+<unit id="0a7c3b3a-17e0-43b8-8668-a0d45f8442d9">
+<notes>
+<note appliesTo="source">line: 184</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Navigation Button Changes and Panning</source>
+</segment>
+</unit>
+<unit id="b3ed68d4-2507-4002-9f25-26b1a51b59f2">
+<notes>
+<note appliesTo="source">line: 186</note>
+</notes>
+<segment>
+<source>You will notice that button functions depend on the context. The presentation pipeline changes the bindings of the physical buttons based on your cursor activity.</source>
+</segment>
+</unit>
+<unit id="6b47d433-2df0-4f78-a1d5-fe9d60207127">
+<notes>
+<note appliesTo="source">line: 188</note>
+</notes>
+<segment>
+<source>Braille presentation takeover: Whenever you press an arrow key to edit text, graphic mode automatically exits to avoid interfering with your workflow. Viewport pan and zoom gestures are unbound, and braille presentation takes over the display.</source>
+</segment>
+</unit>
+<unit id="dbc97f74-6c79-41cf-8b8b-dc59c2c1c495">
+<notes>
+<note appliesTo="source">line: 190</note>
+</notes>
+<segment>
+<source>Button map reference, standard mode:</source>
+</segment>
+</unit>
+<unit id="dfa88ae0-bfa9-4170-ae3b-a62e2b260bdd">
+<notes>
+<note appliesTo="source">line: 192</note>
+</notes>
+<segment>
+<source>- Left Pan Key (Triangular): Scroll back through single-line braille text displayed in the 20-cell text area.</source>
+</segment>
+</unit>
+<unit id="aa59f669-67e7-4eb9-9c29-5af81364de0c">
+<notes>
+<note appliesTo="source">line: 193</note>
+</notes>
+<segment>
+<source>- Right Pan Key (Triangular): Scroll forward through single-line braille text displayed in the 20-cell text area.</source>
+</segment>
+</unit>
+<unit id="c8ee6051-f196-4aef-8b57-e0db66f21066">
+<notes>
+<note appliesTo="source">line: 194</note>
+</notes>
+<segment>
+<source>- F1 Key: Scroll back in the 300-cell multiline area, or move to the previous chart data point.</source>
+</segment>
+</unit>
+<unit id="d1f7b019-346b-4810-9f61-287e4b271bf0">
+<notes>
+<note appliesTo="source">line: 195</note>
+</notes>
+<segment>
+<source>- F4 Key: Scroll forward in the 300-cell multiline area, or move to the next chart data point.</source>
+</segment>
+</unit>
+<unit id="7a5a6c01-fbe1-4cb8-ac36-22b310554c27">
+<notes>
+<note appliesTo="source">line: 196</note>
+</notes>
+<segment>
+<source>- F1+F3: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.</source>
+</segment>
+</unit>
+<unit id="3a26be32-725c-4b84-aeee-0121e7423a3f">
+<notes>
+<note appliesTo="source">line: 197</note>
+</notes>
+<segment>
+<source>- F3 Key: Serves as the hardware enter button, or executes the currently focused navigator object.</source>
+</segment>
+</unit>
+<unit id="35d58c0a-77a5-4c44-8211-067c560c70d6">
+<notes>
+<note appliesTo="source">line: 198</note>
+</notes>
+<segment>
+<source>- F2+F4: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.</source>
+</segment>
+</unit>
+<unit id="d00185d1-6496-4efb-928a-1a4bac18e7b4">
+<notes>
+<note appliesTo="source">line: 200</note>
+</notes>
+<segment>
+<source>Button map reference, tactile graphics mode. When the review mode is explicitly set to tactile graphics, the button configuration adjusts to let you navigate and manipulate the viewport of the graphic or math equation directly from the hardware:</source>
+</segment>
+</unit>
+<unit id="86d9f671-f8c3-4fa4-9978-5fd4b9ab6550">
+<notes>
+<note appliesTo="source">line: 202</note>
+</notes>
+<segment>
+<source>- F2+F3: Zoom in on the tactile graphic or math graph.</source>
+</segment>
+</unit>
+<unit id="20ce69ec-55d4-4aa6-906b-a03d6e5102e4">
+<notes>
+<note appliesTo="source">line: 203</note>
+</notes>
+<segment>
+<source>- F1+F4: Zoom out from the tactile graphic or math graph.</source>
+</segment>
+</unit>
+<unit id="9bb2b4cf-0750-4c1a-94aa-1d3f3ab83550">
+<notes>
+<note appliesTo="source">line: 204</note>
+</notes>
+<segment>
+<source>- F1 Key: Pan the tactile graphic view one step to the left.</source>
+</segment>
+</unit>
+<unit id="21226f99-2ab9-431a-88df-a8cad9eaabfe">
+<notes>
+<note appliesTo="source">line: 205</note>
+</notes>
+<segment>
+<source>- F4 Key: Pan the tactile graphic view one step to the right.</source>
+</segment>
+</unit>
+<unit id="4c2198c7-39e1-46d5-99fa-98ed3b72cc4d">
+<notes>
+<note appliesTo="source">line: 206</note>
+</notes>
+<segment>
+<source>- F2 Key: Pan the tactile graphic view one step up.</source>
+</segment>
+</unit>
+<unit id="a4baaf52-1e91-4b06-a23a-8c03505e1d41">
+<notes>
+<note appliesTo="source">line: 207</note>
+</notes>
+<segment>
+<source>- F3 Key: Pan the tactile graphic view one step down.</source>
+</segment>
+</unit>
+<unit id="225a1334-e810-418b-a3ee-28a4b84b8557">
+<notes>
+<note appliesTo="source">line: 208</note>
+</notes>
+<segment>
+<source>- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation.</source>
+</segment>
+</unit>
+<unit id="1fe704e6-be8c-460d-8257-f4f8ae2e7f68">
+<notes>
+<note appliesTo="source">line: 210</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Dot Pad Display Viewer</source>
+</segment>
+</unit>
+<unit id="0e02c7ed-97c8-468f-b83a-0920755554ab">
+<notes>
+<note appliesTo="source">line: 212</note>
+</notes>
+<segment>
+<source>Sighted teachers, coworkers, friends or family can see what is under your fingers with the onscreen braille visualizer, which may be used when the Dot Pad is connected. See the Dot Pad Display Viewer option under the NVDA Tools menu. When this option is checked, both the single line and the main graphics area will be shown on the computer's screen when the Dot Pad is in use. This is useful for sighted demonstrations of the capabilities of the Dot Pad, training, or other collaboration scenarios.</source>
+</segment>
+</unit>
+<unit id="8bb945a3-7801-4ce7-8ee9-a99a1b7d3371">
+<notes>
+<note appliesTo="source">line: 214</note>
+</notes>
+<segment>
+<source>Note that the NVDA braille viewer, also available from the Tools menu, only shows the 20-cell display. When using a Dot Pad, it is recommended to disable the NVDA braille viewer and only use the Dot Pad Display Viewer if an on-screen view of the display is required.</source>
+</segment>
+</unit>
+<unit id="e5705d09-abc8-4d0a-9fe9-73326424e626">
+<notes>
+<note appliesTo="source">line: 216</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Getting Help</source>
+</segment>
+</unit>
+<unit id="3716dde4-b925-44a4-b9ef-eacf91943c3f">
+<notes>
+<note appliesTo="source">line: 218</note>
+</notes>
+<segment>
+<source>For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's general settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.</source>
+</segment>
+</unit>
+<unit id="43eb7cd9-ab8b-45ad-a02f-fefb196ada1b">
+<notes>
+<note appliesTo="source">line: 220</note>
+</notes>
+<segment>
+<source>For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/).</source>
+</segment>
+</unit>
+<unit id="21123549-695d-4493-8e2d-d01d55ee689c">
+<notes>
+<note appliesTo="source">line: 222</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Licence</source>
+</segment>
+</unit>
+<unit id="80e5aaf8-c5c2-4d30-a03e-887ab68cba85">
+<notes>
+<note appliesTo="source">line: 224</note>
+</notes>
+<segment>
+<source>This add-on is distributed under the terms of the GNU General Public License, version 2 or later. The full text is in the file COPYING.txt, and the licences of the bundled third-party components are in THIRD_PARTY_NOTICES.md. Both files are shipped alongside this guide.</source>
+</segment>
+</unit>
+</file>
+</xliff>
