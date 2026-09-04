@@ -27,13 +27,6 @@ asks during installation whether you want to enable automatic detection of the
 Dot Pad. The question is only asked once. You can change the setting at any time
 in NVDA's braille settings, under "Displays to detect automatically".
 
-The add-on also asks whether to turn off NVDA's blinking braille cursor. Dot
-Pad cells refresh slowly, and not reliably at all while you are touching them,
-so a blinking cursor is of little use. NVDA has one blinking setting for all
-braille displays, so answering yes turns blinking off on every display you use.
-This question is likewise only asked once, and can be changed at any time in
-NVDA's braille settings, under "Blink cursor".
-
 ## Gestures
 
 The full keymap — short / long-press conventions, mode-switch chords,
