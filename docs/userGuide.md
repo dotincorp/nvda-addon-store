@@ -120,6 +120,10 @@ This setting determines which cursor's content outputs to your braille device. W
 
 By pressing NVDA+7 (toggle "Follow system focus") and NVDA+6 (toggle "Follow System Caret"), you can freeze the text on your multiline graphic display. This allows you to reference a webpage or document in the multiline area while actively typing into a text editor on the single-line display.
 
+### Blinking Cursor
+
+By default NVDA blinks the braille cursor. Dot Pad cells refresh slowly, and not reliably at all while you are touching them, so a blinking cursor is of little use. During the installation of the add-on it asks you whether to turn the blinking cursor off. NVDA has a single blink setting for all braille displays, so answering "Yes" turns blinking off on every display you use. Like the automatic detection question it is only asked once, and you can change it at any time with the "Blink cursor" checkbox in NVDA's braille settings.
+
 ### Microsoft Excel and PowerPoint Chart Conversion
 
 When you navigate to a chart area in Excel or PowerPoint, using control+alt+5 or NVDA's elements list (NVDA+f7), the add-on automatically translates the chart data into a bar graph layout rendered dynamically on the 300-cell multiline graphic display.
