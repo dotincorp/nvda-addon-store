@@ -2,15 +2,12 @@ name: Crowdin l10n
 
 on:
   workflow_dispatch:
-  # Enable the weekly schedule once this add-on has been registered in the
-  # nvdaaddons Crowdin project and the CROWDIN_TOKEN secret is configured.
-  # Until then this stays dispatch-only so a cron cannot fail every Monday.
   # If we end up managing several add-ons, give each repository a different
   # cron time: the random startup delay below reduces collisions but concurrent
   # Crowdin sync jobs can still overlap.
-  # schedule:
-  #   # Every Monday at 00:00 UTC
-  #   - cron: '0 0 * * 1'
+  schedule:
+    # Every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
