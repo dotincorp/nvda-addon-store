@@ -343,7 +343,7 @@ class PresentationRenderer(AutoPropertyObject):
 		oldNumCols = oldCellCount // oldNumRows
 		newNumCols = newCellCount // newNumRows
 		if len(oldCells) < oldCellCount:
-			log.warning("Braille cells are shorter than the display size. Padding with blank cells.")
+			log.debugWarning("Braille cells are shorter than the display size. Padding with blank cells.")
 			oldCells.extend([0] * (oldCellCount - len(oldCells)))
 		newCells = []
 		if newCellCount != oldCellCount or newNumRows != oldNumRows:

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 import addonHandler
 from autoSettingsUtils.autoSettings import SupportedSettingType  # type: ignore
-from logHandler import log
 from NVDAObjects import NVDAObject
 from vision import providerBase
 from vision.constants import Context
@@ -65,12 +64,8 @@ class ReviewTracking(providerBase.VisionEnhancementProvider):
 		extensionPoints.post_caretMove.register(self.handleCaretMove)
 		extensionPoints.post_coreCycle.register(self.handleCoreCycle)
 
-	def __init__(self) -> None:
-		super().__init__()
-		log.debug("Starting ReviewTracking")
-
 	def terminate(self) -> None:
-		log.debug("Terminating ReviewTracking")
+		"""Nothing to clean up; the extension point registrations are process-wide."""
 
 	def handleReviewMove(self, context: Context) -> None:
 		reviewMove.notify(context=context, triggerReason=TriggerReason.REVIEW_MOVE)

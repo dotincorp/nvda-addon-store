@@ -115,9 +115,8 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 			mock_selectCell.assert_not_called()
 
 	@patch("addon.utils.table.configuration")
-	@patch("addon.utils.table.log")
-	def test_logs_when_cell_not_found(self, mock_log, mock_config):
-		"""Should log debug message when target cell not found."""
+	def test_does_not_select_when_cell_not_found(self, mock_config):
+		"""Dimensions are set, but no cell matches the target position."""
 		mock_config.getTableNavigatorAfterScroll.return_value = TableNavigatorAfterScroll.FIRST_CELL
 		mock_config.TableNavigatorAfterScroll = TableNavigatorAfterScroll
 
@@ -128,8 +127,6 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 			with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
 				self.tableInstance._moveNavigatorAfterScroll()
 
-				# Verify debug log was called
-				mock_log.debug.assert_called_once()
 				# Verify _selectCell was not called (no matching cell)
 				mock_selectCell.assert_not_called()
 

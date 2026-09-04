@@ -50,7 +50,7 @@ class Scanner:
 		self._discoveredDevices[device.address] = device
 		self.deviceDiscovered.notify(device=device, advertisementData=adv, isNew=isNew)
 		if isNew:
-			log.debug(f"Discovered BLE device: {device.name or device.address}")
+			log.debug("Discovered BLE device: %s", device.name or device.address)
 
 	def start(self, duration: float = 0):
 		"""Start scanning for devices for the given duration in seconds.

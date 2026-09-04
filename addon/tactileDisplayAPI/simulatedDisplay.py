@@ -148,8 +148,9 @@ def renderTactileBytes(payload: bytes) -> None:
 		if not isinstance(activePresentation, allowedClasses):
 			activeName = type(activePresentation).__name__ if activePresentation else "None"
 			log.debug(
-				f"renderTactileBytes: discarding {len(payload)} bytes; active "
-				f"presentation {activeName} is not a library-bytes consumer",
+				"renderTactileBytes: discarding %s bytes; active presentation %s is not a library-bytes consumer",
+				len(payload),
+				activeName,
 			)
 			return
 	except Exception:
@@ -170,10 +171,13 @@ def renderTactileBytes(payload: bytes) -> None:
 	expectedLen = physicalNumRows * physicalNumCols
 
 	if len(payload) != expectedLen:
-		log.warning(
-			f"renderTactileBytes: payload length {len(payload)} != expected "
-			f"{expectedLen} ({physicalNumRows}r × {physicalNumCols}c); "
+		log.debugWarning(
+			"renderTactileBytes: payload length %s != expected %s (%sr × %sc); "
 			"rendering what fits, padding tail with zeros",
+			len(payload),
+			expectedLen,
+			physicalNumRows,
+			physicalNumCols,
 		)
 
 	buf = DpTactileGraphicsBuffer(
@@ -205,10 +209,10 @@ def renderBrailleBytes(payload: bytes) -> None:
 	``ShowMultilineText``, ``ShowStatusText``, or its multiline-text
 	pipeline. The addon does not call those methods in SimulateDisplay mode,
 	so this callback should not fire under normal operation. If it does
-	(e.g. via ``AddFocusedControl`` or library-internal triggers), we log
-	at debug and discard the bytes.
+	(e.g. via ``AddFocusedControl`` or library-internal triggers), we warn
+	into the debug log and discard the bytes.
 	"""
-	log.debug(f"renderBrailleBytes: ignoring {len(payload)} bytes (log-and-drop)")
+	log.debugWarning("renderBrailleBytes: ignoring %s bytes (log-and-drop)", len(payload))
 
 
 def getNVDABrailleTableIfAvailable() -> str | None:
@@ -249,10 +253,11 @@ def getNVDABrailleTableIfAvailable() -> str | None:
 		tablesDir = brailleTables.TABLES_DIR
 		if not os.path.exists(os.path.join(tablesDir, tableName)):
 			log.info(
-				f"dotPad: NVDA's braille table {tableName!r} is not present in "
-				"NVDA's louis/tables directory; the library will keep its default "
-				"table. To match NVDA's braille shape on the multi-line area, "
-				"select a table whose file ships with NVDA's liblouis.",
+				"dotPad: NVDA's braille table %r is not present in NVDA's louis/tables "
+				"directory; the library will keep its default table. To match NVDA's "
+				"braille shape on the multi-line area, select a table whose file ships "
+				"with NVDA's liblouis.",
+				tableName,
 			)
 			return None
 		return str(tableName)

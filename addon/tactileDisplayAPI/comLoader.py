@@ -232,7 +232,7 @@ def _loadDll() -> ctypes.WinDLL:
 		raise FileNotFoundError(f"TactileDisplayAPI.dll not found at {dll_path}")
 	with _dllSearchPathContext():
 		_cachedDll = ctypes.WinDLL(str(dll_path))
-	log.debug(f"Loaded TactileDisplayAPI.dll from {dll_path}")
+	log.debug("Loaded TactileDisplayAPI.dll from %s", dll_path)
 	return _cachedDll
 
 
@@ -303,7 +303,7 @@ def createTactileDisplayApi() -> "ctypes._Pointer[ITactileDisplayAPI]":  # pyrig
 			)
 			if hr == S_OK:
 				resolvedIid = candidate
-				log.debug(f"Tactile-display interface resolved via IID = {_guidStr(candidate)}")
+				log.debug("Tactile-display interface resolved via IID = %s", _guidStr(candidate))
 				break
 			attempts.append((candidate, hr))
 		if resolvedIid is None:

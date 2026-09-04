@@ -155,6 +155,23 @@ hooks = [
     files = '^addon/',
   },
 
+  # Keeps the gesture tables in docs/keymap.md in step with the `@script`
+  # bindings they document. The tables are generated; `--dry-run` writes
+  # nothing and exits 1 if the checked-in document has drifted, printing the
+  # diff. Fix by running `python tools/generateKeymap.py` and committing.
+  # Runs on the sources it parses plus the document itself, so an unrelated
+  # commit doesn't pay for it. No filenames are passed — the script always
+  # reads the whole binding set, because a gesture removed from one file can
+  # invalidate a table sourced from another.
+  {
+    id = "keymap-docs",
+    name = "check docs/keymap.md matches the bound gestures",
+    entry = "python tools/generateKeymap.py --dry-run",
+    language = "system",
+    pass_filenames = false,
+    files = '^(addon/brailleDisplayDrivers/dotPad/driver\.py|addon/presentations/.*\.py|docs/keymap\.md)$',
+  },
+
   # Flags `import pytest` and `from pytest …` in the test suite. CI runs
   # `python -m unittest discover -s tests -t .` and pytest is NOT installed
   # in the CI environment — a test file with a top-level `import pytest`

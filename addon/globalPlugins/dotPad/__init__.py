@@ -133,41 +133,31 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 		effect — the library will be synced when a DotPad next initializes.
 		"""
 		newChecked = event.IsChecked()
-		log.info(f"dotPad: viewer toggle clicked, new state = {newChecked}")
 		config.conf[configuration.CONFIG_SECTION_NAME][  # type: ignore
 			configuration.VIEWER_ON_SCREEN_SETTING_NAME
 		] = newChecked
 		configuration.updateConfigCache()
 		driver = self._getActiveDotPadDriver()
 		if driver is None:
-			log.info("dotPad: no DotPad driver active; config updated, library call skipped")
 			return
 		if not driver._libraryReady:  # pyright: ignore[reportPrivateUsage]
-			log.info(
-				"dotPad: library not ready (init failed or in progress); "
-				"config updated, library call skipped",
-			)
 			return
 		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
 		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
 		if worker is None or tda is None:
-			log.info("dotPad: library worker / wrapper unavailable; library call skipped")
+			log.debugWarning("dotPad: library ready but worker / wrapper missing; viewer call skipped")
 			return
-		log.info(f"dotPad: submitting showBrailleOnScreen({newChecked}) to library worker")
 		future = worker.submit(tda.showBrailleOnScreen, newChecked)
 		future.add_done_callback(self._onShowViewerComplete)
 
 	def _onShowViewerComplete(self, future: "Future[None]") -> None:
-		"""Log the outcome of the fire-and-forget library viewer toggle.
+		"""Report a failed fire-and-forget library viewer toggle.
 
-		Runs on the library worker thread. Logs both success (INFO) and
-		failure (WARNING).
+		Runs on the library worker thread. Silence means the call landed.
 		"""
 		exc = future.exception()
 		if exc is not None:
-			log.warning(f"dotPad: library viewer toggle failed: {exc}")
-		else:
-			log.info("dotPad: showBrailleOnScreen returned successfully")
+			log.warning("dotPad: library viewer toggle failed: %s", exc)
 
 	def _applyLineSpacing(self) -> None:
 		"""Re-apply the line spacing setting to the running display and library.
@@ -185,19 +175,16 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 			driver.graphicDisplay.verticalCellSpacing = paddingDots
 
 		if driver is None:
-			log.info("dotPad: no DotPad driver active; line spacing config updated, library call skipped")
 			return
 		if not driver._libraryReady:  # pyright: ignore[reportPrivateUsage]
-			log.info("dotPad: library not ready; line spacing config updated, library call skipped")
 			return
 		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
 		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
 		if worker is None or tda is None:
-			log.info("dotPad: library worker / wrapper unavailable; line spacing library call skipped")
+			log.debugWarning(
+				"dotPad: library ready but worker / wrapper missing; line-spacing call skipped",
+			)
 			return
-		log.info(
-			f"dotPad: submitting line-spacing (padding={paddingDots}, forceSixDot={forceSixDot}) to library worker",
-		)
 		worker.submit(tda.setBrailleLinePadding, paddingDots)
 		worker.submit(tda.forceSixDotBraille, forceSixDot)
 
@@ -211,18 +198,15 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		driver = self._getActiveDotPadDriver()
 		if driver is None:
-			log.info("dotPad: no DotPad driver active; hybrid mode config updated, library call skipped")
 			return
 		if not driver._libraryReady:  # pyright: ignore[reportPrivateUsage]
-			log.info("dotPad: library not ready; hybrid mode config updated, library call skipped")
 			return
 		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
 		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
 		if worker is None or tda is None:
-			log.info("dotPad: library worker / wrapper unavailable; hybrid mode call skipped")
+			log.debugWarning("dotPad: library ready but worker / wrapper missing; hybrid mode call skipped")
 			return
 		enable = configuration.getHybridPrintAndBraille(fromCache=True)
-		log.info(f"dotPad: submitting setHybridPrintAndBrailleMode({enable}) to library worker")
 		worker.submit(tda.setHybridPrintAndBrailleMode, enable)
 
 	def onAutoRefreshChange(self):

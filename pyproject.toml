@@ -65,6 +65,8 @@ ignore = [
 	"W191",
 ]
 logger-objects = ["logHandler.log"]
+# flake8-logging-format: keep log calls cheap and structured. See docs/logging.md.
+extend-select = ["G"]
 
 [tool.ruff.lint.per-file-ignores]
 # sconscripts contains many inbuilt functions not recognised by the lint,
@@ -97,9 +99,9 @@ l10n = [
 ]
 # Lint and type-check
 lint = [
-    "prek==0.4.8",
+    "prek==0.5.0",
     "pyright[nodejs]==1.1.408",
-    "ruff==0.14.11",
+    "ruff==0.16.5",
 ]
 # NVDA source and its dependencies, needed to import NVDA modules when
 # type-checking and when running the unit tests.
