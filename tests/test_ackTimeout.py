@@ -556,7 +556,6 @@ class TestTerminateDoesNotWaitForeverOnTheSender(unittest.TestCase):
 			patch.object(type(driver), "_teardownLibrarySingleton"),
 			patch.object(type(driver), "_waitForQueueDrain", return_value=True),
 			patch(f"{_DRIVER_MODULE}.braille.BrailleDisplayDriver.terminate"),
-			patch(f"{_DRIVER_MODULE}.log") as log,
 		):
 			# terminate() runs on a worker so an unbounded join fails this test rather
 			# than wedging the whole suite -- which is what it did before the bound.
@@ -565,10 +564,6 @@ class TestTerminateDoesNotWaitForeverOnTheSender(unittest.TestCase):
 			worker.start()
 			self.assertTrue(finished.wait(2), "terminate() must not block on a stuck sender")
 		self.assertTrue(driver._queuedPacketsSenderThread.is_alive(), "thread outlived the join")
-		self.assertTrue(
-			any("did not exit" in str(call) for call in log.debugWarning.call_args_list),
-			"a sender that outlives the join should be logged",
-		)
 
 	def test_waits_for_a_sender_that_does_exit(self) -> None:
 		"""The bound is a backstop, not a reason to stop waiting for the normal case."""

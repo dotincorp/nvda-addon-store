@@ -162,14 +162,15 @@ def _setWorkerThreadLocale() -> None:
 	lcid = languageHandler.localeNameToWindowsLCID(lang)
 	if lcid == 0:
 		log.debugWarning(
-			f"NVDA language {lang!r} has no Windows LCID; worker thread keeps user-default locale",
+			"NVDA language %r has no Windows LCID; worker thread keeps user-default locale",
+			lang,
 		)
 		return
 	kernel32 = ctypes.windll.kernel32
 	if kernel32.SetThreadLocale(lcid) == 0:
-		log.debugWarning(f"SetThreadLocale({lcid}) failed on worker thread")
+		log.debugWarning("SetThreadLocale(%s) failed on worker thread", lcid)
 	else:
-		log.debug(f"Worker thread Win32 locale set to {lang!r} (LCID={lcid})")
+		log.debug("Worker thread Win32 locale set to %r (LCID=%s)", lang, lcid)
 	# Some libraries query GetThreadUILanguage / GetThreadPreferredUILanguages
 	# rather than GetThreadLocale; set both for the widest compatibility.
 	bcp47 = lang.replace("_", "-")
@@ -178,9 +179,9 @@ def _setWorkerThreadLocale() -> None:
 	buf = ctypes.create_unicode_buffer(bcp47 + "\0")
 	count = ctypes.c_ulong(0)
 	if kernel32.SetThreadPreferredUILanguages(_MUI_LANGUAGE_NAME, buf, ctypes.byref(count)) == 0:
-		log.debug(f"SetThreadPreferredUILanguages({bcp47!r}) failed on worker thread")
+		log.debug("SetThreadPreferredUILanguages(%r) failed on worker thread", bcp47)
 	else:
-		log.debug(f"Worker thread preferred UI language set to {bcp47!r}")
+		log.debug("Worker thread preferred UI language set to %r", bcp47)
 
 
 def _pumpThreadMessages() -> None:
@@ -206,8 +207,8 @@ def _pumpThreadMessages() -> None:
 		user32.TranslateMessage(ctypes.byref(msg))
 		user32.DispatchMessageW(ctypes.byref(msg))
 	log.debugWarning(
-		f"_pumpThreadMessages: drained {_PUMP_MAX_ITERATIONS_PER_CALL} messages "
-		"without hitting an empty queue; aborting this pump iteration",
+		"_pumpThreadMessages: drained %s messages without hitting an empty queue; aborting this pump iteration",
+		_PUMP_MAX_ITERATIONS_PER_CALL,
 	)
 
 
@@ -304,7 +305,7 @@ class LibraryWorker:
 			)
 		if self._startError is not None:
 			raise self._startError
-		log.debug(f"Library worker started (thread={self._thread.name})")
+		log.debug("Library worker started (thread=%s)", self._thread.name)
 
 	def submit(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> "Future[T]":
 		"""Enqueue a callable; return its Future immediately.
@@ -483,14 +484,19 @@ class LibraryWorker:
 		if stuckOnThisOp:
 			elapsed = time.monotonic() - started  # type: ignore[operator]
 			log.warning(
-				f"Library {methodName} timed out after {timeout * 1000:.0f}ms and is STILL the "
-				f"worker's current operation ({elapsed:.1f}s and counting) — treating as failure.",
+				"Library %s timed out after %.0fms and is STILL the worker's current "
+				"operation (%.1fs and counting) — treating as failure.",
+				methodName,
+				timeout * 1000,
+				elapsed,
 			)
 			log.debug(self.captureDiagnostics())
 		else:
 			log.debugWarning(
-				f"Library {methodName} timed out after {timeout * 1000:.0f}ms; treating as failure "
-				f"(worker is progressing: currentOp={currentOp!r})",
+				"Library %s timed out after %.0fms; treating as failure (worker is progressing: currentOp=%r)",
+				methodName,
+				timeout * 1000,
+				currentOp,
 			)
 
 	def stop(self) -> None:

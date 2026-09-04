@@ -41,6 +41,7 @@ from logHandler import log
 from NVDAObjects import NVDAObject
 from scriptHandler import script
 
+from ..utils.logOnce import warnFailureOnce
 from .base import Presentation, PresentationProvider
 
 if TYPE_CHECKING:
@@ -152,7 +153,7 @@ class GraphicPresentation(Presentation):
 				return None
 
 			def onShowFailure(exception: BaseException) -> None:
-				log.warning(f"GraphicPresentation: show failed: {exception!r}")
+				warnFailureOnce("GraphicPresentation: show", exception)
 
 			def onDrawSuccess(_result: object) -> None:
 				worker.submitAndReport(
@@ -163,7 +164,7 @@ class GraphicPresentation(Presentation):
 				)
 
 			def onDrawFailure(exception: BaseException) -> None:
-				log.warning(f"GraphicPresentation: drawScreenRegion failed: {exception!r}")
+				warnFailureOnce("GraphicPresentation: drawScreenRegion", exception)
 
 			worker.submitAndReport(
 				tda.drawScreenRegion,
@@ -184,7 +185,8 @@ class GraphicPresentation(Presentation):
 
 				def onLibraryFailure(exception: BaseException) -> None:
 					log.warning(
-						f"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: {exception!r}",
+						"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: %r",
+						exception,
 					)
 
 				worker.submitAndReport(
@@ -227,7 +229,7 @@ class GraphicPresentation(Presentation):
 			return
 
 		def onFailure(exc: BaseException) -> None:
-			log.warning(f"GraphicPresentation: ExecuteOperation({operation!r}) failed: {exc!r}")
+			warnFailureOnce(f"GraphicPresentation: ExecuteOperation({operation!r})", exc)
 
 		worker.submitAndReport(
 			tda.executeOperation,

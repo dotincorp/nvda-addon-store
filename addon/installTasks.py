@@ -172,4 +172,4 @@ def onInstall() -> None:
 		# Not saved here on purpose: NVDA writes the configuration on exit, or when
 		# the user saves it manually.
 	except Exception:
-		log.error("Error asking whether to enable automatic detection of the Dot Pad", exc_info=True)
+		log.exception("Error asking whether to enable automatic detection of the Dot Pad")

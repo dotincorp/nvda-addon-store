@@ -312,17 +312,18 @@ class Table(AutoPropertyObject):
 		if firstRow is None:
 			firstRow = 0
 
-			log.debug(
-				f"First row before centering: {firstRow}, numVisibleRows: {numVisibleRows}, tableCurrentRow: {self.tableCurrentRow}",
-			)
 			if self.tableCurrentRow and self.tableCurrentRow not in range(
 				firstRow,
 				firstRow + numVisibleRows,
 			):
 				# Center the current row
-				log.debug(f"Centering current row {self.tableCurrentRow} in visible rows {numVisibleRows}")
 				firstRow = self.tableCurrentRow - (numVisibleRows // 2)
-				log.debug(f"First row after centering: {firstRow}")
+				log.debug(
+					"Centering row %s in %s visible rows: firstRow=%s",
+					self.tableCurrentRow,
+					numVisibleRows,
+					firstRow,
+				)
 
 				rowCount: int | None = None
 
@@ -625,7 +626,7 @@ class Table(AutoPropertyObject):
 				if self._selectCell(cell, targetRow, targetCol):
 					return
 
-		log.debug(f"Could not find cell at row {targetRow}, col {targetCol}")
+		log.debug("Could not find cell at row %s, col %s", targetRow, targetCol)
 
 	def _selectCell(self, cell: FakeNVDAObjectCell, row: int, col: int) -> bool:
 		"""Select/navigate to a table cell.
@@ -646,7 +647,7 @@ class Table(AutoPropertyObject):
 		"""
 		# For regular tables, cell is already a real NVDAObject (cast to FakeNVDAObjectCell interface)
 		if not isinstance(cell, NVDAObject):
-			log.debug(f"Cell at row {row}, col {col} is not an NVDAObject")
+			log.debug("Cell at row %s, col %s is not an NVDAObject", row, col)
 			return False
 
 		targetObj = cell
@@ -685,8 +686,6 @@ class Table(AutoPropertyObject):
 				# Focus mode or no TreeInterceptor (e.g., Word UIA tables):
 				# Use UIA Grid pattern to get cell and set document selection
 				if treeInterceptor is None:
-					from _ctypes import COMError
-
 					import UIAHandler
 
 					try:
@@ -704,10 +703,9 @@ class Table(AutoPropertyObject):
 										cellTextInfo.collapse()
 										document.selection = cellTextInfo
 										return
-					except COMError:
-						log.debug("UIA Grid pattern failed", exc_info=True)
 					except Exception:
-						log.debug("UIA Grid pattern failed", exc_info=True)
+						# COMError subclasses Exception, so one handler covers both.
+						log.debug("UIA Grid pattern failed for row %s, col %s", row, col, exc_info=True)
 
 				# Fallback: try setFocus on the original target object
 				if hasattr(targetObj, "setFocus"):
@@ -720,7 +718,7 @@ class Table(AutoPropertyObject):
 				# Fallback: move navigator object
 				api.setNavigatorObject(targetObj)
 			except Exception:
-				log.debug(f"Deferred cell selection failed for row {row}, col {col}", exc_info=True)
+				log.debug("Deferred cell selection failed for row %s, col %s", row, col, exc_info=True)
 
 		# Queue for next core cycle (approximately 10ms)
 		core.callLater(10, doMove)
@@ -819,7 +817,7 @@ class ExcelTable(Table):
 			# Get worksheet for re-fetching the cell in the deferred callback
 			ws = self.tableObj.excelWorksheetObject  # type: ignore
 			if ws is None:
-				log.debug(f"Excel worksheet not available for cell at row {row}, col {col}")
+				log.debug("Excel worksheet not available for cell at row %s, col %s", row, col)
 				return False
 
 			# Use 1-based Excel coordinates
@@ -842,21 +840,29 @@ class ExcelTable(Table):
 					# to already be active. Arguments are positional: (Reference, Scroll)
 					# Scroll=False to avoid interfering with DotPad scrolling.
 					excelCell.Application.Goto(excelCell, False)
-					log.debug(f"Activated Excel cell at row {row}, col {col} via Application.Goto (deferred)")
+					log.debug(
+						"Activated Excel cell at row %s, col %s via Application.Goto (deferred)",
+						row,
+						col,
+					)
 					comCallSucceeded = True
 				except Exception as e:
-					log.debug(f"Application.Goto failed for cell at row {row}, col {col}: {e}")
+					log.debug("Application.Goto failed for cell at row %s, col %s: %s", row, col, e)
 					# Fallback to direct Activate if Goto fails
 					try:
 						excelCell = ws.Cells(excelRow, excelCol)  # type: ignore
 						excelCell.Activate()
 						log.debug(
-							f"Activated Excel cell at row {row}, col {col} via Activate fallback (deferred)",
+							"Activated Excel cell at row %s, col %s via Activate fallback (deferred)",
+							row,
+							col,
 						)
 						comCallSucceeded = True
 					except Exception:
 						log.debug(
-							f"Deferred activation failed for cell at row {row}, col {col}",
+							"Deferred activation failed for cell at row %s, col %s",
+							row,
+							col,
 							exc_info=True,
 						)
 
@@ -867,7 +873,7 @@ class ExcelTable(Table):
 						# Get the active cell as an NVDA ExcelCell object
 						activeCellObj = tableObj._getActiveCell()  # type: ignore
 						eventHandler.executeEvent("gainFocus", activeCellObj)
-						log.debug(f"Fired gainFocus event for Excel cell at row {row}, col {col}")
+						log.debug("Fired gainFocus event for Excel cell at row %s, col %s", row, col)
 					except Exception:
 						log.debug("Could not fire gainFocus event for Excel cell", exc_info=True)
 
@@ -877,5 +883,5 @@ class ExcelTable(Table):
 
 			return True
 		except (AttributeError, NotImplementedError, Exception):
-			log.debug(f"Could not prepare Excel cell selection at row {row}, col {col}", exc_info=True)
+			log.debug("Could not prepare Excel cell selection at row %s, col %s", row, col, exc_info=True)
 			return False

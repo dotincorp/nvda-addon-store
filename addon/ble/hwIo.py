@@ -60,7 +60,7 @@ def queueReader(queue: Queue[bytes], onReceive: Callable[[bytes], None], stopEve
 			onReceive(data)
 			queue.task_done()
 		except Exception:
-			log.error("Reader thread got exception", exc_info=True)
+			log.exception("Reader thread got exception")
 
 
 def sliced(data: bytes, n: int) -> Iterator[bytes]:
@@ -116,7 +116,7 @@ class Ble:
 		readCharacteristicUuid: str,
 		onReceive: Callable[[bytes], None],
 	) -> None:
-		log.info(f"Connecting to {device.name} ({device.address})")
+		log.info("Connecting to %s (%s)", device.name, device.address)
 		self._client = bleak.BleakClient(device, winrt=WINRT_CLIENT_PARAMS)
 		self._writeServiceUuid = writeServiceUuid
 		self._writeCharacteristicUuid = writeCharacteristicUuid
@@ -195,7 +195,7 @@ class Ble:
 		if not characteristic:
 			raise RuntimeError(f"Characteristic {self._writeCharacteristicUuid} not found")
 		if _isDebug():
-			log.debug(f"Write: {data!r}")
+			log.debug("Write: %r", data)
 
 		# Split the data into chunks that fit within the MTU. All chunks are awaited
 		# inside one coroutine: a runCoroutineSync per chunk meant a separate
@@ -234,13 +234,13 @@ class Ble:
 		# it through the driver, which can be holding _ackLock while a sender that
 		# terminate() has stopped waiting for still owns it.
 		if not self._drainReceivedData(CLOSE_TIMEOUT_SECONDS):
-			log.debugWarning(f"Received data not dispatched within {CLOSE_TIMEOUT_SECONDS}s; closing anyway")
+			log.debugWarning("Received data not dispatched within %ss; closing anyway", CLOSE_TIMEOUT_SECONDS)
 		self._stopReaderEvent.set()
 		# The reader polls with its own timeout and is a daemon, so at worst it
 		# outlives this call briefly and dies with the process.
 		self._readerThread.join(CLOSE_TIMEOUT_SECONDS)
 		if self._readerThread.is_alive():
-			log.debugWarning(f"Reader thread did not exit within {CLOSE_TIMEOUT_SECONDS}s; closing anyway")
+			log.debugWarning("Reader thread did not exit within %ss; closing anyway", CLOSE_TIMEOUT_SECONDS)
 
 		self._onReceive = None
 
@@ -303,8 +303,10 @@ class Ble:
 					for s in self._client.services.services.values()
 				]
 				log.debug(
-					f"Waiting for connection, {num_tries} tries, "
-					f"is connected {self.isConnected()}, services {services}",
+					"Waiting for connection, %s tries, is connected %s, services %s",
+					num_tries,
+					self.isConnected(),
+					services,
 				)
 			if self._client.is_connected and len(self._client.services.services) > 0:
 				return
@@ -314,7 +316,7 @@ class Ble:
 
 	def _notifyReceive(self, _char: bleak.BleakGATTCharacteristic, data: bytearray):
 		if _isDebug():
-			log.debug(f"Read: {data!r}")
+			log.debug("Read: %r", data)
 		self._readEvent.set()
 		self._queuedData.put(data)
 

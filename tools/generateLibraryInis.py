@@ -10,8 +10,10 @@ This is a maintainer-run script. It reads NVDA's ``braille.py`` source and
 ``.po`` translation catalogues, then emits per-locale ``.ini`` files under
 ``addon/tactileDisplayAPI/<libLcid>/``. The ``[ControlTypes]`` and
 ``[StateFlags]`` sections are rewritten to mirror NVDA's
-``braille.roleLabels`` / ``positiveStateLabels`` / ``negativeStateLabels``;
-every other section is preserved verbatim from the vendor's English reference.
+``braille.roleLabels`` / ``positiveStateLabels`` / ``negativeStateLabels``, and
+the handful of ``[Settings]`` keys in ``SETTINGS_OVERRIDES`` are forced to the
+values this addon needs. Every other section is preserved verbatim from the
+vendor's English reference.
 
 Run it after a vendor library drop, an NVDA translation refresh, or a change to
 NVDA's ``roleLabels`` / state labels. ``--dry-run`` writes nothing and exits 1
@@ -230,8 +232,38 @@ NVDA_LOCALE_TO_LIBRARY_LCID: Final[Mapping[str, str]] = {
 }
 
 
-# Sections we mutate. Anything else is preserved verbatim.
+# Sections whose values are resolved against NVDA's label tables. ``[Settings]``
+# is mutated too, but from the fixed table below rather than from NVDA; anything
+# else is preserved verbatim.
 MUTABLE_SECTIONS: Final[frozenset[str]] = frozenset({"ControlTypes", "StateFlags"})
+
+
+#: The ini section holding the library's behaviour switches.
+SETTINGS_SECTION: Final[str] = "Settings"
+
+
+#: ``[Settings]`` keys this addon forces, whatever the vendor reference says.
+#:
+#: The vendor's ``enu`` reference doubles as this generator's input, so a vendor
+#: drop overwrites anything hand-edited into it. Forcing the values here instead
+#: means they survive every drop, and keeps the rationale next to the value.
+#: Keys absent from the reference are appended to the section; keys present have
+#: their value replaced.
+SETTINGS_OVERRIDES: Final[Mapping[str, str]] = {
+	# v1.36+. The library labels a graphed equation on the separate braille
+	# display when one is available, and at the bottom of the tactile area when
+	# it is not. The addon hands the library zero text cells — NVDA keeps the
+	# 20-cell line to itself, see ``simulatedDisplay.computeSimulateDisplayArgs``
+	# — so the library always takes the second path and paints the label over
+	# the graphic, while NVDA is already showing that same text on the 20-cell
+	# line. Turn the library's label off and let NVDA own it.
+	"EquationShowLabel": "0",
+	# v1.36+. Same root cause: with zero text cells the library falls back to
+	# painting braille under the tactile representation, where it runs together
+	# with the bottom of the characters above it and duplicates what NVDA
+	# already renders on the 20-cell line.
+	"SuppressHybridBraille": "1",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +366,81 @@ def detect_ini_encoding(path: Path) -> str:
 def emit_ini(records: Sequence[IniRecord]) -> str:
 	"""Serialise records back to a string. Returns the joined ``raw_line`` values."""
 	return "".join(record.raw_line for record in records)
+
+
+def apply_settings_overrides(
+	records: Sequence[IniRecord],
+) -> tuple[list[IniRecord], tuple[str, ...]]:
+	"""Force :data:`SETTINGS_OVERRIDES` into a parsed ini's ``[Settings]`` section.
+
+	A key already present has its value replaced (formatting preserved); a key
+	the vendor reference does not carry is appended after the section's last
+	``Key=Value`` line, so it lands inside the section rather than after any
+	trailing blank line that separates it from the next one. Ini keys are
+	matched case-insensitively but appended under the spelling in
+	:data:`SETTINGS_OVERRIDES`.
+
+	If the reference has no ``[Settings]`` section at all the records are
+	returned untouched — the library treats every override as opt-in and
+	defaults to its previous behaviour, so a missing section is a vendor change
+	worth noticing rather than something to paper over.
+
+	:returns: ``(new_records, changed_keys)`` where ``changed_keys`` holds
+		``"[Settings]key"`` identifiers whose emitted line actually differs.
+	"""
+	if not any(record.section == SETTINGS_SECTION for record in records):
+		log.warning(
+			"vendor reference has no [%s] section; skipping %d addon override(s)",
+			SETTINGS_SECTION,
+			len(SETTINGS_OVERRIDES),
+		)
+		return list(records), ()
+
+	lowered = {key.lower(): key for key in SETTINGS_OVERRIDES}
+	changed: list[str] = []
+	seen: set[str] = set()
+	new_records: list[IniRecord] = []
+	last_key_index: int | None = None
+	line_ending = "\r\n"
+
+	for record in records:
+		if record.section == SETTINGS_SECTION and record.kind == "key_value":
+			line_ending = _detect_line_ending(record.raw_line) or line_ending
+			canonical = lowered.get(record.key.strip().lower())
+			if canonical is not None:
+				seen.add(canonical)
+				wanted = SETTINGS_OVERRIDES[canonical]
+				if record.value != wanted:
+					record = replace_value(record, wanted)
+					changed.append(f"[{SETTINGS_SECTION}]{canonical}")
+			last_key_index = len(new_records)
+		new_records.append(record)
+
+	# Append whatever the reference did not carry, in declaration order.
+	missing = [key for key in SETTINGS_OVERRIDES if key not in seen]
+	if missing:
+		# With a [Settings] section present but no keys in it, fall in right
+		# after the header.
+		if last_key_index is None:
+			last_key_index = next(
+				index
+				for index, record in enumerate(new_records)
+				if record.kind == "section_header" and record.section == SETTINGS_SECTION
+			)
+		additions = [
+			IniRecord(
+				"key_value",
+				SETTINGS_SECTION,
+				key,
+				SETTINGS_OVERRIDES[key],
+				f"{key}={SETTINGS_OVERRIDES[key]}{line_ending}",
+			)
+			for key in missing
+		]
+		new_records[last_key_index + 1 : last_key_index + 1] = additions
+		changed.extend(f"[{SETTINGS_SECTION}]{key}" for key in missing)
+
+	return new_records, tuple(changed)
 
 
 def _detect_line_ending(raw_line: str) -> str:
@@ -755,8 +862,9 @@ def generate_locale(
 	Returns ``(new_records, changed_keys, preserved_keys, unicode_braille_suppressed_keys)``.
 	The latter three are lists of ``"[Section]key"`` identifiers for logging.
 	"""
+	records, settings_changed = apply_settings_overrides(records)
 	new_records: list[IniRecord] = []
-	changed: list[str] = []
+	changed: list[str] = list(settings_changed)
 	preserved: list[str] = []
 	unicode_suppressed: list[str] = []
 	for record in records:
