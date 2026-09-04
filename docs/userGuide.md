@@ -118,7 +118,7 @@ This setting determines which cursor's content outputs to your braille device. W
 
 ### Follow Cursor Toggle
 
-By pressing NVDA+7 (toggle "Follow Navigator Object") and NVDA+6 (toggle "Follow System Caret"), you can freeze the text on your multiline graphic display. This allows you to reference a webpage or document in the multiline area while actively typing into a text editor on the single-line display.
+By pressing NVDA+7 (toggle "Follow system focus") and NVDA+6 (toggle "Follow System Caret"), you can freeze the text on your multiline graphic display. This allows you to reference a webpage or document in the multiline area while actively typing into a text editor on the single-line display.
 
 ### Microsoft Excel and PowerPoint Chart Conversion
 
