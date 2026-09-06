@@ -57,8 +57,12 @@ class ScreenCapturePresentation(Presentation):
 	navigator object) with the current navigator object highlighted. This provides
 	context about where the user is in the object hierarchy.
 
-	The presentation supports scrolling through the sibling list when there are
-	more objects than can fit on the display.
+	The viewport is a sticky page: it stays where it is while the navigator moves
+	inside it, and flips to the next or previous page — without overlap — when the
+	navigator steps off an edge. Bidirectional expansion around the navigator is
+	only used to seed the first page, or to recentre after a jump that lands
+	somewhere else entirely. The same page can also be turned by hand with the
+	scroll gestures.
 	"""
 
 	def __init__(self, display: Display):
@@ -76,6 +80,12 @@ class ScreenCapturePresentation(Presentation):
 		self._parent: NVDAObject | None = None
 		# Cached navigator object for detecting changes
 		self._navObj: NVDAObject | None = None
+		# Layout the current viewport was measured against. A kept page is not
+		# re-measured on every move, so a settings change would otherwise leave it
+		# built for one line budget and drawn against another.
+		self._viewportLayout: tuple[int, int, bool, int] | None = None
+		# Whether the last draw actually put the navigator object on the display
+		self._navigatorWasDrawn: bool = False
 
 	def _getPositionInfo(self, obj: NVDAObject) -> int | None:
 		"""Get position index from object's positionInfo if available.
@@ -96,6 +106,10 @@ class ScreenCapturePresentation(Presentation):
 	) -> None:
 		"""Build the viewport by expanding bidirectionally from center object.
 
+		Used to seed the first page, and to recentre after the navigator jumps
+		somewhere the current page cannot be turned to. Stepping between adjacent
+		objects pages instead; see :meth:`_updateViewportForNavigator`.
+
 		:param centerObj: The object to center the viewport on.
 		:param parent: The parent object (for context).
 		:param availableLines: Number of lines available for child objects.
@@ -108,6 +122,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
+		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
 
 		if availableLines <= 0:
 			return
@@ -215,6 +230,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
+		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
 
 		if availableLines <= 0:
 			return
@@ -268,6 +284,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
+		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
 
 		if availableLines <= 0:
 			return
@@ -333,16 +350,47 @@ class ScreenCapturePresentation(Presentation):
 		if not parent:
 			return buffer
 
-		# Check if navigator changed - rebuild viewport centered on navigator
+		# Check if navigator changed - page, keep or recentre the viewport
 		if self._navObj != navObj:
 			self._navObj = navObj
-			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+			self._updateViewportForNavigator(navObj, parent, display)
 
-		# Get configuration
+		self._drawViewport(buffer, parent, display)
+
+		# A kept page is not re-measured while the navigator moves inside it, so its
+		# content can outgrow the display: an object whose label grew now takes more
+		# lines than it did when the page was built, and the navigator falls off the
+		# bottom. Rather than re-measure on every move, notice it here — where the
+		# lines have just been laid out anyway — and recentre. A viewport that never
+		# claimed to hold the navigator is left alone: that is a page turned by hand,
+		# which is meant to stay put.
+		if self._navigatorIndex >= 0 and not self._navigatorWasDrawn:
+			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+			buffer = DpTactileGraphicsBuffer(display.physicalNumCols, display.physicalNumRows)
+			self._drawViewport(buffer, parent, display)
+
+		return buffer
+
+	def _drawViewport(
+		self,
+		buffer: DpTactileGraphicsBuffer,
+		parent: NVDAObject,
+		display: Display,
+	) -> None:
+		"""Draw the parent and the current viewport into a buffer.
+
+		Sets :attr:`_navigatorWasDrawn` to whether the navigator object's own line
+		made it onto the display.
+
+		:param buffer: The tactile graphics buffer to draw into.
+		:param parent: The parent object, drawn first.
+		:param display: The display to draw for.
+		"""
 		maxLinesPerObject = configuration.getScreenCaptureMaxLinesPerObject()
 		showObjectNumbers = configuration.getScreenCaptureShowObjectNumbers()
 		maxLineLength = display.numCols
 		y = 0
+		self._navigatorWasDrawn = False
 
 		# Render parent object first
 		parentLineCells = self._formatLine(parent, isActive=False, indent=0, showNumbers=showObjectNumbers)
@@ -356,8 +404,83 @@ class ScreenCapturePresentation(Presentation):
 			isActive = i == self._navigatorIndex
 			lineCells = self._formatLine(obj, isActive=isActive, showNumbers=showObjectNumbers)
 			y = self._renderObjectToBuffer(buffer, lineCells, y, maxLineLength, maxLinesPerObject)
+			if isActive:
+				self._navigatorWasDrawn = True
 
-		return buffer
+	def _updateViewportForNavigator(
+		self,
+		navObj: NVDAObject,
+		parent: NVDAObject,
+		display: Display,
+	) -> None:
+		"""Move the viewport to follow the navigator object.
+
+		The viewport is a sticky page. While the navigator moves inside it nothing
+		changes but the highlight; stepping off an edge turns the page, so the list
+		advances a screenful at a time instead of sliding one object per keypress.
+		Anything else — a jump to an unrelated object, a different parent, a changed
+		line budget — rebuilds the page centred on the navigator.
+
+		The decision is made from the page's edges rather than the previous
+		navigator index, which is -1 after the page was turned by hand.
+
+		:param navObj: The current navigator object.
+		:param parent: The parent object.
+		:param display: The display for dimension calculations.
+		"""
+		if not self._visibleObjects or self._parent != parent:
+			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+			return
+
+		availableLines = self._calculateAvailableLinesForChildren(display, parent)
+		if self._viewportLayout != self._currentViewportLayout(availableLines, display):
+			# Built against a different line budget; its measurements no longer hold.
+			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+			return
+
+		# Still on the page: keep it, and just move the highlight. Note that the
+		# sibling list is not re-walked here, so a sibling removed from the parent
+		# stays listed until the page turns. An object added to the parent is not on
+		# the page at all, so it takes one of the branches below instead.
+		for index, obj in enumerate(self._visibleObjects):
+			if obj == navObj:
+				self._navigatorIndex = index
+				return
+
+		simpleMode = cast(bool, config.conf["reviewCursor"]["simpleReviewMode"])  # pyright: ignore[reportArgumentType, reportOptionalSubscript, reportIndexIssue, reportCallIssue]
+		lastObj = self._visibleObjects[-1]
+		firstObj = self._visibleObjects[0]
+		afterPage = lastObj.simpleNext if simpleMode else lastObj.next  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+		beforePage = firstObj.simplePrevious if simpleMode else firstObj.previous  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+
+		if afterPage is not None and afterPage == navObj:
+			# Stepped off the bottom: the navigator starts the next page.
+			self._buildViewportFromFirst(navObj, navObj, parent, availableLines)
+		elif beforePage is not None and beforePage == navObj:
+			# Stepped off the top: the navigator ends the previous page.
+			self._buildViewportFromLast(navObj, navObj, parent, availableLines)
+		else:
+			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+			return
+
+		if self._navigatorIndex == -1:
+			# The navigator object alone does not fit the budget. The page builders
+			# leave an empty viewport in that case; centring shows it on its own.
+			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+
+	def _currentViewportLayout(self, availableLines: int, display: Display) -> tuple[int, int, bool, int]:
+		"""Return the layout parameters a viewport built now would be measured against.
+
+		:param availableLines: Lines available for child objects.
+		:param display: The display for dimension calculations.
+		:returns: The tuple stored in :attr:`_viewportLayout` by the viewport builders.
+		"""
+		return (
+			availableLines,
+			configuration.getScreenCaptureMaxLinesPerObject(),
+			configuration.getScreenCaptureShowObjectNumbers(),
+			display.numCols,
+		)
 
 	def _renderObjectToBuffer(
 		self,
@@ -583,6 +706,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects.clear()
 		self._parent = None
 		self._navObj = None
+		self._viewportLayout = None
 
 	@property
 	def name(self) -> str:
