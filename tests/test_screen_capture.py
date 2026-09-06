@@ -946,5 +946,495 @@ class TestFormatLineWithPositionInfo(unittest.TestCase):
 		self.assertNotIn(".", result_text[:10])  # No "X." pattern at start
 
 
+class TestUpdateViewportForNavigator(unittest.TestCase):
+	"""Tests for _updateViewportForNavigator: the sticky page that follows the navigator."""
+
+	def setUp(self):
+		"""Set up test fixtures."""
+		self.display = MockDisplay(physicalNumRows=10)
+		self.presentation = ScreenCapturePresentation(self.display)
+
+	def _configureMocks(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+		maxLinesPerObject=1,
+		cellsPerObject=10,
+	):
+		"""Point the patched module globals at simple, predictable values."""
+		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
+		mock_config.getScreenCaptureMaxLinesPerObject.return_value = maxLinesPerObject
+		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
+		mock_getPropertiesBraille.return_value = "text"
+		mock_hasUsefulText.return_value = False
+		mock_translate.side_effect = lambda text: [1] * cellsPerObject
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_moving_within_the_page_keeps_it(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should leave the viewport alone and only move the highlight."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+
+		self.presentation._updateViewportForNavigator(page[-1], parent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects, page)
+		self.assertEqual(self.presentation._navigatorIndex, len(page) - 1)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_stepping_past_the_last_object_turns_the_page(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should start a new page at the navigator, with no overlap."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+		nextObj = page[-1].next
+
+		self.presentation._updateViewportForNavigator(nextObj, parent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects[0], nextObj)
+		self.assertEqual(self.presentation._navigatorIndex, 0)
+		self.assertEqual(set(self.presentation._visibleObjects) & set(page), set())
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_stepping_before_the_first_object_turns_the_page_back(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should end the previous page at the navigator."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[14], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+		prevObj = page[0].previous
+
+		self.presentation._updateViewportForNavigator(prevObj, parent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects[-1], prevObj)
+		self.assertEqual(
+			self.presentation._navigatorIndex,
+			len(self.presentation._visibleObjects) - 1,
+		)
+		self.assertEqual(set(self.presentation._visibleObjects) & set(page), set())
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_jump_off_the_page_recentres(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should recentre when the navigator lands somewhere unrelated."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+
+		self.presentation._updateViewportForNavigator(siblings[15], parent, self.display)
+
+		index = self.presentation._navigatorIndex
+		self.assertEqual(self.presentation._visibleObjects[index], siblings[15])
+		# Centred: objects on both sides of the navigator.
+		self.assertGreater(index, 0)
+		self.assertLess(index, len(self.presentation._visibleObjects) - 1)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_different_parent_recentres(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should rebuild when the navigator moved into another container."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+
+		otherParent = MockNVDAObject(name="Other parent")
+		otherChild = MockNVDAObject(name="Other child")
+		self.presentation._updateViewportForNavigator(otherChild, otherParent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects, [otherChild])
+		self.assertEqual(self.presentation._navigatorIndex, 0)
+		self.assertEqual(self.presentation._parent, otherParent)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_changed_line_budget_recentres(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Should rebuild when the page was measured against another line budget."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+			cellsPerObject=90,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+
+		# The user changes "Maximum lines per object" without leaving the mode: every
+		# object now claims three lines instead of one, so the page no longer fits.
+		mock_config.getScreenCaptureMaxLinesPerObject.return_value = 3
+
+		self.presentation._updateViewportForNavigator(page[1], parent, self.display)
+
+		self.assertLess(len(self.presentation._visibleObjects), len(page))
+		self.assertEqual(
+			self.presentation._viewportLayout,
+			self.presentation._currentViewportLayout(
+				self.presentation._calculateAvailableLinesForChildren(self.display, parent),
+				self.display,
+			),
+		)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_object_added_within_the_page_recentres_onto_it(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""A child appearing mid-list is not on the page, so the page rebuilds around it."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+
+		# A new item appears between the second and third object on the page.
+		inserted = MockNVDAObject(name="Inserted")
+		inserted.previous = inserted.simplePrevious = page[1]
+		inserted.next = inserted.simpleNext = page[2]
+		page[1].next = page[1].simpleNext = inserted
+		page[2].previous = page[2].simplePrevious = inserted
+
+		self.presentation._updateViewportForNavigator(inserted, parent, self.display)
+
+		self.assertIn(inserted, self.presentation._visibleObjects)
+		self.assertEqual(
+			self.presentation._visibleObjects[self.presentation._navigatorIndex],
+			inserted,
+		)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_object_appended_after_the_page_turns_the_page(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""A child appended right after the page starts the next one."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(7)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+		page = list(self.presentation._visibleObjects)
+
+		appended = MockNVDAObject(name="Appended")
+		appended.previous = appended.simplePrevious = page[-1]
+		page[-1].next = page[-1].simpleNext = appended
+
+		self.presentation._updateViewportForNavigator(appended, parent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects, [appended])
+		self.assertEqual(self.presentation._navigatorIndex, 0)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_object_taller_than_the_budget_stays_visible(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Paging onto an object that cannot fit must not blank the display."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+			maxLinesPerObject=5,
+			cellsPerObject=150,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		# The parent claims five of the eight lines, leaving three for its children,
+		# so no child fits: the page builders would leave the viewport empty.
+		self.assertLess(
+			self.presentation._calculateAvailableLinesForChildren(self.display, parent),
+			5,
+		)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+
+		self.presentation._updateViewportForNavigator(siblings[1], parent, self.display)
+
+		self.assertEqual(self.presentation._visibleObjects, [siblings[1]])
+		self.assertEqual(self.presentation._navigatorIndex, 0)
+
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	def test_walking_a_long_list_pages_in_blocks(
+		self,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+	):
+		"""Regression for the reported issue: 1-7, 8-14, 15-21, never 2-8."""
+		self._configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+		)
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		self.presentation._rebuildViewportCenteredOnNavigator(siblings[0], parent, self.display)
+
+		pages = [list(self.presentation._visibleObjects)]
+		for obj in siblings[1:]:
+			self.presentation._updateViewportForNavigator(obj, parent, self.display)
+			page = list(self.presentation._visibleObjects)
+			if page != pages[-1]:
+				pages.append(page)
+
+		self.assertEqual(
+			[[obj.name for obj in page] for page in pages],
+			[
+				[f"Item {i}" for i in range(1, 8)],
+				[f"Item {i}" for i in range(8, 15)],
+				[f"Item {i}" for i in range(15, 22)],
+			],
+		)
+
+
+class TestRenderFollowsTheNavigator(unittest.TestCase):
+	"""Tests for render() driving the sticky page."""
+
+	def setUp(self):
+		"""Set up test fixtures."""
+		self.display = MockDisplay(physicalNumRows=10)
+		self.presentation = ScreenCapturePresentation(self.display)
+
+	@patch("addon.presentations.screenCapture.drawBrailleCellsOnTactileBuffer")
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	@patch("addon.presentations.screenCapture.api")
+	def test_render_pages_instead_of_recentring(
+		self,
+		mock_api,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+		mock_draw,
+	):
+		"""Rendering successive navigator objects must page, not slide by one."""
+		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
+		mock_config.getScreenCaptureMaxLinesPerObject.return_value = 1
+		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
+		mock_getPropertiesBraille.return_value = "text"
+		mock_hasUsefulText.return_value = False
+		mock_translate.side_effect = lambda text: [1] * 10
+
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		for obj in siblings:
+			obj.parent = obj.simpleParent = parent
+
+		# Start in the middle of the list, where the old recentring behaviour would
+		# shift the whole page by one object for every step.
+		mock_api.getNavigatorObject.return_value = siblings[10]
+		self.presentation.render(self.display)
+		firstPage = list(self.presentation._visibleObjects)
+		indexBefore = self.presentation._navigatorIndex
+
+		mock_api.getNavigatorObject.return_value = siblings[11]
+		self.presentation.render(self.display)
+
+		self.assertEqual(self.presentation._visibleObjects, firstPage)
+		self.assertEqual(self.presentation._navigatorIndex, indexBefore + 1)
+
+	@patch("addon.presentations.screenCapture.drawBrailleCellsOnTactileBuffer")
+	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
+	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
+	@patch("addon.presentations.screenCapture.translateTextToBraille")
+	@patch("addon.presentations.screenCapture.configuration")
+	@patch("addon.presentations.screenCapture.config")
+	@patch("addon.presentations.screenCapture.api")
+	def test_render_recentres_when_the_page_outgrows_the_display(
+		self,
+		mock_api,
+		mock_nvda_config,
+		mock_config,
+		mock_translate,
+		mock_getPropertiesBraille,
+		mock_hasUsefulText,
+		mock_draw,
+	):
+		"""A page whose content grew must not leave the navigator off the display."""
+		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
+		mock_config.getScreenCaptureMaxLinesPerObject.return_value = 3
+		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
+		mock_getPropertiesBraille.return_value = "text"
+		mock_hasUsefulText.return_value = False
+		mock_translate.side_effect = lambda text: [1] * 10
+
+		parent = MockNVDAObject(name="Parent")
+		siblings = create_sibling_chain(21)
+		for obj in siblings:
+			obj.parent = obj.simpleParent = parent
+
+		mock_api.getNavigatorObject.return_value = siblings[0]
+		self.presentation.render(self.display)
+		page = list(self.presentation._visibleObjects)
+		self.assertGreater(len(page), 2)
+
+		# The children's labels grow to three lines each while the page stays put.
+		# The parent's stays one line, so the line budget is unchanged and the page
+		# is kept rather than rebuilt: only the draw can notice it no longer fits.
+		mock_translate.side_effect = lambda text: [1] * 10 if text == "text" else [1] * 90
+		mock_api.getNavigatorObject.return_value = page[-1]
+		self.presentation.render(self.display)
+
+		self.assertTrue(self.presentation._navigatorWasDrawn)
+		self.assertEqual(
+			self.presentation._visibleObjects[self.presentation._navigatorIndex],
+			page[-1],
+		)
+
+
 if __name__ == "__main__":
 	unittest.main()
