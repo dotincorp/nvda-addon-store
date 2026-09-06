@@ -10,9 +10,11 @@ and this script never touches it.
 
 Parsing rather than importing keeps the script runnable anywhere -- pre-commit,
 CI, a bare checkout -- without NVDA on ``sys.path``. It works because every
-gesture in the addon is a plain string literal on a singular ``gesture=``
-keyword. If a future binding is ever computed at runtime, this script will not
-see it; add it to the prose by hand and note it here.
+gesture in the addon is a plain string literal, on either a singular
+``gesture=`` keyword or a ``gestures=[...]`` list literal (a script bound to
+several gestures yields one table row per gesture). If a future binding is
+ever computed at runtime, this script will not see it; add it to the prose by
+hand and note it here.
 
 Run it after adding, removing or retargeting any ``@script`` handler.
 ``--dry-run`` writes nothing and exits 1 if the checked-in document would
@@ -148,11 +150,32 @@ def _keyword(call: ast.Call, name: str) -> ast.expr | None:
 	return None
 
 
+def _parseGestures(decorator: ast.Call) -> list[str | None]:
+	"""Return every gesture a ``@script`` decorator declares.
+
+	``@script`` accepts a singular ``gesture=`` string, a ``gestures=[...]``
+	list, or both; NVDA concatenates them. Returns ``[None]`` for a script with
+	no default gesture so it still reaches the "unbound" table.
+	"""
+	gestures: list[str | None] = []
+	gesturesNode = _keyword(decorator, "gestures")
+	if isinstance(gesturesNode, ast.List | ast.Tuple):
+		for element in gesturesNode.elts:
+			if isinstance(element, ast.Constant) and isinstance(element.value, str):
+				gestures.append(_stripGesturePrefix(element.value))
+	gestureNode = _keyword(decorator, "gesture")
+	if isinstance(gestureNode, ast.Constant) and isinstance(gestureNode.value, str):
+		gestures.append(_stripGesturePrefix(gestureNode.value))
+	return gestures or [None]
+
+
 def parseScriptBindings(source: str, *, tier: int, sourcePath: str) -> list[Binding]:
 	"""Collect ``@script`` bindings from ``source``.
 
-	Every decorated method becomes a :class:`Binding`, whether or not it
-	declares a ``gesture=``. ``owner`` is the enclosing class name.
+	Every decorated method becomes at least one :class:`Binding`, whether or
+	not it declares a gesture; a method bound to several gestures via
+	``gestures=[...]`` yields one per gesture. ``owner`` is the enclosing class
+	name.
 	"""
 	tree = ast.parse(source)
 	bindings: list[Binding] = []
@@ -165,20 +188,19 @@ def parseScriptBindings(source: str, *, tier: int, sourcePath: str) -> list[Bind
 			decorator = _scriptDecorator(member)
 			if decorator is None:
 				continue
-			gestureNode = _keyword(decorator, "gesture")
-			gesture: str | None = None
-			if isinstance(gestureNode, ast.Constant) and isinstance(gestureNode.value, str):
-				gesture = _stripGesturePrefix(gestureNode.value)
-			bindings.append(
-				Binding(
-					gesture=gesture,
-					scriptName=member.name,
-					description=_extractDescription(_keyword(decorator, "description")),
-					tier=tier,
-					owner=classNode.name,
-					sourcePath=sourcePath,
-				),
-			)
+			gestures = _parseGestures(decorator)
+			description = _extractDescription(_keyword(decorator, "description"))
+			for gesture in gestures:
+				bindings.append(
+					Binding(
+						gesture=gesture,
+						scriptName=member.name,
+						description=description,
+						tier=tier,
+						owner=classNode.name,
+						sourcePath=sourcePath,
+					),
+				)
 	return bindings
 
 

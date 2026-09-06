@@ -2332,7 +2332,14 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			"Displays the review object as tactile graphics via TactileDisplayAPI",
 		),
 		category=SCRCAT_BRAILLE,
-		gesture="br(dotPad):f2+f4",
+		# Both chords enter tactile-graphic mode, matching the shipped
+		# [DotPad320X Keys] map: f1+f3 mirrors the f2+f4 exit chord, and
+		# f2+f3 is the chord JAWS uses (it doubles as zoom-in once a
+		# graphic is on screen, where GraphicPresentation claims it).
+		# NVDA annotates ``gestures`` as ``Iterator[str]``, but the runtime does
+		# ``list(gestures)`` and NVDA's own app modules all pass lists; the
+		# annotation should read ``Iterable``.
+		gestures=["br(dotPad):f1+f3", "br(dotPad):f2+f3"],  # pyright: ignore[reportArgumentType]
 	)
 	def script_graphicDisplay(self, _gesture: inputCore.InputGesture):
 		"""Force tactile-graphics rendering of the current navigator object.
@@ -2359,7 +2366,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			"Displays the review object as braille via the active braille presentation",
 		),
 		category=SCRCAT_BRAILLE,
-		gesture="br(dotPad):f1+f3",
+		gesture="br(dotPad):f2+f4",
 	)
 	def script_brailleDisplay(self, _gesture: inputCore.InputGesture):
 		"""Force braille rendering of the current navigator object.
