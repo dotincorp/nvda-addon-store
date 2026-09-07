@@ -1,0 +1,419 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: nvdaaddons\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2026-09-07 00:05+0000\n"
+"PO-Revision-Date: 2026-09-07 00:09\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"Language: tr_TR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: nvdaaddons\n"
+"X-Crowdin-Project-ID: 780748\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: dotPad.pot\n"
+"X-Crowdin-File-ID: 663\n"
+
+#: addon\configuration.py:35
+msgid "Single Line Text Display"
+msgstr "Tek Satırlı Metin Ekranı"
+
+#: addon\configuration.py:36
+msgid "Graphic/Multi Line Text Display"
+msgstr "Grafik/Çok Satırlı Metin Görüntüleme"
+
+#. Translators: Choice option for not moving navigator after scroll
+#: addon\configuration.py:52
+msgid "Do nothing"
+msgstr "Hiçbir şey yapma"
+
+#. Translators: Choice option for moving to first visible cell
+#: addon\configuration.py:54
+msgid "Move to first visible cell"
+msgstr "Görünür olan ilk hücreye git"
+
+#. Translators: Choice option for moving to center cell
+#: addon\configuration.py:56
+msgid "Move to center cell"
+msgstr "Hücreyi ortaya taşı"
+
+#. Translators: Choice option for the existing NVDA-driven braille rendering.
+#: addon\configuration.py:82
+msgid "NVDA review cursor (multi-line follows navigator)"
+msgstr "NVDA inceleme imleci (çok satırlı, gezinti çubuğunu takip eder)"
+
+#. Translators: Choice option for the TactileDisplayAPI library-driven braille rendering.
+#: addon\configuration.py:84
+msgid "TactileDisplayAPI library (follows focused control)"
+msgstr "TactileDisplayAPI kütüphanesi (odaklanmış denetimleri takip eder)"
+
+#. Translators: Line spacing option — maximum lines, 8-dot braille.
+#: addon\configuration.py:105
+msgid "Auto (maximum lines, 8-dot braille)"
+msgstr "Otomatik (maksimum satır, 8 noktalı Braille)"
+
+#. Translators: Line spacing option — force six-dot braille for more lines (library mode only).
+#: addon\configuration.py:107
+msgid "Max Line Count (six-dot braille, library mode only)"
+msgstr "Maksimum Satır Sayısı (altı noktalı Braille , yalnızca kütüphane kipi)"
+
+#. Translators: Line spacing option — wider gaps between braille lines.
+#: addon\configuration.py:109
+msgid "Double Line Spacing (8-dot braille)"
+msgstr "Çift Satır Aralığı (8 noktalı Braille)"
+
+#. Translators: Message of the dialog shown when installing the add-on,
+#. asking whether NVDA should detect Dot Pad displays automatically.
+#: addon\installTasks.py:196
+msgid "NVDA does not detect Dot Pad displays automatically by default. Do you want to enable automatic detection of the Dot Pad?\n"
+"You can change this later in NVDA's braille settings."
+msgstr "NVDA, varsayılan olarak Dot Pad ekranlarını otomatik olarak algılamaz. Dot Pad’in otomatik algılanmasını etkinleştirmek istiyor musunuz?\n"
+"Bunu daha sonra NVDA’nın braille ayarlarından değiştirebilirsiniz."
+
+#. Translators: Title of the dialog shown when installing the add-on, asking
+#. whether NVDA should detect Dot Pad displays automatically.
+#: addon\installTasks.py:202
+msgid "Dot Pad: automatic detection"
+msgstr "Dot Pad: otomatik algılama"
+
+#. Translators: Message of the dialog shown when installing the add-on,
+#. asking whether NVDA should stop blinking the braille cursor.
+#: addon\installTasks.py:211
+msgid "Dot Pad cells refresh slowly, so a blinking braille cursor does not work well. Do you want to turn the blinking cursor off?\n"
+"This applies to all braille displays. You can change this later in NVDA's braille settings."
+msgstr "Dot Pad hücreleri yavaş yenilenir, bu nedenle yanıp sönen braille imleci pek işe yaramaz. Yanıp sönen imleci kapatmak ister misiniz?\n"
+"Bu, tüm braille ekranlar için geçerlidir. Bu ayarı daha sonra NVDA’nın braille ayarlarından değiştirebilirsiniz."
+
+#. Translators: Title of the dialog shown when installing the add-on, asking
+#. whether NVDA should stop blinking the braille cursor.
+#: addon\installTasks.py:218
+msgid "Dot Pad: blinking cursor"
+msgstr "Dot Pad: yanıp sönen imleç"
+
+#: addon\brailleDisplayDrivers\dotPad\driver.py:1058
+msgid "DotPad"
+msgstr "DotPad"
+
+#: addon\brailleDisplayDrivers\dotPad\driver.py:1139
+#, python-format
+msgid "Bluetooth: %s"
+msgstr "Bluetooth: %s"
+
+#. Translators: description of the refresh
+#. command for the multiline/graphical display.
+#. No default gesture — the user can assign one via NVDA's Input
+#. Gestures dialog.
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2235
+msgid "Refreshes the Dot Pad display"
+msgstr "Dot Pad ekranını yeniler"
+
+#. Translators: description of the scroll backwards
+#. command for the multiline/graphical display
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2249
+msgid "Scrolls the multiline display backwards"
+msgstr "Çok satırlı ekranı geriye doğru kaydırır"
+
+#. Translators: description of the scroll forward command
+#. for the multiline/graphical display
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2264
+msgid "Scrolls the multiline display forward"
+msgstr "Çok satırlı ekranı ileri doğru kaydırır"
+
+#. Translators: description of the toggle screen capture mode command
+#. for the DotPad braille display
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2279
+msgid "Toggles between normal braille output and screen capture mode"
+msgstr "Normal braille çıktısı ile ekran yakalama modu arasında geçiş yapar"
+
+#. Translators: Message announced when screen capture mode is enabled
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2289
+msgid "Screen capture mode"
+msgstr "Ekran yakalama modu"
+
+#. Translators: Message announced when screen capture mode is disabled
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2292
+msgid "Normal mode"
+msgstr "Normal kip"
+
+#. Translators: description of the force table mode command
+#. for the DotPad braille display
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2298
+msgid "Forces table mode by scanning parent objects for a table"
+msgstr "Tablo kipini, üst nesneleri tarayarak bir tablo aramak suretiyle zorlar"
+
+#. Translators: Message announced when table mode is activated
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2323
+msgid "Table mode"
+msgstr "Tablo kipi"
+
+#. Translators: Message announced when no table is found in parent objects
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2326
+msgid "No table found"
+msgstr "Tablo bulunamadı."
+
+#. Translators: description of the graphic display command
+#. for the DotPad braille display
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2332
+msgid "Displays the review object as tactile graphics via TactileDisplayAPI"
+msgstr "İnceleme nesnesini TactileDisplayAPI aracılığıyla dokunsal grafik olarak görüntüler"
+
+#. Translators: description of the braille display command
+#. for the DotPad braille display — symmetric to the tactile-graphic
+#. force chord; "show as braille" on the navigator object.
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2366
+msgid "Displays the review object as braille via the active braille presentation"
+msgstr "İnceleme nesnesini, etkin olan braille görüntüleme yöntemi aracılığıyla braille olarak görüntüler"
+
+#. Translators: The label for the Dot Pad settings panel.
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+#: addon\globalPlugins\dotPad\settingsPanel.py:44 buildVars.py:33
+msgid "Dot Pad"
+msgstr "Dot Pad"
+
+#. type: ignore
+#. Translators: The label for the auto refresh settings group.
+#: addon\globalPlugins\dotPad\settingsPanel.py:51
+msgid "Auto Refresh"
+msgstr "Otomatik Yenileme"
+
+#. Translators: Note shown in settings when D3 hardware with auto-refresh is connected
+#: addon\globalPlugins\dotPad\settingsPanel.py:61
+msgid "Auto-refresh is handled by hardware on this device"
+msgstr "Bu cihazda otomatik yenileme işlemi donanım tarafından gerçekleştirilir"
+
+#. Translators: The label for a list of check boxes in Dot Pad settings to enable auto refresh.
+#: addon\globalPlugins\dotPad\settingsPanel.py:66
+msgid "Enable auto refresh for"
+msgstr "Otomatik yenilemeyi etkinleştir"
+
+#. Translators: The label for the auto refresh idle timeout text box.
+#: addon\globalPlugins\dotPad\settingsPanel.py:80
+msgid "Auto refresh idle timeout (seconds)"
+msgstr "Otomatik yenileme bekleme süresi (saniye cinsinden)"
+
+#. Translators: The label for the auto refresh interval text box.
+#: addon\globalPlugins\dotPad\settingsPanel.py:88
+msgid "Auto refresh interval (seconds)"
+msgstr "Otomatik yenileme aralığı (saniye cinsinden)"
+
+#. Translators: The label for the screen capture settings group.
+#: addon\globalPlugins\dotPad\settingsPanel.py:96
+msgid "Screen Capture Mode"
+msgstr "Ekran Yakalama Modu"
+
+#. Translators: The label for the max lines per object spin control.
+#: addon\globalPlugins\dotPad\settingsPanel.py:103
+msgid "Maximum lines per object"
+msgstr "Nesne başına maksimum satır sayısı"
+
+#. Translators: The label for the show object numbers checkbox.
+#: addon\globalPlugins\dotPad\settingsPanel.py:113
+msgid "Show object numbers"
+msgstr "Nesne numaralarını göster"
+
+#. Translators: The label for the table mode settings group.
+#: addon\globalPlugins\dotPad\settingsPanel.py:120
+msgid "Table Mode"
+msgstr "Tablo Kipi"
+
+#. Translators: The label for the table navigator after scroll choice.
+#: addon\globalPlugins\dotPad\settingsPanel.py:126
+msgid "&Move navigator after table scroll"
+msgstr "&Tablo kaydırma işleminden sonra gezinti çubuğunu hareket ettir"
+
+#. Translators: The label for the multi-line braille settings group.
+#: addon\globalPlugins\dotPad\settingsPanel.py:136
+msgid "Multi-line braille"
+msgstr "Çok satırlı Braille"
+
+#. Translators: The label for the multi-line braille source choice.
+#: addon\globalPlugins\dotPad\settingsPanel.py:143
+msgid "&Source for multi-line braille content"
+msgstr "Çok &satırlı braille içerik kaynağı"
+
+#: addon\globalPlugins\dotPad\settingsPanel.py:153
+msgid "Library mode follows the focused control only; review-mode exploration via the navigator is not supported in library mode. The 20-cell text strip is unchanged in both modes. Changes take effect on the next focus change or NVDA restart."
+msgstr "Kütüphane kipi yalnızca odaklanmış kontrolü takip eder; kütüphane kipinde gezgin aracılığıyla inceleme kipinde dolaşma desteklenmez. 20 hücrelik metin şeridi her iki modda da değişmez. Değişiklikler, bir sonraki odak değişikliğinde veya NVDA’nın yeniden başlatılmasında yürürlüğe girer."
+
+#. Translators: The label for the multi-line braille line spacing choice.
+#: addon\globalPlugins\dotPad\settingsPanel.py:161
+msgid "Multi-line braille &line spacing"
+msgstr "Çok satır&lı Braille satır aralığı"
+
+#. Translators: The label for the hybrid print + braille checkbox.
+#: addon\globalPlugins\dotPad\settingsPanel.py:171
+msgid "Show print and braille together (hybrid mode)"
+msgstr "Yazılı metni ve braille yazısını birlikte göster ((hibrit)  mod)"
+
+#. Translators: The label for the advanced settings group.
+#: addon\globalPlugins\dotPad\settingsPanel.py:178
+msgid "Advanced"
+msgstr "Gelişmiş"
+
+#: addon\globalPlugins\dotPad\settingsPanel.py:188
+msgid "Use &system-installed TactileDisplayAPI library (falls back to bundled library if not found)"
+msgstr "&Sistemde kurulu TactileDisplayAPI kütüphanesini kullan (bulunmazsa paketlenmiş kütüphaneye geri döner)."
+
+#: addon\globalPlugins\dotPad\settingsPanel.py:209
+#, python-brace-format
+msgid "Auto refresh idle timeout must be between 0.5 and 10.0 seconds.\n"
+"You entered: {value}"
+msgstr "Otomatik yenileme bekleme süresi 0,5 ile 10,0 saniye arasında olmalıdır.\n"
+"Girdiğiniz değer: {value}"
+
+#. Translators: The title of the message box shown when the user enters an invalid value for the auto refresh idle timeout setting.
+#. Translators: The title of the message box shown when the user enters an invalid value for the auto refresh interval setting.
+#: addon\globalPlugins\dotPad\settingsPanel.py:212
+#: addon\globalPlugins\dotPad\settingsPanel.py:225
+#: addon\globalPlugins\dotPad\settingsPanel.py:242
+#: addon\globalPlugins\dotPad\settingsPanel.py:255
+msgid "Invalid Setting Value"
+msgstr "Geçersiz Ayar Değeri"
+
+#. Translators: This message is shown when the user enters an invalid value for the auto refresh idle timeout setting.
+#: addon\globalPlugins\dotPad\settingsPanel.py:221
+#, python-brace-format
+msgid "Auto refresh idle timeout must be a valid number.\n"
+"You entered: {value}"
+msgstr "Otomatik yenileme bekleme süresi geçerli bir sayı olmalıdır.\n"
+"Girdiğiniz değer: {value}"
+
+#: addon\globalPlugins\dotPad\settingsPanel.py:239
+#, python-brace-format
+msgid "Auto refresh interval must be between 0.5 and 10.0 seconds.\n"
+"You entered: {value}"
+msgstr "Otomatik yenileme aralığı 0,5 ile 10,0 saniye arasında olmalıdır.\n"
+"Girdiğiniz değer: {value}"
+
+#. Translators: This message is shown when the user enters an invalid value for the auto refresh interval setting.
+#: addon\globalPlugins\dotPad\settingsPanel.py:251
+#, python-brace-format
+msgid "Auto refresh interval must be a valid number.\n"
+"You entered: {value}"
+msgstr "Otomatik yenileme aralığı geçerli bir sayı olmalıdır.\n"
+"Girdiğiniz değer: {value}"
+
+#. Translators: Message shown when the user changes the system library setting.
+#: addon\globalPlugins\dotPad\settingsPanel.py:319
+msgid "The TactileDisplayAPI library source has changed.\n"
+"The change takes effect on the next driver initialisation (disconnect and reconnect your device, or restart NVDA)."
+msgstr "TactileDisplayAPI kütüphanesinin kaynak kodu değişti.\\n\n"
+"Değişiklik, bir sonraki sürücü başlatma işleminde geçerli olacaktır (cihazınızın bağlantısını kesip yeniden bağlayın veya NVDA'yı yeniden başlatın)."
+
+#. Translators: Title for the restart-required message box.
+#: addon\globalPlugins\dotPad\settingsPanel.py:324
+msgid "Restart Required"
+msgstr "Yeniden Başlatma Gerekli"
+
+#. Translators: Tools-menu item to toggle the bundled library's on-screen viewer.
+#: addon\globalPlugins\dotPad\__init__.py:106
+msgid "&Dot Pad display viewer"
+msgstr "&Dot Pad ekran görüntüleyici"
+
+#. Translators: announced once when the user selects library-driven
+#. braille but the library isn't available for the current device.
+#: addon\presentations\braille.py:653
+msgid "DotPad library-driven braille unavailable; falling back to NVDA review mode"
+msgstr "DotPad kütüphane tabanlı braille özelliği kullanılamıyor; NVDA inceleme kipine geçiliyor"
+
+#. Translators: description of the pan-left command on the tactile graphic.
+#: addon\presentations\graphic.py:259
+msgid "Pan the tactile graphic viewport left by one page-step"
+msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar sola kaydır"
+
+#. Translators: description of the pan-up command on the tactile graphic.
+#: addon\presentations\graphic.py:268
+msgid "Pan the tactile graphic viewport up by one page-step"
+msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar yukarı kaydır"
+
+#. Translators: description of the pan-down command on the tactile graphic.
+#: addon\presentations\graphic.py:277
+msgid "Pan the tactile graphic viewport down by one page-step"
+msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı aşağı kaydır"
+
+#. Translators: description of the pan-right command on the tactile graphic.
+#: addon\presentations\graphic.py:286
+msgid "Pan the tactile graphic viewport right by one page-step"
+msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar sağa kaydır"
+
+#. Translators: description of the small pan-left command on the tactile graphic.
+#: addon\presentations\graphic.py:295
+msgid "Pan the tactile graphic viewport left by a few dots"
+msgstr ""
+
+#. Translators: description of the small pan-up command on the tactile graphic.
+#: addon\presentations\graphic.py:304
+msgid "Pan the tactile graphic viewport up by a few dots"
+msgstr ""
+
+#. Translators: description of the small pan-down command on the tactile graphic.
+#: addon\presentations\graphic.py:313
+msgid "Pan the tactile graphic viewport down by a few dots"
+msgstr ""
+
+#. Translators: description of the small pan-right command on the tactile graphic.
+#: addon\presentations\graphic.py:322
+msgid "Pan the tactile graphic viewport right by a few dots"
+msgstr ""
+
+#. Translators: description of the jump-to-left-edge command on the tactile graphic.
+#: addon\presentations\graphic.py:331
+msgid "Jump the tactile graphic viewport to the left edge"
+msgstr "Dokunsal grafik görüntüleme alanını sol kenara kaydır"
+
+#. Translators: description of the jump-to-top-edge command on the tactile graphic.
+#: addon\presentations\graphic.py:340
+msgid "Jump the tactile graphic viewport to the top edge"
+msgstr "Dokunsal grafik görüntüleme alanını üst kenara kaydır"
+
+#. Translators: description of the jump-to-bottom-edge command on the tactile graphic.
+#: addon\presentations\graphic.py:349
+msgid "Jump the tactile graphic viewport to the bottom edge"
+msgstr "Dokunsal grafik görüntü alanını alt kenara kaydır"
+
+#. Translators: description of the jump-to-right-edge command on the tactile graphic.
+#: addon\presentations\graphic.py:358
+msgid "Jump the tactile graphic viewport to the right edge"
+msgstr "Dokunsal grafik görüntüleme alanını sağ kenara kaydır"
+
+#. Translators: description of the recenter command on the tactile graphic.
+#: addon\presentations\graphic.py:367
+msgid "Recenter the tactile graphic viewport"
+msgstr "Dokunsal grafik görüntü alanını yeniden ortala"
+
+#. Translators: description of the zoom-in command on the tactile graphic.
+#: addon\presentations\graphic.py:376
+msgid "Zoom the tactile graphic in"
+msgstr "Dokunsal grafiği yakınlaştır"
+
+#. Translators: description of the zoom-out command on the tactile graphic.
+#: addon\presentations\graphic.py:385
+msgid "Zoom the tactile graphic out"
+msgstr "Dokunsal grafiği uzaklaştır"
+
+#. Translators: description of the invert command on the tactile graphic.
+#: addon\presentations\graphic.py:394
+msgid "Invert the tactile graphic image (swap raised and blank dots)"
+msgstr "Dokunsal grafik görüntüyü ters çevirir (yükseltilmiş ve düz noktaları değiştirir)"
+
+#. Brief changelog for this version
+#. Translators: what's new content for the add-on version to be shown in the add-on store
+#: buildVars.py:44
+msgid "New in version 1.0:\n\n"
+"- Braille and graphics on the multi-line tactile area are now rendered by the bundled TactileDisplayAPI library. It follows the focused control itself and gives richer output for controls, math and images; the NVDA review cursor remains available as an alternative\n"
+"- Tactile graphic mode for images, with pan, zoom, recentre and image inversion\n"
+"- Table mode, including tables in virtual documents such as Google Docs\n"
+"- Connecting, disconnecting and switching between Bluetooth and USB displays is faster, and no longer freezes NVDA when a display is off or out of range\n"
+"- Requires NVDA 2026.1 or later"
+msgstr "1.0 sürümündeki yenilikler:\n\n"
+"- Çok satırlı dokunsal alandaki Braille ve grafikler artık pakete dahil TactileDisplayAPI kütüphanesi tarafından işlenmektedir. Bu kütüphane, odaklanmış denetimin kendisini takip eder ve denetimler, matematiksel ifadeler ve görüntüler için daha zengin bir çıktı sunar; NVDA inceleme imleci ise alternatif olarak kullanılmaya devam eder.\n"
+"- Görüntüler için dokunsal grafik kipi; kaydırma, yakınlaştırma, yeniden merkezleme ve görüntü ters çevirme özellikleri ile\n"
+"- Tablo kipi; Google Dokümanlar gibi sanal belgelerdeki tablolar da dahil\n"
+"- Bluetooth ve USB ekranları arasında bağlantı kurma, bağlantıyı kesme ve geçiş yapma işlemleri daha hızlı hale geldi; ayrıca bir ekran kapalıyken veya menzil dışındayken NVDA artık donmuyor\n"
+"- NVDA 2026.1 veya daha yeni bir sürüm gerekir"
+
