@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en">
-<file id="userGuide.md" original="https://raw.githubusercontent.com/dotincorp/nvda-addon-store/784029c6bdfb8a0608aad0d3d3a19fdd63c100f1/docs/userGuide.md">
+<file id="userGuide.md" original="https://raw.githubusercontent.com/dotincorp/nvda-addon-store/e304e3b5877bb8f3d7be808a2f62450ba3f96e2b/docs/userGuide.md">
 <skeleton>
 # $(ID:2aa53b96-9234-4f54-bae8-cb0fe2a53823)
 
@@ -102,9 +102,11 @@ $(ID:06a689f6-fa88-458c-a3ed-10e6185ce3cd)
 
 $(ID:1496b8dc-335f-41e0-95b4-aeee9fb79c1a)
 $(ID:cb1ed42a-8f76-4e60-a6bc-425f0e76e3a5)
-$(ID:68e72984-01e9-41ad-8eb3-37fad911e2bf)
-$(ID:2c88b5e0-7b8a-4a61-85f9-131cdd581b6f)
-$(ID:81fe6a18-4cb0-4645-beef-71824dfcaca4)
+$(ID:912efd69-b72f-4b51-88bc-c4b1a394fb3e)
+$(ID:a4b3a35a-7a3f-4634-81d9-dbcdc007cb5b)
+$(ID:f29e5c51-c61a-4de1-8212-d95904b5c849)
+$(ID:bb0c91a6-1c35-4eb4-a287-a3cf918adb43)
+$(ID:0df5aab6-f203-422c-a7a7-abf15a7e84b6)
 $(ID:e8dd2d2a-5c91-4c13-a68b-c7e1dce282ad)
 $(ID:72af16ef-f21f-4e47-a5b5-295872420f84)
 
@@ -171,14 +173,14 @@ $(ID:949498c6-973f-4cd7-b7ae-9da1918a7ba0)
 $(ID:912eaf06-a657-4256-9bb0-83dbeacd3e27)
 
 1. $(ID:823bdad5-9ca9-4ff9-85f0-2655503eada0)
-2. $(ID:ce1df497-03a0-4a49-9b2b-a67b937acda9)
+2. $(ID:5c89c42b-cb0e-411c-ae77-1696f0fbc35a)
 3. $(ID:8892b90b-adb9-4a7c-a5d8-957e21a9b2dc)
 4. $(ID:ae2d9cac-8eda-41b8-8b45-fc0e2d80421b)
-5. $(ID:0444a18c-3457-4444-a901-ad33ae3efc90)
+5. $(ID:37eddf4c-da54-4393-a138-f38a18a85d02)
 
 ### $(ID:dc9537a6-aa71-4495-8f10-a08346e978ab)
 
-$(ID:ff54f5ed-29b9-45fe-8dfe-fb12bdc4cb49)
+$(ID:bc4ba801-7115-4b4e-8e1a-591375081eb1)
 
 ## $(ID:927ffdbb-109b-4152-b1ae-2c59cfc5f5ba)
 
@@ -196,9 +198,9 @@ $(ID:dfa88ae0-bfa9-4170-ae3b-a62e2b260bdd)
 $(ID:aa59f669-67e7-4eb9-9c29-5af81364de0c)
 $(ID:c8ee6051-f196-4aef-8b57-e0db66f21066)
 $(ID:d1f7b019-346b-4810-9f61-287e4b271bf0)
-$(ID:7a5a6c01-fbe1-4cb8-ac36-22b310554c27)
+$(ID:cf447b9a-0665-416b-914c-e1a6bee5674e)
 $(ID:3a26be32-725c-4b84-aeee-0121e7423a3f)
-$(ID:35d58c0a-77a5-4c44-8211-067c560c70d6)
+$(ID:5817228e-8572-456c-80d4-9da37752b5f6)
 
 $(ID:d00185d1-6496-4efb-928a-1a4bac18e7b4)
 
@@ -208,6 +210,10 @@ $(ID:9bb2b4cf-0750-4c1a-94aa-1d3f3ab83550)
 $(ID:21226f99-2ab9-431a-88df-a8cad9eaabfe)
 $(ID:4c2198c7-39e1-46d5-99fa-98ed3b72cc4d)
 $(ID:a4baaf52-1e91-4b06-a23a-8c03505e1d41)
+$(ID:9356aa8e-228f-4dc0-9fac-2ec83f8c4f73)
+$(ID:58309386-e680-414e-b18e-f9216c439bdd)
+$(ID:7b2e94bf-8ec9-48fd-a624-d11ae33b39ba)
+$(ID:7480853e-40f0-4fe6-8791-cd81d509eed0)
 $(ID:225a1334-e810-418b-a3ee-28a4b84b8557)
 
 ## $(ID:1fe704e6-be8c-460d-8257-f4f8ae2e7f68)
@@ -225,7 +231,6 @@ $(ID:43eb7cd9-ab8b-45ad-a02f-fefb196ada1b)
 ## $(ID:21123549-695d-4493-8e2d-d01d55ee689c)
 
 $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
-
 </skeleton>
 <unit id="2aa53b96-9234-4f54-bae8-cb0fe2a53823">
 <notes>
@@ -764,33 +769,49 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 <source>- Right Pan + F4 Key: Pan the graphic right a few dots in graphics mode.</source>
 </segment>
 </unit>
-<unit id="68e72984-01e9-41ad-8eb3-37fad911e2bf">
+<unit id="912efd69-b72f-4b51-88bc-c4b1a394fb3e">
 <notes>
 <note appliesTo="source">line: 102</note>
 </notes>
 <segment>
-<source>- F1+F3: Braille mode. Long press for screen capture mode.</source>
+<source>- F1+F2: Move the viewport up a few dots in graphics mode.</source>
 </segment>
 </unit>
-<unit id="2c88b5e0-7b8a-4a61-85f9-131cdd581b6f">
+<unit id="a4b3a35a-7a3f-4634-81d9-dbcdc007cb5b">
 <notes>
 <note appliesTo="source">line: 103</note>
 </notes>
 <segment>
-<source>- F2+F4: Convert the letter, emoji, graphic or selection to a tactile image.</source>
+<source>- F3+F4: Move the viewport down a few dots in graphics mode.</source>
 </segment>
 </unit>
-<unit id="81fe6a18-4cb0-4645-beef-71824dfcaca4">
+<unit id="f29e5c51-c61a-4de1-8212-d95904b5c849">
 <notes>
 <note appliesTo="source">line: 104</note>
 </notes>
 <segment>
-<source>- F2+F3: When showing a tactile image, zoom in (magnify the image).</source>
+<source>- F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.</source>
+</segment>
+</unit>
+<unit id="bb0c91a6-1c35-4eb4-a287-a3cf918adb43">
+<notes>
+<note appliesTo="source">line: 105</note>
+</notes>
+<segment>
+<source>- F2+F4: Braille mode.</source>
+</segment>
+</unit>
+<unit id="0df5aab6-f203-422c-a7a7-abf15a7e84b6">
+<notes>
+<note appliesTo="source">line: 106</note>
+</notes>
+<segment>
+<source>- F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image.</source>
 </segment>
 </unit>
 <unit id="e8dd2d2a-5c91-4c13-a68b-c7e1dce282ad">
 <notes>
-<note appliesTo="source">line: 105</note>
+<note appliesTo="source">line: 107</note>
 </notes>
 <segment>
 <source>- F1+F4: When showing a tactile image, zoom out (shrink the image).</source>
@@ -798,7 +819,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="72af16ef-f21f-4e47-a5b5-295872420f84">
 <notes>
-<note appliesTo="source">line: 106</note>
+<note appliesTo="source">line: 108</note>
 </notes>
 <segment>
 <source>- F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.</source>
@@ -806,7 +827,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="a625cda9-ec1a-44e5-8161-3bfce4a259f1">
 <notes>
-<note appliesTo="source">line: 108</note>
+<note appliesTo="source">line: 110</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -815,7 +836,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="15c82dee-64d8-4092-aa33-7606b21509bb">
 <notes>
-<note appliesTo="source">line: 110</note>
+<note appliesTo="source">line: 112</note>
 </notes>
 <segment>
 <source>NVDA controls the braille translation engine, converting your screen's text into braille data for the Dot Pad. These advanced features and structural behaviors are managed within NVDA's braille settings.</source>
@@ -823,7 +844,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="9665605a-a347-4be0-9826-75dd21420d61">
 <notes>
-<note appliesTo="source">line: 112</note>
+<note appliesTo="source">line: 114</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -832,7 +853,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="6d6c653b-ea64-4fa5-9b05-bfceb3d56cc2">
 <notes>
-<note appliesTo="source">line: 114</note>
+<note appliesTo="source">line: 116</note>
 </notes>
 <segment>
 <source>By default, the NVDA Dot Pad driver maps the single-line 20-cell display to follow the system focus, where your typing cursor or tab key is. Meanwhile, the multiline 300-cell display either shows multiline text from the system caret, or text from the navigator object and review cursor, depending on the Multiline Source setting in the Dot Pad settings panel. This lets you either review full multiline text, or independently look at two different screen areas simultaneously, depending on the view.</source>
@@ -840,7 +861,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="dbd249ce-fc00-47f5-881d-574fc4ff6ef5">
 <notes>
-<note appliesTo="source">line: 116</note>
+<note appliesTo="source">line: 118</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -849,7 +870,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="db51ebc9-8750-4780-808f-8494954f7527">
 <notes>
-<note appliesTo="source">line: 118</note>
+<note appliesTo="source">line: 120</note>
 </notes>
 <segment>
 <source>This setting determines which cursor's content outputs to your braille device. When using the Dot Pad, it is recommended to set braille tethering to "System Focus". This naturally reinforces the separation of the 20-cell display for focus text and the 300-cell display for multiline context.</source>
@@ -857,7 +878,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="84b6740d-913f-4e26-bf1c-f03f70367a58">
 <notes>
-<note appliesTo="source">line: 120</note>
+<note appliesTo="source">line: 122</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -866,7 +887,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="23ccc193-3a95-48a1-9eb0-882134061674">
 <notes>
-<note appliesTo="source">line: 122</note>
+<note appliesTo="source">line: 124</note>
 </notes>
 <segment>
 <source>By pressing NVDA+7 (toggle "Follow system focus") and NVDA+6 (toggle "Follow System Caret"), you can freeze the text on your multiline graphic display. This allows you to reference a webpage or document in the multiline area while actively typing into a text editor on the single-line display.</source>
@@ -874,7 +895,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="498ab4bf-4d30-43e9-a890-b6c0111edf84">
 <notes>
-<note appliesTo="source">line: 124</note>
+<note appliesTo="source">line: 126</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -883,7 +904,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="b492ec9f-39c9-477d-987d-fa2806743e13">
 <notes>
-<note appliesTo="source">line: 126</note>
+<note appliesTo="source">line: 128</note>
 </notes>
 <segment>
 <source>By default NVDA blinks the braille cursor. Dot Pad cells refresh slowly, and not reliably at all while you are touching them, so a blinking cursor is of little use. During the installation of the add-on it asks you whether to turn the blinking cursor off. NVDA has a single blink setting for all braille displays, so answering "Yes" turns blinking off on every display you use. Like the automatic detection question it is only asked once, and you can change it at any time with the "Blink cursor" checkbox in NVDA's braille settings.</source>
@@ -891,7 +912,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="32651a5c-9ace-424f-bba1-8ca4d05850b6">
 <notes>
-<note appliesTo="source">line: 128</note>
+<note appliesTo="source">line: 130</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -900,7 +921,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="30667f0d-cc86-48a9-b0c7-f9ed486d83e4">
 <notes>
-<note appliesTo="source">line: 130</note>
+<note appliesTo="source">line: 132</note>
 </notes>
 <segment>
 <source>When you navigate to a chart area in Excel or PowerPoint, using control+alt+5 or NVDA's elements list (NVDA+f7), the add-on automatically translates the chart data into a bar graph layout rendered dynamically on the 300-cell multiline graphic display.</source>
@@ -908,7 +929,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="d07ce934-e2b0-4169-be63-83bf6a687fe8">
 <notes>
-<note appliesTo="source">line: 132</note>
+<note appliesTo="source">line: 134</note>
 </notes>
 <segment>
 <source>Note that other chart types will render as a bar graph as well. This is a limitation we hope to resolve soon.</source>
@@ -916,7 +937,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="d480b850-f7d4-4f16-975d-5e446b395d2d">
 <notes>
-<note appliesTo="source">line: 134</note>
+<note appliesTo="source">line: 136</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -925,7 +946,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="b9332a8c-ed4e-4e6b-898d-3bbcb35bb693">
 <notes>
-<note appliesTo="source">line: 136</note>
+<note appliesTo="source">line: 138</note>
 </notes>
 <segment>
 <source>If you want to change what the F1 to F4 or panning keys do, go to NVDA menu, Preferences, Input Gestures. Under the feature categories, you can select "Add" and press any button combination on the Dot Pad to remap it to a new NVDA command.</source>
@@ -933,7 +954,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="75af7d8f-a957-44db-baac-72505ae48419">
 <notes>
-<note appliesTo="source">line: 138</note>
+<note appliesTo="source">line: 140</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -942,7 +963,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="d78fcfab-8bb4-4710-8913-722778217f82">
 <notes>
-<note appliesTo="source">line: 140</note>
+<note appliesTo="source">line: 142</note>
 </notes>
 <segment>
 <source>This add-on includes Dot's Tactile Display API library to introduce seamless, real-time tactile graphics directly into the Windows environment, allowing blind users to physically feel layout shapes, diagrams and formatting structure.</source>
@@ -950,7 +971,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="8de662fb-4796-4973-a39d-2a69e5a0f492">
 <notes>
-<note appliesTo="source">line: 142</note>
+<note appliesTo="source">line: 144</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -959,7 +980,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="367d96ca-b1a2-4ca1-a13a-0ce22fe2b67b">
 <notes>
-<note appliesTo="source">line: 144</note>
+<note appliesTo="source">line: 146</note>
 </notes>
 <segment>
 <source>When interacting with spreadsheets, the add-on maps distinct information across your dual displays. The 300-cell graphical display transforms spreadsheet data into a physical, tactile table layout, allowing you to feel cell barriers and vertical alignments. Simultaneously, the exact structural text content of the currently focused cell is shown in braille on the 20-cell text display.</source>
@@ -967,7 +988,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="4de8c8b5-d614-4083-b189-2782eaba76f9">
 <notes>
-<note appliesTo="source">line: 146</note>
+<note appliesTo="source">line: 148</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -976,7 +997,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="c8d368c1-55ab-4bae-8555-8ccd3e5cc719">
 <notes>
-<note appliesTo="source">line: 148</note>
+<note appliesTo="source">line: 150</note>
 </notes>
 <segment>
 <source>By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window.</source>
@@ -984,7 +1005,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="940b2c43-abe4-4964-8064-fc1088964fba">
 <notes>
-<note appliesTo="source">line: 150</note>
+<note appliesTo="source">line: 152</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
@@ -993,7 +1014,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="3b0cc8e2-b076-4300-9a23-219571118ea4">
 <notes>
-<note appliesTo="source">line: 152</note>
+<note appliesTo="source">line: 154</note>
 </notes>
 <segment>
 <source>You can use math expressions directly inside applications to render cartesian graphs on the fly.</source>
@@ -1001,7 +1022,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="025fe931-8f6c-420d-81f0-c92a2965061b">
 <notes>
-<note appliesTo="source">line: 154</note>
+<note appliesTo="source">line: 156</note>
 </notes>
 <segment>
 <source>In Microsoft Word:</source>
@@ -1009,7 +1030,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="93028a20-4444-4725-84e7-28031dba2740">
 <notes>
-<note appliesTo="source">line: 156</note>
+<note appliesTo="source">line: 158</note>
 <note appliesTo="source">prefix: 1. </note>
 </notes>
 <segment>
@@ -1018,7 +1039,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="2e344193-247e-401c-a636-c4ca26194d8c">
 <notes>
-<note appliesTo="source">line: 157</note>
+<note appliesTo="source">line: 159</note>
 <note appliesTo="source">prefix: 2. </note>
 </notes>
 <segment>
@@ -1027,7 +1048,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="daea4a2c-32c7-431c-ba32-709e7ca182f9">
 <notes>
-<note appliesTo="source">line: 159</note>
+<note appliesTo="source">line: 161</note>
 </notes>
 <segment>
 <source>You can write the following example expressions to demonstrate math graphs in Microsoft Word:</source>
@@ -1035,7 +1056,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="687d1998-87f5-4be5-bee9-cb2a96800164">
 <notes>
-<note appliesTo="source">line: 161</note>
+<note appliesTo="source">line: 163</note>
 </notes>
 <segment>
 <source>- Linear function: y = x</source>
@@ -1043,7 +1064,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="c0b48383-0e23-4a89-b3e2-b83091b43dc7">
 <notes>
-<note appliesTo="source">line: 162</note>
+<note appliesTo="source">line: 164</note>
 </notes>
 <segment>
 <source>- Quadratic function (parabola): y = x^2</source>
@@ -1051,7 +1072,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="83e95610-904a-48cf-84cc-0bd0ac562a7b">
 <notes>
-<note appliesTo="source">line: 163</note>
+<note appliesTo="source">line: 165</note>
 </notes>
 <segment>
 <source>- Square root function: y = sqrt(x)</source>
@@ -1059,7 +1080,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="8d27e7b8-bdf6-438c-a7e8-708f235d7449">
 <notes>
-<note appliesTo="source">line: 164</note>
+<note appliesTo="source">line: 166</note>
 </notes>
 <segment>
 <source>- Cubic function: y = x^3</source>
@@ -1067,7 +1088,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="328375b3-937b-443d-9894-f8eacc7bf039">
 <notes>
-<note appliesTo="source">line: 165</note>
+<note appliesTo="source">line: 167</note>
 </notes>
 <segment>
 <source>- Sinusoidal function (wave): y = sin(x)</source>
@@ -1075,7 +1096,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="949498c6-973f-4cd7-b7ae-9da1918a7ba0">
 <notes>
-<note appliesTo="source">line: 166</note>
+<note appliesTo="source">line: 168</note>
 </notes>
 <segment>
 <source>- Rational function: y = 1/x</source>
@@ -1083,7 +1104,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="912eaf06-a657-4256-9bb0-83dbeacd3e27">
 <notes>
-<note appliesTo="source">line: 168</note>
+<note appliesTo="source">line: 170</note>
 </notes>
 <segment>
 <source>To view math graphs on the Dot Pad:</source>
@@ -1091,25 +1112,25 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="823bdad5-9ca9-4ff9-85f0-2655503eada0">
 <notes>
-<note appliesTo="source">line: 170</note>
+<note appliesTo="source">line: 172</note>
 <note appliesTo="source">prefix: 1. </note>
 </notes>
 <segment>
 <source>Use the keyboard to arrow down to the target equation in your document.</source>
 </segment>
 </unit>
-<unit id="ce1df497-03a0-4a49-9b2b-a67b937acda9">
+<unit id="5c89c42b-cb0e-411c-ae77-1696f0fbc35a">
 <notes>
-<note appliesTo="source">line: 171</note>
+<note appliesTo="source">line: 173</note>
 <note appliesTo="source">prefix: 2. </note>
 </notes>
 <segment>
-<source>With your cursor resting on the equation, press F2+F4 on the Dot Pad to enter tactile viewer mode.</source>
+<source>With your cursor resting on the equation, press F1+F3 on the Dot Pad to enter tactile viewer mode.</source>
 </segment>
 </unit>
 <unit id="8892b90b-adb9-4a7c-a5d8-957e21a9b2dc">
 <notes>
-<note appliesTo="source">line: 172</note>
+<note appliesTo="source">line: 174</note>
 <note appliesTo="source">prefix: 3. </note>
 </notes>
 <segment>
@@ -1118,42 +1139,42 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="ae2d9cac-8eda-41b8-8b45-fc0e2d80421b">
 <notes>
-<note appliesTo="source">line: 173</note>
+<note appliesTo="source">line: 175</note>
 <note appliesTo="source">prefix: 4. </note>
 </notes>
 <segment>
 <source>Zoom out by pressing F1+F4 on the Dot Pad.</source>
 </segment>
 </unit>
-<unit id="0444a18c-3457-4444-a901-ad33ae3efc90">
+<unit id="37eddf4c-da54-4393-a138-f38a18a85d02">
 <notes>
-<note appliesTo="source">line: 174</note>
+<note appliesTo="source">line: 176</note>
 <note appliesTo="source">prefix: 5. </note>
 </notes>
 <segment>
-<source>When finished, press F1+F3 on the Dot Pad to exit the viewer and return to standard braille output.</source>
+<source>When finished, press F2+F4 on the Dot Pad to exit the viewer and return to standard braille output.</source>
 </segment>
 </unit>
 <unit id="dc9537a6-aa71-4495-8f10-a08346e978ab">
 <notes>
-<note appliesTo="source">line: 176</note>
+<note appliesTo="source">line: 178</note>
 <note appliesTo="source">prefix: ### </note>
 </notes>
 <segment>
 <source>Rendering Tactile Print</source>
 </segment>
 </unit>
-<unit id="ff54f5ed-29b9-45fe-8dfe-fb12bdc4cb49">
+<unit id="bc4ba801-7115-4b4e-8e1a-591375081eb1">
 <notes>
-<note appliesTo="source">line: 178</note>
+<note appliesTo="source">line: 180</note>
 </notes>
 <segment>
-<source>You can also feel a tactile representation of print characters by pressing F2+F4. Dot Pad will render the character at the cursor. You can zoom in with F2+F3, and out with F1+F4. You can invert the tactile image by pressing all four function keys together.</source>
+<source>You can also feel a tactile representation of print characters by pressing F1+F3. Dot Pad will render the character at the cursor. You can zoom in with F2+F3, and out with F1+F4. You can invert the tactile image by pressing all four function keys together.</source>
 </segment>
 </unit>
 <unit id="927ffdbb-109b-4152-b1ae-2c59cfc5f5ba">
 <notes>
-<note appliesTo="source">line: 180</note>
+<note appliesTo="source">line: 182</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -1162,7 +1183,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="ba8f5ec7-73f7-4cb9-958f-d3ad3c817815">
 <notes>
-<note appliesTo="source">line: 182</note>
+<note appliesTo="source">line: 184</note>
 </notes>
 <segment>
 <source>Graphics mode allows the Dot Pad to automatically follow your system cursor events without requiring manually typed coordinates. If your NVDA review cursor diverges from the system focus, such as when exploring a virtual document on a web page, the add-on switches to bounding-box rendering to keep you oriented.</source>
@@ -1170,7 +1191,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="0a7c3b3a-17e0-43b8-8668-a0d45f8442d9">
 <notes>
-<note appliesTo="source">line: 184</note>
+<note appliesTo="source">line: 186</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -1179,7 +1200,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="b3ed68d4-2507-4002-9f25-26b1a51b59f2">
 <notes>
-<note appliesTo="source">line: 186</note>
+<note appliesTo="source">line: 188</note>
 </notes>
 <segment>
 <source>You will notice that button functions depend on the context. The presentation pipeline changes the bindings of the physical buttons based on your cursor activity.</source>
@@ -1187,7 +1208,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="6b47d433-2df0-4f78-a1d5-fe9d60207127">
 <notes>
-<note appliesTo="source">line: 188</note>
+<note appliesTo="source">line: 190</note>
 </notes>
 <segment>
 <source>Braille presentation takeover: Whenever you press an arrow key to edit text, graphic mode automatically exits to avoid interfering with your workflow. Viewport pan and zoom gestures are unbound, and braille presentation takes over the display.</source>
@@ -1195,7 +1216,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="dbc97f74-6c79-41cf-8b8b-dc59c2c1c495">
 <notes>
-<note appliesTo="source">line: 190</note>
+<note appliesTo="source">line: 192</note>
 </notes>
 <segment>
 <source>Button map reference, standard mode:</source>
@@ -1203,7 +1224,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="dfa88ae0-bfa9-4170-ae3b-a62e2b260bdd">
 <notes>
-<note appliesTo="source">line: 192</note>
+<note appliesTo="source">line: 194</note>
 </notes>
 <segment>
 <source>- Left Pan Key (Triangular): Scroll back through single-line braille text displayed in the 20-cell text area.</source>
@@ -1211,7 +1232,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="aa59f669-67e7-4eb9-9c29-5af81364de0c">
 <notes>
-<note appliesTo="source">line: 193</note>
+<note appliesTo="source">line: 195</note>
 </notes>
 <segment>
 <source>- Right Pan Key (Triangular): Scroll forward through single-line braille text displayed in the 20-cell text area.</source>
@@ -1219,7 +1240,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="c8ee6051-f196-4aef-8b57-e0db66f21066">
 <notes>
-<note appliesTo="source">line: 194</note>
+<note appliesTo="source">line: 196</note>
 </notes>
 <segment>
 <source>- F1 Key: Scroll back in the 300-cell multiline area, or move to the previous chart data point.</source>
@@ -1227,39 +1248,39 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="d1f7b019-346b-4810-9f61-287e4b271bf0">
 <notes>
-<note appliesTo="source">line: 195</note>
+<note appliesTo="source">line: 197</note>
 </notes>
 <segment>
 <source>- F4 Key: Scroll forward in the 300-cell multiline area, or move to the next chart data point.</source>
 </segment>
 </unit>
-<unit id="7a5a6c01-fbe1-4cb8-ac36-22b310554c27">
+<unit id="cf447b9a-0665-416b-914c-e1a6bee5674e">
 <notes>
-<note appliesTo="source">line: 196</note>
+<note appliesTo="source">line: 198</note>
 </notes>
 <segment>
-<source>- F1+F3: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.</source>
+<source>- F2+F4: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.</source>
 </segment>
 </unit>
 <unit id="3a26be32-725c-4b84-aeee-0121e7423a3f">
 <notes>
-<note appliesTo="source">line: 197</note>
+<note appliesTo="source">line: 199</note>
 </notes>
 <segment>
 <source>- F3 Key: Serves as the hardware enter button, or executes the currently focused navigator object.</source>
 </segment>
 </unit>
-<unit id="35d58c0a-77a5-4c44-8211-067c560c70d6">
+<unit id="5817228e-8572-456c-80d4-9da37752b5f6">
 <notes>
-<note appliesTo="source">line: 198</note>
+<note appliesTo="source">line: 200</note>
 </notes>
 <segment>
-<source>- F2+F4: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.</source>
+<source>- F1+F3 or F2+F3: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.</source>
 </segment>
 </unit>
 <unit id="d00185d1-6496-4efb-928a-1a4bac18e7b4">
 <notes>
-<note appliesTo="source">line: 200</note>
+<note appliesTo="source">line: 202</note>
 </notes>
 <segment>
 <source>Button map reference, tactile graphics mode. When the review mode is explicitly set to tactile graphics, the button configuration adjusts to let you navigate and manipulate the viewport of the graphic or math equation directly from the hardware:</source>
@@ -1267,7 +1288,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="86d9f671-f8c3-4fa4-9978-5fd4b9ab6550">
 <notes>
-<note appliesTo="source">line: 202</note>
+<note appliesTo="source">line: 204</note>
 </notes>
 <segment>
 <source>- F2+F3: Zoom in on the tactile graphic or math graph.</source>
@@ -1275,7 +1296,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="20ce69ec-55d4-4aa6-906b-a03d6e5102e4">
 <notes>
-<note appliesTo="source">line: 203</note>
+<note appliesTo="source">line: 205</note>
 </notes>
 <segment>
 <source>- F1+F4: Zoom out from the tactile graphic or math graph.</source>
@@ -1283,7 +1304,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="9bb2b4cf-0750-4c1a-94aa-1d3f3ab83550">
 <notes>
-<note appliesTo="source">line: 204</note>
+<note appliesTo="source">line: 206</note>
 </notes>
 <segment>
 <source>- F1 Key: Pan the tactile graphic view one step to the left.</source>
@@ -1291,7 +1312,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="21226f99-2ab9-431a-88df-a8cad9eaabfe">
 <notes>
-<note appliesTo="source">line: 205</note>
+<note appliesTo="source">line: 207</note>
 </notes>
 <segment>
 <source>- F4 Key: Pan the tactile graphic view one step to the right.</source>
@@ -1299,7 +1320,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="4c2198c7-39e1-46d5-99fa-98ed3b72cc4d">
 <notes>
-<note appliesTo="source">line: 206</note>
+<note appliesTo="source">line: 208</note>
 </notes>
 <segment>
 <source>- F2 Key: Pan the tactile graphic view one step up.</source>
@@ -1307,15 +1328,47 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="a4baaf52-1e91-4b06-a23a-8c03505e1d41">
 <notes>
-<note appliesTo="source">line: 207</note>
+<note appliesTo="source">line: 209</note>
 </notes>
 <segment>
 <source>- F3 Key: Pan the tactile graphic view one step down.</source>
 </segment>
 </unit>
+<unit id="9356aa8e-228f-4dc0-9fac-2ec83f8c4f73">
+<notes>
+<note appliesTo="source">line: 210</note>
+</notes>
+<segment>
+<source>- Left Pan + F1 Key: Pan the tactile graphic view left by a few dots.</source>
+</segment>
+</unit>
+<unit id="58309386-e680-414e-b18e-f9216c439bdd">
+<notes>
+<note appliesTo="source">line: 211</note>
+</notes>
+<segment>
+<source>- Right Pan + F4 Key: Pan the tactile graphic view right by a few dots.</source>
+</segment>
+</unit>
+<unit id="7b2e94bf-8ec9-48fd-a624-d11ae33b39ba">
+<notes>
+<note appliesTo="source">line: 212</note>
+</notes>
+<segment>
+<source>- F1+F2: Pan the tactile graphic view up by a few dots.</source>
+</segment>
+</unit>
+<unit id="7480853e-40f0-4fe6-8791-cd81d509eed0">
+<notes>
+<note appliesTo="source">line: 213</note>
+</notes>
+<segment>
+<source>- F3+F4: Pan the tactile graphic view down by a few dots.</source>
+</segment>
+</unit>
 <unit id="225a1334-e810-418b-a3ee-28a4b84b8557">
 <notes>
-<note appliesTo="source">line: 208</note>
+<note appliesTo="source">line: 214</note>
 </notes>
 <segment>
 <source>- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation.</source>
@@ -1323,7 +1376,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="1fe704e6-be8c-460d-8257-f4f8ae2e7f68">
 <notes>
-<note appliesTo="source">line: 210</note>
+<note appliesTo="source">line: 216</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -1332,7 +1385,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="0e02c7ed-97c8-468f-b83a-0920755554ab">
 <notes>
-<note appliesTo="source">line: 212</note>
+<note appliesTo="source">line: 218</note>
 </notes>
 <segment>
 <source>Sighted teachers, coworkers, friends or family can see what is under your fingers with the onscreen braille visualizer, which may be used when the Dot Pad is connected. See the Dot Pad Display Viewer option under the NVDA Tools menu. When this option is checked, both the single line and the main graphics area will be shown on the computer's screen when the Dot Pad is in use. This is useful for sighted demonstrations of the capabilities of the Dot Pad, training, or other collaboration scenarios.</source>
@@ -1340,7 +1393,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="8bb945a3-7801-4ce7-8ee9-a99a1b7d3371">
 <notes>
-<note appliesTo="source">line: 214</note>
+<note appliesTo="source">line: 220</note>
 </notes>
 <segment>
 <source>Note that the NVDA braille viewer, also available from the Tools menu, only shows the 20-cell display. When using a Dot Pad, it is recommended to disable the NVDA braille viewer and only use the Dot Pad Display Viewer if an on-screen view of the display is required.</source>
@@ -1348,7 +1401,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="e5705d09-abc8-4d0a-9fe9-73326424e626">
 <notes>
-<note appliesTo="source">line: 216</note>
+<note appliesTo="source">line: 222</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -1357,7 +1410,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="3716dde4-b925-44a4-b9ef-eacf91943c3f">
 <notes>
-<note appliesTo="source">line: 218</note>
+<note appliesTo="source">line: 224</note>
 </notes>
 <segment>
 <source>For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's general settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.</source>
@@ -1365,7 +1418,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="43eb7cd9-ab8b-45ad-a02f-fefb196ada1b">
 <notes>
-<note appliesTo="source">line: 220</note>
+<note appliesTo="source">line: 226</note>
 </notes>
 <segment>
 <source>For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/).</source>
@@ -1373,7 +1426,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="21123549-695d-4493-8e2d-d01d55ee689c">
 <notes>
-<note appliesTo="source">line: 222</note>
+<note appliesTo="source">line: 228</note>
 <note appliesTo="source">prefix: ## </note>
 </notes>
 <segment>
@@ -1382,7 +1435,7 @@ $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
 </unit>
 <unit id="80e5aaf8-c5c2-4d30-a03e-887ab68cba85">
 <notes>
-<note appliesTo="source">line: 224</note>
+<note appliesTo="source">line: 230</note>
 </notes>
 <segment>
 <source>This add-on is distributed under the terms of the GNU General Public License, version 2 or later. The full text is in the file COPYING.txt, and the licences of the bundled third-party components are in THIRD_PARTY_NOTICES.md. Both files are shipped alongside this guide.</source>
