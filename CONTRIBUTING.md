@@ -14,13 +14,21 @@ uv sync
 uv run prek install      # install the git hooks
 ```
 
-One extra step is needed once per clone. The bundled per-locale
-`TactileDisplayAPI.ini` files are UTF-16 LE and are stored as binary so their
-byte alignment survives; register the textconv driver so `git diff` and
-`git log -p` can still render them as text:
+Two extra steps are needed once per clone, both registering a textconv driver
+so that `git diff` and `git log -p` can render a file git stores as binary.
+
+The bundled per-locale `TactileDisplayAPI.ini` files are UTF-16 LE and are
+stored as binary so their byte alignment survives:
 
 ```bash
 git config diff.utf16.textconv "python tools/textconvUtf16.py"
+```
+
+Dot's Word review copy of the user guide in `docs/wordSource/` is a zip, and
+renders as one line per paragraph:
+
+```bash
+git config diff.docx.textconv "python tools/textconvDocx.py"
 ```
 
 ## Branching
@@ -42,6 +50,9 @@ and simple lists. `buildVars.markdownExtensions` is empty, so the build renders
 with vanilla python-markdown, and the XLIFF segmenter expects the same flavour.
 
 Everything else under `docs/` is developer documentation and is not shipped.
+That includes [`docs/wordSource/`](docs/wordSource/readme.md), which holds Dot's
+Word review copy of the same guide as an archival snapshot. The Markdown is
+canonical; see the readme there before editing the Word document.
 
 ## The development loop
 

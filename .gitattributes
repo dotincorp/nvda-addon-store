@@ -45,6 +45,14 @@ Makefile     text
 # See CLAUDE.md "Contributor setup" for details.
 addon/tactileDisplayAPI/**/TactileDisplayAPI.ini -text diff=utf16
 
+# Dot's Word review copy of the user guide (docs/wordSource/). A .docx is a zip,
+# so it is pinned as binary for the same reason as the INIs above: text-mode
+# normalisation would corrupt it, and NUL-byte auto-detection is not guaranteed
+# everywhere. The `diff=docx` filter renders it as one line per paragraph via
+# tools/textconvDocx.py. Register the driver once per clone:
+#     git config diff.docx.textconv "python tools/textconvDocx.py"
+*.docx -text diff=docx
+
 # Other files
 *.def text
 *.css text
