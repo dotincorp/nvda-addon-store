@@ -92,6 +92,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - Right Pan Key (Triangular): Scroll forward through the braille text in the 20-cell area.
 - F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.
 - F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.
+- F2 Key: In a tactile graphic, scroll the graphic up.
 - F3 Key:
     - In braille mode: Activate or execute the currently focused navigator object, equivalent to NVDA+enter.
     - In a tactile graphic: Scroll the graphic down.
@@ -103,7 +104,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F1+F2: Move the viewport up a few dots in graphics mode.
 - F3+F4: Move the viewport down a few dots in graphics mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
-- F2+F4: Braille mode.
+- F2+F4: When showing a tactile image, return to braille mode.
 - F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
@@ -204,10 +205,10 @@ Button map reference, tactile graphics mode. When the review mode is explicitly 
 
 - F2+F3: Zoom in on the tactile graphic or math graph.
 - F1+F4: Zoom out from the tactile graphic or math graph.
-- F1 Key: Pan the tactile graphic view one step to the left.
-- F4 Key: Pan the tactile graphic view one step to the right.
-- F2 Key: Pan the tactile graphic view one step up.
-- F3 Key: Pan the tactile graphic view one step down.
+- F1 Key: Pan the tactile graphic view one display to the left.
+- F4 Key: Pan the tactile graphic view one display to the right.
+- F2 Key: Pan the tactile graphic view one display up.
+- F3 Key: Pan the tactile graphic view one display down.
 - Long press any of the four keys above to jump the view straight to that edge of the graphic: F1 to the left edge, F4 to the right edge, F2 to the top edge, and F3 to the bottom edge.
 - Left Pan + F1 Key: Pan the tactile graphic view left by a few dots.
 - Right Pan + F4 Key: Pan the tactile graphic view right by a few dots.
