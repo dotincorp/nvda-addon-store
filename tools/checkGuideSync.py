@@ -37,6 +37,20 @@ WORD = REPO / "docs" / "wordSource" / "NVDA Dot Pad Add-on Guide.docx"
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 
+
+def markdown_links(path: Path) -> dict[str, str]:
+	"""Link text to URL, for every Markdown link in the guide."""
+	text = path.read_text(encoding="utf-8")
+	return {m.group(1): m.group(2) for m in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", text)}
+
+
+def word_link_targets(path: Path) -> set[str]:
+	"""The external hyperlink targets the Word document declares."""
+	with zipfile.ZipFile(path) as archive:
+		rels = archive.read("word/_rels/document.xml.rels").decode("utf-8")
+	return set(re.findall(r'Target="([^"]+)" TargetMode="External"', rels))
+
+
 EXPECTED = """Word-only content that is not drift:
   * the table of contents (a TOC field; the Markdown has no equivalent)
   * the six math examples, which are real equation objects in Word where the
@@ -107,7 +121,9 @@ def markdown_blocks(path: Path) -> list[str]:
 		text = re.sub(r"^#+\s*", "", text)
 		text = re.sub(r"^[-*]\s+", "", text)
 		text = re.sub(r"^\d+\.\s+", "", text)
-		text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
+		# A link's URL lives in the Markdown source and in a Word relationship, never
+		# in the visible text, so compare the link text and check targets separately.
+		text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", text)
 		text = re.sub(r"`([^`]+)`", r"\1", text)
 		out.append(text.replace("**", "").strip())
 	return out
@@ -127,9 +143,17 @@ def main() -> int:
 		if not line.startswith(("---", "+++", "@@"))
 	]
 
-	if not diff:
-		print(f"In step: {len(md)} paragraphs match.")
+	# Links carry their URL in the Markdown source and in a relationship in Word, so
+	# the paragraph text cannot show them; compare the targets separately.
+	wanted = {url for url in markdown_links(MARKDOWN).values() if url.startswith("http")}
+	missing = wanted - word_link_targets(WORD)
+
+	if not diff and not missing:
+		print(f"In step: {len(md)} paragraphs match, {len(wanted)} links point to the same targets.")
 		return 0
+
+	for url in sorted(missing):
+		print(f"  link not in the Word copy: {url}")
 
 	if not args.quiet:
 		for line in diff:
