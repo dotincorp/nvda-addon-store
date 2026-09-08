@@ -37,6 +37,8 @@ from contextlib import contextmanager
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
+import winUser
+
 
 @contextmanager
 def _stubbedComEnvironment() -> Iterator[MagicMock]:
@@ -469,11 +471,7 @@ class TestMessagePumpRunsOnIdle(unittest.TestCase):
 				worker.stop()
 
 	def test_idle_blocks_in_msgWaitForMultipleObjects(self) -> None:
-		"""Idle waits on the queue event + QS_ALLINPUT rather than polling.
-
-		Polling put a full interval of latency on every message the library
-		exchanges; blocking wakes on the first one.
-		"""
+		"""Idle waits on the queue event + QS_ALLINPUT rather than polling."""
 		import time as _time
 
 		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
@@ -490,12 +488,14 @@ class TestMessagePumpRunsOnIdle(unittest.TestCase):
 				# nCount, handles, waitAll, timeoutMs, wakeMask
 				self.assertEqual(waitCalls[0].args[0], 1)
 				self.assertFalse(waitCalls[0].args[2])
-				self.assertEqual(waitCalls[0].args[4], lw._QS_ALLINPUT)
+				self.assertEqual(waitCalls[0].args[4], winUser.QS_ALLINPUT)
 			finally:
 				worker.stop()
 
 	def test_submit_signals_the_queue_event(self) -> None:
-		"""A queue put wakes the worker instead of leaving it on the backstop."""
+		"""A queue put signals the wake event. Does not prove the wait responds --
+		MsgWaitForMultipleObjects is mocked here and never blocks.
+		"""
 		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
 
 		with _stubbedComEnvironment():
