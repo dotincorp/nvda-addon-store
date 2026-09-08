@@ -4,6 +4,8 @@
 
 The NVDA add-on for Dot Pad is the means by which we get NVDA to optimally display braille and tactile graphics on the Dot Pad. You need to install the add-on: without it, NVDA won't be able to take advantage of the Dot Pad's multiline and tactile graphics capabilities.
 
+## Why You Need the Add-on
+
 Traditionally, screen readers would send a single line of text to the braille display. Panning the display would reposition the display to show parts of that line (since a display typically shows far fewer characters than a visual line on a computer screen), and then move the cursor to the next or prior line in the document and show the next display's worth of text. In the multiline braille display world, it is not enough just to send a line of text to the display and have it wrapped across the multiple lines of the display, potentially leaving the rest of the display empty. Rather, the screen reader must retrieve as many paragraphs of text as will fit on the display. It must then ensure that when panning the display, the cursor is moved such that subsequent text retrieval results in the reading experience being continuous, like reading a book, whether panning forward or backward through the text. This must happen regardless of whether braille is shown using the computer braille code, which has a one-for-one correspondence with print characters, or whether the user has elected to display contracted braille, where one symbol may represent multiple print characters. In either case, what corresponds to a line of text on a braille display will almost never correspond to the same onscreen print line. This problem is exacerbated in the multiline braille context. The add-on handles the text retrieval, formatting, translation and panning such that the user experience is optimal when reading on the Dot Pad with NVDA.
 
 The add-on also allows letters, emoji and graphics to be rendered as tactile images on the Dot Pad in a way which makes sense to the braille reader. Tactile graphics may be enlarged, reduced and inverted for ease of comprehension. Math equations in Microsoft Word and charts in Excel are also automatically converted to an appropriate tactile image. Axes, tick marks and labels will be properly generated, and where necessary, translated and formatted.
@@ -90,6 +92,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - Right Pan Key (Triangular): Scroll forward through the braille text in the 20-cell area.
 - F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.
 - F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.
+- F2 Key: In a tactile graphic, scroll the graphic up.
 - F3 Key:
     - In braille mode: Activate or execute the currently focused navigator object, equivalent to NVDA+enter.
     - In a tactile graphic: Scroll the graphic down.
@@ -97,12 +100,12 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 ### Multi Key Commands
 
 - Left Pan + F1 Key: Move the viewport left a few dots in graphics mode.
-- Right Pan + F4 Key: Pan the graphic right a few dots in graphics mode.
+- Right Pan + F4 Key: Move the viewport right a few dots in graphics mode.
 - F1+F2: Move the viewport up a few dots in graphics mode.
 - F3+F4: Move the viewport down a few dots in graphics mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
-- F2+F4: Braille mode.
-- F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image.
+- F2+F4: When showing a tactile image, return to braille mode.
+- F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
 
@@ -202,10 +205,11 @@ Button map reference, tactile graphics mode. When the review mode is explicitly 
 
 - F2+F3: Zoom in on the tactile graphic or math graph.
 - F1+F4: Zoom out from the tactile graphic or math graph.
-- F1 Key: Pan the tactile graphic view one step to the left.
-- F4 Key: Pan the tactile graphic view one step to the right.
-- F2 Key: Pan the tactile graphic view one step up.
-- F3 Key: Pan the tactile graphic view one step down.
+- F1 Key: Pan the tactile graphic view one display to the left.
+- F4 Key: Pan the tactile graphic view one display to the right.
+- F2 Key: Pan the tactile graphic view one display up.
+- F3 Key: Pan the tactile graphic view one display down.
+- Long press any of the four keys above to jump the view straight to that edge of the graphic: F1 to the left edge, F4 to the right edge, F2 to the top edge, and F3 to the bottom edge.
 - Left Pan + F1 Key: Pan the tactile graphic view left by a few dots.
 - Right Pan + F4 Key: Pan the tactile graphic view right by a few dots.
 - F1+F2: Pan the tactile graphic view up by a few dots.
@@ -220,9 +224,9 @@ Note that the NVDA braille viewer, also available from the Tools menu, only show
 
 ## Getting Help
 
-For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's general settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.
+For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's Privacy and Security settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.
 
-For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/).
+For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/)
 
 ## Licence
 

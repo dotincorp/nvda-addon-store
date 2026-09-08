@@ -33,13 +33,14 @@ charts and tables.
 
 ## Contributor setup
 
-Once per clone, register the textconv driver for the bundled per-locale
-`TactileDisplayAPI.ini` files. They are UTF-16 LE and stored as binary so their
-byte alignment survives; without this, `git diff` and `git log -p` show them as
-unreadable blobs:
+Once per clone, register the two textconv drivers, without which `git diff` and
+`git log -p` show these files as unreadable blobs. The bundled per-locale
+`TactileDisplayAPI.ini` files are UTF-16 LE and stored as binary so their byte
+alignment survives; the Word review copy in `docs/wordSource/` is a zip:
 
 ```bash
 git config diff.utf16.textconv "python tools/textconvUtf16.py"
+git config diff.docx.textconv "python tools/textconvDocx.py"
 ```
 
 ## Branching
@@ -69,7 +70,9 @@ copies it to `addon/doc/en/userGuide.md`, renders it to `userGuide.html`
 Crowdin sync turns it into `dotPad.xliff` for translation. Keep it plain Markdown —
 headings, paragraphs and simple lists — because `buildVars.markdownExtensions` is
 empty and the XLIFF segmenter expects the same. Everything else under `docs/` is
-developer documentation and is not shipped.
+developer documentation and is not shipped, including `docs/wordSource/` — Dot's
+Word review copy of the guide, kept as an archival snapshot. The Markdown is
+canonical; `docs/wordSource/readme.md` covers how the two are kept in step.
 
 ## Code Quality
 
