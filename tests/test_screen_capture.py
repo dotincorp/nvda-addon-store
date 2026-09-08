@@ -946,6 +946,24 @@ class TestFormatLineWithPositionInfo(unittest.TestCase):
 		self.assertNotIn(".", result_text[:10])  # No "X." pattern at start
 
 
+def configureMocks(
+	mock_nvda_config,
+	mock_config,
+	mock_translate,
+	mock_getPropertiesBraille,
+	mock_hasUsefulText,
+	maxLinesPerObject=1,
+	cellsPerObject=10,
+):
+	"""Point the patched module globals at simple, predictable values."""
+	mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
+	mock_config.getScreenCaptureMaxLinesPerObject.return_value = maxLinesPerObject
+	mock_config.getScreenCaptureShowObjectNumbers.return_value = True
+	mock_getPropertiesBraille.return_value = "text"
+	mock_hasUsefulText.return_value = False
+	mock_translate.side_effect = lambda text: [1] * cellsPerObject
+
+
 class TestUpdateViewportForNavigator(unittest.TestCase):
 	"""Tests for _updateViewportForNavigator: the sticky page that follows the navigator."""
 
@@ -953,24 +971,6 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		"""Set up test fixtures."""
 		self.display = MockDisplay(physicalNumRows=10)
 		self.presentation = ScreenCapturePresentation(self.display)
-
-	def _configureMocks(
-		self,
-		mock_nvda_config,
-		mock_config,
-		mock_translate,
-		mock_getPropertiesBraille,
-		mock_hasUsefulText,
-		maxLinesPerObject=1,
-		cellsPerObject=10,
-	):
-		"""Point the patched module globals at simple, predictable values."""
-		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
-		mock_config.getScreenCaptureMaxLinesPerObject.return_value = maxLinesPerObject
-		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
-		mock_getPropertiesBraille.return_value = "text"
-		mock_hasUsefulText.return_value = False
-		mock_translate.side_effect = lambda text: [1] * cellsPerObject
 
 	@patch("addon.presentations.screenCapture.braille.NVDAObjectHasUsefulText")
 	@patch("addon.presentations.screenCapture.braille.getPropertiesBraille")
@@ -986,7 +986,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should leave the viewport alone and only move the highlight."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1017,7 +1017,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should start a new page at the navigator, with no overlap."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1050,7 +1050,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should end the previous page at the navigator."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1086,7 +1086,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should recentre when the navigator lands somewhere unrelated."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1119,7 +1119,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should rebuild when the navigator moved into another container."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1152,7 +1152,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Should rebuild when the page was measured against another line budget."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1194,7 +1194,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""A child appearing mid-list is not on the page, so the page rebuilds around it."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1235,7 +1235,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""A child appended right after the page starts the next one."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1270,7 +1270,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Paging onto an object that cannot fit must not blank the display."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1308,7 +1308,7 @@ class TestUpdateViewportForNavigator(unittest.TestCase):
 		mock_hasUsefulText,
 	):
 		"""Regression for the reported issue: 1-7, 8-14, 15-21, never 2-8."""
-		self._configureMocks(
+		configureMocks(
 			mock_nvda_config,
 			mock_config,
 			mock_translate,
@@ -1362,12 +1362,14 @@ class TestRenderFollowsTheNavigator(unittest.TestCase):
 		mock_draw,
 	):
 		"""Rendering successive navigator objects must page, not slide by one."""
-		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
-		mock_config.getScreenCaptureMaxLinesPerObject.return_value = 1
-		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
-		mock_getPropertiesBraille.return_value = "text"
-		mock_hasUsefulText.return_value = False
-		mock_translate.side_effect = lambda text: [1] * 10
+		configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+			maxLinesPerObject=1,
+		)
 
 		parent = MockNVDAObject(name="Parent")
 		siblings = create_sibling_chain(21)
@@ -1405,12 +1407,14 @@ class TestRenderFollowsTheNavigator(unittest.TestCase):
 		mock_draw,
 	):
 		"""A page whose content grew must not leave the navigator off the display."""
-		mock_nvda_config.conf = {"reviewCursor": {"simpleReviewMode": False}}
-		mock_config.getScreenCaptureMaxLinesPerObject.return_value = 3
-		mock_config.getScreenCaptureShowObjectNumbers.return_value = True
-		mock_getPropertiesBraille.return_value = "text"
-		mock_hasUsefulText.return_value = False
-		mock_translate.side_effect = lambda text: [1] * 10
+		configureMocks(
+			mock_nvda_config,
+			mock_config,
+			mock_translate,
+			mock_getPropertiesBraille,
+			mock_hasUsefulText,
+			maxLinesPerObject=3,
+		)
 
 		parent = MockNVDAObject(name="Parent")
 		siblings = create_sibling_chain(21)
@@ -1429,7 +1433,7 @@ class TestRenderFollowsTheNavigator(unittest.TestCase):
 		mock_api.getNavigatorObject.return_value = page[-1]
 		self.presentation.render(self.display)
 
-		self.assertTrue(self.presentation._navigatorWasDrawn)
+		self.assertNotEqual(self.presentation._visibleObjects, page)
 		self.assertEqual(
 			self.presentation._visibleObjects[self.presentation._navigatorIndex],
 			page[-1],

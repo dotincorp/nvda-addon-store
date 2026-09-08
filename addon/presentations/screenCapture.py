@@ -80,12 +80,9 @@ class ScreenCapturePresentation(Presentation):
 		self._parent: NVDAObject | None = None
 		# Cached navigator object for detecting changes
 		self._navObj: NVDAObject | None = None
-		# Layout the current viewport was measured against. A kept page is not
-		# re-measured on every move, so a settings change would otherwise leave it
-		# built for one line budget and drawn against another.
+		# Layout the viewport was last measured against, so a settings change to a
+		# kept page does not go unnoticed.
 		self._viewportLayout: tuple[int, int, bool, int] | None = None
-		# Whether the last draw actually put the navigator object on the display
-		self._navigatorWasDrawn: bool = False
 
 	def _getPositionInfo(self, obj: NVDAObject) -> int | None:
 		"""Get position index from object's positionInfo if available.
@@ -122,7 +119,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
-		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
+		self._viewportLayout = self._currentViewportLayout(availableLines, self._display)
 
 		if availableLines <= 0:
 			return
@@ -230,7 +227,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
-		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
+		self._viewportLayout = self._currentViewportLayout(availableLines, self._display)
 
 		if availableLines <= 0:
 			return
@@ -284,7 +281,7 @@ class ScreenCapturePresentation(Presentation):
 		self._visibleObjects = []
 		self._navigatorIndex = -1
 		self._parent = parent
-		self._viewportLayout = (availableLines, maxLinesPerObject, showObjectNumbers, maxLineLength)
+		self._viewportLayout = self._currentViewportLayout(availableLines, self._display)
 
 		if availableLines <= 0:
 			return
@@ -355,16 +352,13 @@ class ScreenCapturePresentation(Presentation):
 			self._navObj = navObj
 			self._updateViewportForNavigator(navObj, parent, display)
 
-		self._drawViewport(buffer, parent, display)
+		navigatorWasDrawn = self._drawViewport(buffer, parent, display)
 
-		# A kept page is not re-measured while the navigator moves inside it, so its
-		# content can outgrow the display: an object whose label grew now takes more
-		# lines than it did when the page was built, and the navigator falls off the
-		# bottom. Rather than re-measure on every move, notice it here — where the
-		# lines have just been laid out anyway — and recentre. A viewport that never
-		# claimed to hold the navigator is left alone: that is a page turned by hand,
-		# which is meant to stay put.
-		if self._navigatorIndex >= 0 and not self._navigatorWasDrawn:
+		# Content can outgrow the page between renders without the layout tuple
+		# changing (a label grew), so only the draw can notice it no longer fits.
+		# A page that never claimed to hold the navigator is left alone: that is a
+		# hand-turned page, which is meant to stay put.
+		if self._navigatorIndex >= 0 and not navigatorWasDrawn:
 			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
 			buffer = DpTactileGraphicsBuffer(display.physicalNumCols, display.physicalNumRows)
 			self._drawViewport(buffer, parent, display)
@@ -376,21 +370,19 @@ class ScreenCapturePresentation(Presentation):
 		buffer: DpTactileGraphicsBuffer,
 		parent: NVDAObject,
 		display: Display,
-	) -> None:
+	) -> bool:
 		"""Draw the parent and the current viewport into a buffer.
-
-		Sets :attr:`_navigatorWasDrawn` to whether the navigator object's own line
-		made it onto the display.
 
 		:param buffer: The tactile graphics buffer to draw into.
 		:param parent: The parent object, drawn first.
 		:param display: The display to draw for.
+		:returns: Whether the navigator object's own line made it onto the display.
 		"""
 		maxLinesPerObject = configuration.getScreenCaptureMaxLinesPerObject()
 		showObjectNumbers = configuration.getScreenCaptureShowObjectNumbers()
 		maxLineLength = display.numCols
 		y = 0
-		self._navigatorWasDrawn = False
+		navigatorWasDrawn = False
 
 		# Render parent object first
 		parentLineCells = self._formatLine(parent, isActive=False, indent=0, showNumbers=showObjectNumbers)
@@ -405,7 +397,9 @@ class ScreenCapturePresentation(Presentation):
 			lineCells = self._formatLine(obj, isActive=isActive, showNumbers=showObjectNumbers)
 			y = self._renderObjectToBuffer(buffer, lineCells, y, maxLineLength, maxLinesPerObject)
 			if isActive:
-				self._navigatorWasDrawn = True
+				navigatorWasDrawn = True
+
+		return navigatorWasDrawn
 
 	def _updateViewportForNavigator(
 		self,
@@ -438,10 +432,9 @@ class ScreenCapturePresentation(Presentation):
 			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
 			return
 
-		# Still on the page: keep it, and just move the highlight. Note that the
-		# sibling list is not re-walked here, so a sibling removed from the parent
-		# stays listed until the page turns. An object added to the parent is not on
-		# the page at all, so it takes one of the branches below instead.
+		# The sibling list is not re-walked here: a removed sibling lingers until the
+		# page turns, and an added one is not on the page so it falls to the
+		# branches below.
 		for index, obj in enumerate(self._visibleObjects):
 			if obj == navObj:
 				self._navigatorIndex = index
