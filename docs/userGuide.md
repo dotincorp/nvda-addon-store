@@ -100,7 +100,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 ### Multi Key Commands
 
 - Left Pan + F1 Key: Move the viewport left a few dots in graphics mode.
-- Right Pan + F4 Key: Pan the graphic right a few dots in graphics mode.
+- Right Pan + F4 Key: Move the viewport right a few dots in graphics mode.
 - F1+F2: Move the viewport up a few dots in graphics mode.
 - F3+F4: Move the viewport down a few dots in graphics mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
