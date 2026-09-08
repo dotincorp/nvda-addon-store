@@ -245,24 +245,17 @@ SETTINGS_SECTION: Final[str] = "Settings"
 #: ``[Settings]`` keys this addon forces, whatever the vendor reference says.
 #:
 #: The vendor's ``enu`` reference doubles as this generator's input, so a vendor
-#: drop overwrites anything hand-edited into it. Forcing the values here instead
-#: means they survive every drop, and keeps the rationale next to the value.
-#: Keys absent from the reference are appended to the section; keys present have
-#: their value replaced.
+#: drop overwrites anything hand-edited into it; forcing the values here means
+#: they survive every drop.
+#:
+#: Both switches address the same mismatch. The addon hands the library zero
+#: text cells — NVDA keeps the 20-cell line to itself, see
+#: ``simulatedDisplay.computeSimulateDisplayArgs`` — so the library concludes
+#: there is no separate braille display and paints onto the tactile area
+#: instead, duplicating what NVDA already shows.
 SETTINGS_OVERRIDES: Final[Mapping[str, str]] = {
-	# v1.36+. The library labels a graphed equation on the separate braille
-	# display when one is available, and at the bottom of the tactile area when
-	# it is not. The addon hands the library zero text cells — NVDA keeps the
-	# 20-cell line to itself, see ``simulatedDisplay.computeSimulateDisplayArgs``
-	# — so the library always takes the second path and paints the label over
-	# the graphic, while NVDA is already showing that same text on the 20-cell
-	# line. Turn the library's label off and let NVDA own it.
-	"EquationShowLabel": "0",
-	# v1.36+. Same root cause: with zero text cells the library falls back to
-	# painting braille under the tactile representation, where it runs together
-	# with the bottom of the characters above it and duplicates what NVDA
-	# already renders on the 20-cell line.
-	"SuppressHybridBraille": "1",
+	"EquationShowLabel": "0",  # v1.36+. Equation label, drawn over the graphic.
+	"SuppressHybridBraille": "1",  # v1.36+. Braille line, drawn under the tactile art.
 }
 
 
@@ -373,20 +366,16 @@ def apply_settings_overrides(
 ) -> tuple[list[IniRecord], tuple[str, ...]]:
 	"""Force :data:`SETTINGS_OVERRIDES` into a parsed ini's ``[Settings]`` section.
 
-	A key already present has its value replaced (formatting preserved); a key
-	the vendor reference does not carry is appended after the section's last
-	``Key=Value`` line, so it lands inside the section rather than after any
-	trailing blank line that separates it from the next one. Ini keys are
-	matched case-insensitively but appended under the spelling in
-	:data:`SETTINGS_OVERRIDES`.
+	A present key has its value replaced (formatting preserved); a missing one is
+	appended inside the section. Keys are matched case-insensitively but appended
+	under the spelling in :data:`SETTINGS_OVERRIDES`.
 
-	If the reference has no ``[Settings]`` section at all the records are
-	returned untouched — the library treats every override as opt-in and
-	defaults to its previous behaviour, so a missing section is a vendor change
-	worth noticing rather than something to paper over.
+	A reference carrying no ``[Settings]`` section at all is left untouched and
+	logged: every override is opt-in, so the section disappearing is a vendor
+	change worth chasing rather than papering over.
 
-	:returns: ``(new_records, changed_keys)`` where ``changed_keys`` holds
-		``"[Settings]key"`` identifiers whose emitted line actually differs.
+	:returns: ``(new_records, changed_keys)`` holding ``"[Settings]key"``
+		identifiers whose emitted line actually differs.
 	"""
 	if not any(record.section == SETTINGS_SECTION for record in records):
 		log.warning(

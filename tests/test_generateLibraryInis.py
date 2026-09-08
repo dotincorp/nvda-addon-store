@@ -537,12 +537,8 @@ class TestReplaceValue(unittest.TestCase):
 
 
 class TestSettingsOverrides(unittest.TestCase):
-	"""``apply_settings_overrides`` forces the addon's ``[Settings]`` values.
-
-	The vendor's ``enu`` reference doubles as the generator's input, so a vendor
-	drop overwrites anything hand-edited into it. These values are therefore
-	forced from the generator's own table, and must land whether or not the
-	reference happens to carry the key.
+	"""``apply_settings_overrides`` forces the addon's ``[Settings]`` values,
+	whether or not the vendor reference already carries the key.
 	"""
 
 	def _settingsLines(self, records):

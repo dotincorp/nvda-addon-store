@@ -176,13 +176,10 @@ the passed-through sections (keymaps, `[Liblouis]` defaults). On a
 means a parser bug; don't commit it.
 
 `[Settings]` is generated from `SETTINGS_OVERRIDES` in
-`tools/generateLibraryInis.py`, a fixed table of keys the addon forces: the
-value is replaced when the vendor reference carries the key and appended inside
-the section when it does not. The values live there rather than hand-edited into
-`enu/TactileDisplayAPI.ini` precisely because that file *is* the generator's
-vendor reference — a drop overwrites it, and a hand-edit would be lost silently.
-So when a release note offers a new behaviour switch, add it to that table
-rather than to the ini. If the vendor ever drops the `[Settings]` section
+`tools/generateLibraryInis.py`, a fixed table of keys the addon forces. When a
+release note offers a new behaviour switch, add it to that table rather than to
+`enu/TactileDisplayAPI.ini` — that file is the generator's vendor reference and
+the next drop overwrites it. If the vendor ever drops the `[Settings]` section
 entirely the generator logs a warning and forces nothing, which is worth
 chasing rather than ignoring.
 
