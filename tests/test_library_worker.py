@@ -37,6 +37,8 @@ from contextlib import contextmanager
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
+import winUser
+
 
 @contextmanager
 def _stubbedComEnvironment() -> Iterator[MagicMock]:
@@ -462,9 +464,49 @@ class TestMessagePumpRunsOnIdle(unittest.TestCase):
 			worker = LibraryWorker()
 			worker.start(startTimeoutS=2.0)
 			try:
-				_time.sleep(0.2)  # ~4 pump intervals (50 ms each) while idle
+				_time.sleep(0.2)  # several idle wait/pump cycles
 				peekCalls = lw.ctypes.windll.user32.PeekMessageW.call_count
 				self.assertGreater(peekCalls, 0, f"Expected PeekMessageW during idle, got {peekCalls}")
+			finally:
+				worker.stop()
+
+	def test_idle_blocks_in_msgWaitForMultipleObjects(self) -> None:
+		"""Idle waits on the queue event + QS_ALLINPUT."""
+		import time as _time
+
+		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
+
+		with _stubbedComEnvironment():
+			import addon.tactileDisplayAPI.libraryWorker as lw
+
+			worker = LibraryWorker()
+			worker.start(startTimeoutS=2.0)
+			try:
+				_time.sleep(0.05)
+				waitCalls = lw.ctypes.windll.user32.MsgWaitForMultipleObjects.call_args_list
+				self.assertTrue(waitCalls, "Expected the idle loop to block in MsgWaitForMultipleObjects")
+				# nCount, handles, waitAll, timeoutMs, wakeMask
+				self.assertEqual(waitCalls[0].args[0], 1)
+				self.assertFalse(waitCalls[0].args[2])
+				self.assertEqual(waitCalls[0].args[4], winUser.QS_ALLINPUT)
+			finally:
+				worker.stop()
+
+	def test_submit_signals_the_queue_event(self) -> None:
+		"""A queue put signals the wake event. Does not prove the wait responds --
+		MsgWaitForMultipleObjects is mocked here and never blocks.
+		"""
+		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
+
+		with _stubbedComEnvironment():
+			import addon.tactileDisplayAPI.libraryWorker as lw
+
+			worker = LibraryWorker()
+			worker.start(startTimeoutS=2.0)
+			try:
+				lw.ctypes.windll.kernel32.SetEvent.reset_mock()
+				worker.submit(lambda: None).result(timeout=2.0)
+				lw.ctypes.windll.kernel32.SetEvent.assert_called()
 			finally:
 				worker.stop()
 

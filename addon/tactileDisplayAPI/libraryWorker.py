@@ -14,7 +14,9 @@ Threading-ownership model:
 
 - The worker thread initialises COM apartment-threaded (**STA**) at start, owns
   the wrapper instance, processes a FIFO queue of work items interleaved with a
-  Win32 message pump, and releases COM at clean shutdown.
+  Win32 message pump, and releases COM at clean shutdown. When it has no work it
+  blocks in ``MsgWaitForMultipleObjects`` on the queue event plus ``QS_ALLINPUT``,
+  so it wakes the moment either a work item is queued or a message arrives.
 
   Why STA + pump (not MTA): the library is its own UI Automation *client* —
   ``RegisterEvents(True)`` makes it subscribe to UIA events and render braille
@@ -83,6 +85,8 @@ from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import Any, Callable, TypeVar
 
+import winKernel
+import winUser
 from logHandler import log
 
 from .wrapper import TactileDisplayAPI
@@ -98,12 +102,9 @@ _QueueItem = tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any], "Future[
 # STA that pumps. See the module docstring.
 _COINIT_APARTMENTTHREADED: int = 0x2
 
-# Worker idle-pump cadence. While the queue is empty, the worker drains the
-# Win32 message queue every PUMP_INTERVAL_S seconds. Smaller = snappier
-# delivery of library-fired events (UIA events, button presses, device-removal
-# notifications); larger = lower CPU. 50 ms is well below human-perceptible
-# input latency for braille hardware.
-_PUMP_INTERVAL_S: float = 0.05
+# Backstop timeout for the idle wait, in seconds. Liveness insurance only — the
+# worker wakes on the queue event or on an incoming message.
+_WAIT_BACKSTOP_S: float = 1.0
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds
 # at most a few thousand pending messages even under heavy load; capping
@@ -184,6 +185,23 @@ def _setWorkerThreadLocale() -> None:
 		log.debug("Worker thread preferred UI language set to %r", bcp47)
 
 
+def _waitForWorkOrMessage(queueEvent: int, timeoutMs: int) -> None:
+	"""Block until a work item is queued, a Win32 message arrives, or timeout.
+
+	Callers must drain the message queue *before* waiting: ``QS_ALLINPUT`` wakes
+	on newly-arrived input, so messages left sitting from a previous iteration
+	would not raise it.
+	"""
+	handles = (ctypes.c_void_p * 1)(ctypes.c_void_p(queueEvent))
+	ctypes.windll.user32.MsgWaitForMultipleObjects(
+		1,
+		handles,
+		False,
+		int(timeoutMs),
+		winUser.QS_ALLINPUT,
+	)
+
+
 def _pumpThreadMessages() -> None:
 	"""Drain pending Win32 messages on the calling thread's message queue.
 
@@ -248,6 +266,8 @@ class LibraryWorker:
 
 	def __init__(self) -> None:
 		self._queue: Queue[_QueueItem] = Queue()
+		# Auto-reset event SetEvent()'d on every queue put; see _waitForWorkOrMessage.
+		self._queueEvent: int = winKernel.createEvent()
 		self._readyEvent: threading.Event = threading.Event()
 		self._startError: BaseException | None = None
 		self._thread: threading.Thread | None = None
@@ -307,6 +327,10 @@ class LibraryWorker:
 			raise self._startError
 		log.debug("Library worker started (thread=%s)", self._thread.name)
 
+	def _signalQueue(self) -> None:
+		"""Wake the worker out of its idle wait after a queue put."""
+		ctypes.windll.kernel32.SetEvent(ctypes.c_void_p(self._queueEvent))
+
 	def submit(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> "Future[T]":
 		"""Enqueue a callable; return its Future immediately.
 
@@ -319,6 +343,7 @@ class LibraryWorker:
 		"""
 		future: "Future[T]" = Future()
 		self._queue.put((fn, args, kwargs, future))
+		self._signalQueue()
 		return future
 
 	def submitAndAwait(
@@ -511,6 +536,7 @@ class LibraryWorker:
 		"""
 		log.debug("Library worker stop requested")
 		self._queue.put(None)
+		self._signalQueue()
 
 	def _run(self) -> None:
 		"""Worker thread main loop. STA COM init → wrapper construction →
@@ -552,10 +578,12 @@ class LibraryWorker:
 		# 3. Drain the queue, pumping Win32 messages between iterations.
 		while True:
 			try:
-				item = self._queue.get(timeout=_PUMP_INTERVAL_S)
+				item = self._queue.get_nowait()
 			except QueueEmpty:
-				# Idle: pump the message queue so library-fired events (UIA
-				# callbacks, hardware events) are dispatched to their handlers.
+				# Idle: block until a work item is queued or a message arrives,
+				# then dispatch whatever showed up so library-fired events (UIA
+				# callbacks, hardware events) reach their handlers promptly.
+				_waitForWorkOrMessage(self._queueEvent, int(_WAIT_BACKSTOP_S * 1000))
 				_pumpThreadMessages()
 				continue
 			if item is None:
@@ -596,8 +624,12 @@ class LibraryWorker:
 		# Final pump in case disconnect/close emitted device-removal events.
 		_pumpThreadMessages()
 		self.tda = None
-		# 5. Release the COM apartment.
+		# 5. Release the COM apartment and the wake event.
 		try:
 			ctypes.windll.ole32.CoUninitialize()
+		except Exception:
+			pass
+		try:
+			winKernel.closeHandle(self._queueEvent)
 		except Exception:
 			pass
