@@ -14,7 +14,19 @@ Threading-ownership model:
 
 - The worker thread initialises COM apartment-threaded (**STA**) at start, owns
   the wrapper instance, processes a FIFO queue of work items interleaved with a
-  Win32 message pump, and releases COM at clean shutdown.
+  Win32 message pump, and releases COM at clean shutdown. When it has no work it
+  blocks in ``MsgWaitForMultipleObjects`` on the queue event plus ``QS_ALLINPUT``,
+  so it wakes the moment either a work item is queued or a message arrives.
+
+  Why blocking rather than polling: this loop used to sit in
+  ``Queue.get(timeout=50ms)`` and pump on each timeout, which put up to a full
+  interval of latency on *every* message the library exchanges. Since the library
+  resolves a focused control over a sequence of message round trips, that cost
+  compounded — measured on the Windows desktop, the delay between a focus change
+  and the library's braille render was 1.3–1.9 s with the 50 ms poll and 0.55–0.69 s
+  once the poll was replaced by this wait. (The remaining ~0.55 s is inside the
+  library: a *commanded* render via ``ExecuteOperation`` comes back in 55–76 ms,
+  while the same object rendered in response to a focus event takes 560–690 ms.)
 
   Why STA + pump (not MTA): the library is its own UI Automation *client* —
   ``RegisterEvents(True)`` makes it subscribe to UIA events and render braille
@@ -98,12 +110,16 @@ _QueueItem = tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any], "Future[
 # STA that pumps. See the module docstring.
 _COINIT_APARTMENTTHREADED: int = 0x2
 
-# Worker idle-pump cadence. While the queue is empty, the worker drains the
-# Win32 message queue every PUMP_INTERVAL_S seconds. Smaller = snappier
-# delivery of library-fired events (UIA events, button presses, device-removal
-# notifications); larger = lower CPU. 50 ms is well below human-perceptible
-# input latency for braille hardware.
-_PUMP_INTERVAL_S: float = 0.05
+# Backstop timeout for the idle wait. The worker wakes on the queue event or on
+# an incoming message, so this is NOT on the latency path — it only bounds how
+# long the loop can sit before re-checking state, guarding against a missed
+# wake-up. Seconds.
+_WAIT_BACKSTOP_S: float = 1.0
+
+# MsgWaitForMultipleObjects wake mask: any input, which covers the posted and
+# sent messages carrying cross-apartment COM calls (the library's UIA event
+# callbacks among them).
+_QS_ALLINPUT: int = 0x04FF
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds
 # at most a few thousand pending messages even under heavy load; capping
@@ -184,6 +200,33 @@ def _setWorkerThreadLocale() -> None:
 		log.debug("Worker thread preferred UI language set to %r", bcp47)
 
 
+def _waitForWorkOrMessage(queueEvent: int, timeoutMs: int) -> int:
+	"""Block until a work item is queued, a Win32 message arrives, or timeout.
+
+	``queueEvent`` is the auto-reset event :meth:`LibraryWorker._signalQueue`
+	sets after every queue put, so a submitted call wakes the thread as directly
+	as an incoming message does.
+
+	Callers must drain the message queue *before* waiting: the ``QS_ALLINPUT``
+	wake fires on newly-arrived input, and messages left sitting from a previous
+	iteration would not raise it.
+
+	:param queueEvent: handle of the auto-reset queue event.
+	:param timeoutMs: backstop timeout in milliseconds.
+	:returns: the raw ``MsgWaitForMultipleObjects`` result.
+	"""
+	handles = (ctypes.c_void_p * 1)(ctypes.c_void_p(queueEvent))
+	return int(
+		ctypes.windll.user32.MsgWaitForMultipleObjects(
+			1,
+			handles,
+			False,
+			int(timeoutMs),
+			_QS_ALLINPUT,
+		),
+	)
+
+
 def _pumpThreadMessages() -> None:
 	"""Drain pending Win32 messages on the calling thread's message queue.
 
@@ -248,6 +291,12 @@ class LibraryWorker:
 
 	def __init__(self) -> None:
 		self._queue: Queue[_QueueItem] = Queue()
+		# Auto-reset Win32 event signalled on every queue put, so the worker can
+		# wait for work items and Win32 messages in a single blocking call
+		# instead of polling for either. See _waitForWorkOrMessage.
+		_createEvent = ctypes.windll.kernel32.CreateEventW
+		_createEvent.restype = ctypes.c_void_p
+		self._queueEvent: int = int(_createEvent(None, False, False, None) or 0)
 		self._readyEvent: threading.Event = threading.Event()
 		self._startError: BaseException | None = None
 		self._thread: threading.Thread | None = None
@@ -307,6 +356,15 @@ class LibraryWorker:
 			raise self._startError
 		log.debug("Library worker started (thread=%s)", self._thread.name)
 
+	def _signalQueue(self) -> None:
+		"""Wake the worker out of its idle wait after a queue put.
+
+		Best-effort: if the event handle could not be created the worker still
+		makes progress via the ``_WAIT_BACKSTOP_S`` timeout, just later.
+		"""
+		if self._queueEvent:
+			ctypes.windll.kernel32.SetEvent(ctypes.c_void_p(self._queueEvent))
+
 	def submit(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> "Future[T]":
 		"""Enqueue a callable; return its Future immediately.
 
@@ -319,6 +377,7 @@ class LibraryWorker:
 		"""
 		future: "Future[T]" = Future()
 		self._queue.put((fn, args, kwargs, future))
+		self._signalQueue()
 		return future
 
 	def submitAndAwait(
@@ -511,6 +570,7 @@ class LibraryWorker:
 		"""
 		log.debug("Library worker stop requested")
 		self._queue.put(None)
+		self._signalQueue()
 
 	def _run(self) -> None:
 		"""Worker thread main loop. STA COM init → wrapper construction →
@@ -552,10 +612,12 @@ class LibraryWorker:
 		# 3. Drain the queue, pumping Win32 messages between iterations.
 		while True:
 			try:
-				item = self._queue.get(timeout=_PUMP_INTERVAL_S)
+				item = self._queue.get_nowait()
 			except QueueEmpty:
-				# Idle: pump the message queue so library-fired events (UIA
-				# callbacks, hardware events) are dispatched to their handlers.
+				# Idle: block until a work item is queued or a message arrives,
+				# then dispatch whatever showed up so library-fired events (UIA
+				# callbacks, hardware events) reach their handlers promptly.
+				_waitForWorkOrMessage(self._queueEvent, int(_WAIT_BACKSTOP_S * 1000))
 				_pumpThreadMessages()
 				continue
 			if item is None:
