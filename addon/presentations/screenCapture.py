@@ -352,17 +352,10 @@ class ScreenCapturePresentation(Presentation):
 			self._navObj = navObj
 			self._updateViewportForNavigator(navObj, parent, display)
 
-		navigatorWasDrawn = self._drawViewport(buffer, parent, display)
-
-		# Content can outgrow the page between renders without the layout tuple
-		# changing (a label grew), so only the draw can notice it no longer fits.
-		# A page that never claimed to hold the navigator is left alone: that is a
-		# hand-turned page, which is meant to stay put.
-		if self._navigatorIndex >= 0 and not navigatorWasDrawn:
+		if not self._navigatorFitsCurrentPage(parent, display):
 			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
-			buffer = DpTactileGraphicsBuffer(display.physicalNumCols, display.physicalNumRows)
-			self._drawViewport(buffer, parent, display)
 
+		self._drawViewport(buffer, parent, display)
 		return buffer
 
 	def _drawViewport(
@@ -370,19 +363,17 @@ class ScreenCapturePresentation(Presentation):
 		buffer: DpTactileGraphicsBuffer,
 		parent: NVDAObject,
 		display: Display,
-	) -> bool:
+	) -> None:
 		"""Draw the parent and the current viewport into a buffer.
 
 		:param buffer: The tactile graphics buffer to draw into.
 		:param parent: The parent object, drawn first.
 		:param display: The display to draw for.
-		:returns: Whether the navigator object's own line made it onto the display.
 		"""
 		maxLinesPerObject = configuration.getScreenCaptureMaxLinesPerObject()
 		showObjectNumbers = configuration.getScreenCaptureShowObjectNumbers()
 		maxLineLength = display.numCols
 		y = 0
-		navigatorWasDrawn = False
 
 		# Render parent object first
 		parentLineCells = self._formatLine(parent, isActive=False, indent=0, showNumbers=showObjectNumbers)
@@ -396,10 +387,6 @@ class ScreenCapturePresentation(Presentation):
 			isActive = i == self._navigatorIndex
 			lineCells = self._formatLine(obj, isActive=isActive, showNumbers=showObjectNumbers)
 			y = self._renderObjectToBuffer(buffer, lineCells, y, maxLineLength, maxLinesPerObject)
-			if isActive:
-				navigatorWasDrawn = True
-
-		return navigatorWasDrawn
 
 	def _updateViewportForNavigator(
 		self,
@@ -460,6 +447,44 @@ class ScreenCapturePresentation(Presentation):
 			# The navigator object alone does not fit the budget. The page builders
 			# leave an empty viewport in that case; centring shows it on its own.
 			self._rebuildViewportCenteredOnNavigator(navObj, parent, display)
+
+	def _navigatorFitsCurrentPage(self, parent: NVDAObject, display: Display) -> bool:
+		"""Whether the page still has room to reach the navigator object.
+
+		A kept page is not re-measured while the navigator moves inside it, so an
+		object whose label has since grown can push the navigator past the last
+		line without any of the layout parameters changing. Measured the way the
+		builders measure, so a page that passes here is one they would have built.
+
+		A page that does not claim to hold the navigator passes: that is a page
+		turned by hand, which is meant to stay put.
+
+		:param parent: The parent object, which takes the first line(s).
+		:param display: The display for dimension calculations.
+		:returns: Whether the navigator's line fits within the available lines.
+		"""
+		if self._navigatorIndex < 0:
+			return True
+
+		availableLines = self._calculateAvailableLinesForChildren(display, parent)
+		maxLinesPerObject = configuration.getScreenCaptureMaxLinesPerObject()
+		showObjectNumbers = configuration.getScreenCaptureShowObjectNumbers()
+		maxLineLength = display.numCols
+
+		linesUsed = 0
+		for index, obj in enumerate(self._visibleObjects[: self._navigatorIndex + 1]):
+			linesUsed += self._calculateObjectLineCount(
+				obj,
+				None,
+				isActive=index == self._navigatorIndex,
+				indent=CHILD_INDENT,
+				showNumbers=showObjectNumbers,
+				maxLineLength=maxLineLength,
+				maxLinesPerObject=maxLinesPerObject,
+			)
+			if linesUsed > availableLines:
+				return False
+		return True
 
 	def _currentViewportLayout(self, availableLines: int, display: Display) -> tuple[int, int, bool, int]:
 		"""Return the layout parameters a viewport built now would be measured against.
