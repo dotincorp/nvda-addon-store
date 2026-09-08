@@ -18,13 +18,6 @@ Threading-ownership model:
   blocks in ``MsgWaitForMultipleObjects`` on the queue event plus ``QS_ALLINPUT``,
   so it wakes the moment either a work item is queued or a message arrives.
 
-  Why blocking rather than polling: the loop used to sit in
-  ``Queue.get(timeout=…)`` and pump on each timeout, so every message the library
-  exchanges paid up to a full interval. The library resolves a focused control
-  over a sequence of message round trips, so that cost compounded. A residual
-  delay remains after this change and is inside the library, not here — see the
-  PR for the before/after measurements.
-
   Why STA + pump (not MTA): the library is its own UI Automation *client* —
   ``RegisterEvents(True)`` makes it subscribe to UIA events and render braille
   autonomously via the ``TactileDisplayUpdated`` callback. UIA delivers those
@@ -109,9 +102,8 @@ _QueueItem = tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any], "Future[
 # STA that pumps. See the module docstring.
 _COINIT_APARTMENTTHREADED: int = 0x2
 
-# Backstop timeout for the idle wait, in seconds. The worker wakes on the queue
-# event or on an incoming message, so this is not on the latency path; it is
-# liveness insurance against the loop parking forever.
+# Backstop timeout for the idle wait, in seconds. Liveness insurance only — the
+# worker wakes on the queue event or on an incoming message.
 _WAIT_BACKSTOP_S: float = 1.0
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds

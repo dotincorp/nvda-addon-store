@@ -471,7 +471,7 @@ class TestMessagePumpRunsOnIdle(unittest.TestCase):
 				worker.stop()
 
 	def test_idle_blocks_in_msgWaitForMultipleObjects(self) -> None:
-		"""Idle waits on the queue event + QS_ALLINPUT rather than polling."""
+		"""Idle waits on the queue event + QS_ALLINPUT."""
 		import time as _time
 
 		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
@@ -484,7 +484,7 @@ class TestMessagePumpRunsOnIdle(unittest.TestCase):
 			try:
 				_time.sleep(0.05)
 				waitCalls = lw.ctypes.windll.user32.MsgWaitForMultipleObjects.call_args_list
-				self.assertTrue(waitCalls, "Expected the idle loop to wait, not poll")
+				self.assertTrue(waitCalls, "Expected the idle loop to block in MsgWaitForMultipleObjects")
 				# nCount, handles, waitAll, timeoutMs, wakeMask
 				self.assertEqual(waitCalls[0].args[0], 1)
 				self.assertFalse(waitCalls[0].args[2])
