@@ -713,10 +713,10 @@ class Table(AutoPropertyObject):
 		Returns:
 			bool: True if the table was scrolled, False if it was already at the end.
 		"""
-		if self.numVisibleCols is None:
+		if self.numVisibleCols is None or self.tableColumnCount is None:
 			return False
 		firstVisibleCol: int = self.firstVisibleCol or 0
-		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:  # type: ignore
+		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:
 			return False
 		self.firstVisibleCol = firstVisibleCol + self.numVisibleCols
 		return True
@@ -745,10 +745,10 @@ class Table(AutoPropertyObject):
 		Returns:
 			bool: True if the table was scrolled, False if it was already at the end.
 		"""
-		if self.numVisibleRows is None:
+		if self.numVisibleRows is None or self.tableRowCount is None:
 			return False
 		firstVisibleRow: int = self.firstVisibleRow or 0
-		if firstVisibleRow + self.numVisibleRows >= self.tableRowCount:  # type: ignore
+		if firstVisibleRow + self.numVisibleRows >= self.tableRowCount:
 			return False
 		self.firstVisibleRow = firstVisibleRow + self.numVisibleRows
 		return True
@@ -770,6 +770,105 @@ class Table(AutoPropertyObject):
 			return True
 		self.firstVisibleRow = firstVisibleRow - self.numVisibleRows
 		return True
+
+	def _lastFullPageStart(self, count: int | None, pageSize: int | None) -> int | None:
+		"""First index of the last screenful that still fills the display.
+
+		``count - pageSize`` rather than a page-aligned multiple, so a jump to the
+		end shows a full display rather than whatever remainder the table happens
+		to end on. Matches how ``drawTable`` clamps when it auto-centres.
+
+		:returns: The index, or None when the extent or the viewport is unknown.
+		"""
+		if count is None or pageSize is None:
+			return None
+		return max(0, count - pageSize)
+
+	def _setFirstVisible(self, target: int, vertical: bool) -> bool:
+		"""Move one axis of the viewport to ``target``, clamped to the table.
+
+		Clamping rather than refusing means a step that would overshoot still
+		lands on the edge, which is what makes repeated presses feel right.
+
+		:param target: Desired first visible row or column, 0-based.
+		:param vertical: True for rows, False for columns.
+		:returns: True if the viewport moved.
+		"""
+		if vertical:
+			pageSize = self.numVisibleRows
+			current = self.firstVisibleRow or 0
+			limit = self._lastFullPageStart(self.tableRowCount, pageSize)
+		else:
+			pageSize = self.numVisibleCols
+			current = self.firstVisibleCol or 0
+			limit = self._lastFullPageStart(self.tableColumnCount, pageSize)
+
+		if pageSize is None:
+			# Not drawn yet, so there is no viewport to move.
+			return False
+		if limit is None:
+			# The table does not report its extent, so the far edge cannot be
+			# clamped. Moving back is still safe; moving forward is not.
+			if target > current:
+				return False
+			limit = current
+
+		newFirst = max(0, min(target, limit))
+		if newFirst == current:
+			return False
+		if vertical:
+			self.firstVisibleRow = newFirst
+		else:
+			self.firstVisibleCol = newFirst
+		return True
+
+	def scrollByRows(self, rows: int) -> bool:
+		"""Move the viewport ``rows`` rows down (negative for up).
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible((self.firstVisibleRow or 0) + rows, vertical=True)
+
+	def scrollByCols(self, cols: int) -> bool:
+		"""Move the viewport ``cols`` columns right (negative for left).
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible((self.firstVisibleCol or 0) + cols, vertical=False)
+
+	def scrollToFirstRow(self) -> bool:
+		"""Jump the viewport to the top of the table.
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible(0, vertical=True)
+
+	def scrollToLastRow(self) -> bool:
+		"""Jump the viewport to the last full screenful of rows.
+
+		:returns: True if the viewport moved.
+		"""
+		limit = self._lastFullPageStart(self.tableRowCount, self.numVisibleRows)
+		if limit is None:
+			return False
+		return self._setFirstVisible(limit, vertical=True)
+
+	def scrollToFirstCol(self) -> bool:
+		"""Jump the viewport to the left edge of the table.
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible(0, vertical=False)
+
+	def scrollToLastCol(self) -> bool:
+		"""Jump the viewport to the last full screenful of columns.
+
+		:returns: True if the viewport moved.
+		"""
+		limit = self._lastFullPageStart(self.tableColumnCount, self.numVisibleCols)
+		if limit is None:
+			return False
+		return self._setFirstVisible(limit, vertical=False)
 
 	def _moveNavigatorAfterScroll(self) -> None:
 		"""Move navigator object after scroll based on user setting.
@@ -920,17 +1019,46 @@ class Table(AutoPropertyObject):
 
 
 class ExcelTable(Table):
-	def _get_tableColumnCount(self) -> int | None:
+	_usedRangeBounds: tuple[int | None, int | None] | None = None
+	"""Cached ``(lastRow, lastColumn)`` from the worksheet's used range."""
+
+	def _getUsedRangeBounds(self) -> tuple[int | None, int | None]:
+		"""Return the worksheet's last used row and column, 1-based.
+
+		A worksheet reports itself as 1,048,576 x 16,384 whatever it contains, so
+		the sheet's own counts would send a jump to the last row a million rows
+		into empty space and make paging walk through all of it. The used range is
+		the extent a reader cares about.
+
+		It does not have to start at A1 — data in C5:H20 gives a used range whose
+		Row is 5 and Rows.Count is 16 — so the last row is the first plus the
+		count, less one.
+
+		Cached: this is a COM round trip and ``drawTable`` plus every scroll step
+		asks for it. ``Table`` does not enable NVDA's property cache, so nothing
+		else would.
+		"""
+		if self._usedRangeBounds is not None:
+			return self._usedRangeBounds
+		bounds: tuple[int | None, int | None] = (None, None)
 		try:
-			return cast(int, self.tableObj.excelWorksheetObject.columns.count)  # type: ignore
-		except AttributeError:
-			return None
+			usedRange = self.tableObj.excelWorksheetObject.UsedRange  # type: ignore
+			lastRow = int(usedRange.Row) + int(usedRange.Rows.Count) - 1
+			lastCol = int(usedRange.Column) + int(usedRange.Columns.Count) - 1
+			bounds = (lastRow, lastCol)
+		except Exception:
+			# Excel refuses COM calls freely while it is busy, and a worksheet may
+			# not expose a used range at all. An unknown extent is handled
+			# everywhere it is read.
+			log.debug("ExcelTable: could not read the worksheet used range", exc_info=True)
+		self._usedRangeBounds = bounds
+		return bounds
+
+	def _get_tableColumnCount(self) -> int | None:
+		return self._getUsedRangeBounds()[1]
 
 	def _get_tableRowCount(self) -> int | None:
-		try:
-			return cast(int, self.tableObj.excelWorksheetObject.rows.count)  # type: ignore
-		except AttributeError:
-			return None
+		return self._getUsedRangeBounds()[0]
 
 	def getTableCells(
 		self,

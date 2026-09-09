@@ -1,0 +1,170 @@
+# Dot Pad add-on for the NVDA screen reader
+# This file is covered by the GNU General Public License version 2.
+# See the file COPYING.txt for more details.
+# Copyright (C) 2026 Dot Incorporated
+
+"""Tests for the table viewport steps that the table-mode gestures drive."""
+
+import unittest
+from unittest.mock import Mock
+
+# addon.presentations first: addon.utils.table's runtime loadModule pulls the
+# driver back through presentations, so importing it first here deadlocks the
+# cycle when this module is run on its own.
+import addon.presentations  # noqa: F401
+from addon.utils import table
+
+
+def makeTable(rowCount, colCount, visibleRows=4, visibleCols=6):
+	"""A drawn table with a known extent and viewport size."""
+	tableObj = Mock()
+	tableObj.role = table.ROLE_TABLE
+	tableObj.name = "Test Table"
+	tableObj.rowCount = rowCount
+	tableObj.columnCount = colCount
+	instance = table.Table(tableObj, hCellPadding=1, vCellPadding=1)
+	instance.tableCurrentRow = 0
+	instance.tableCurrentCol = 0
+	# drawTable normally sets these; the scroll steps refuse to run without them.
+	instance.numVisibleRows = visibleRows
+	instance.numVisibleCols = visibleCols
+	instance.firstVisibleRow = 0
+	instance.firstVisibleCol = 0
+	return instance
+
+
+class TestSingleStepStepping(unittest.TestCase):
+	"""One row or column at a time — what the chorded gestures move by."""
+
+	def test_stepping_down_moves_one_row(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertTrue(instance.scrollByRows(1))
+
+		self.assertEqual(instance.firstVisibleRow, 1)
+
+	def test_stepping_up_moves_one_row(self):
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.firstVisibleRow = 5
+
+		self.assertTrue(instance.scrollByRows(-1))
+
+		self.assertEqual(instance.firstVisibleRow, 4)
+
+	def test_stepping_right_moves_one_column(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertTrue(instance.scrollByCols(1))
+
+		self.assertEqual(instance.firstVisibleCol, 1)
+
+	def test_stepping_up_at_the_top_does_not_move(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertFalse(instance.scrollByRows(-1))
+
+		self.assertEqual(instance.firstVisibleRow, 0)
+
+	def test_stepping_down_stops_where_the_display_is_still_full(self):
+		"""50 rows, 4 visible: row 46 is the last start that fills the display."""
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.firstVisibleRow = 46
+
+		self.assertFalse(instance.scrollByRows(1))
+
+		self.assertEqual(instance.firstVisibleRow, 46)
+
+	def test_a_step_past_the_end_is_clamped_rather_than_refused(self):
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.firstVisibleRow = 44
+
+		self.assertTrue(instance.scrollByRows(10))
+
+		self.assertEqual(instance.firstVisibleRow, 46)
+
+	def test_stepping_is_refused_before_the_table_is_drawn(self):
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.numVisibleRows = None
+
+		self.assertFalse(instance.scrollByRows(1))
+
+
+class TestSteppingWithAnUnknownExtent(unittest.TestCase):
+	"""A table that does not report its size cannot have its far edge clamped."""
+
+	def test_forward_stepping_is_refused(self):
+		instance = makeTable(rowCount=None, colCount=None)
+
+		self.assertFalse(instance.scrollByRows(1))
+		self.assertFalse(instance.scrollByCols(1))
+
+	def test_backward_stepping_still_works(self):
+		instance = makeTable(rowCount=None, colCount=None)
+		instance.firstVisibleRow = 5
+
+		self.assertTrue(instance.scrollByRows(-1))
+
+		self.assertEqual(instance.firstVisibleRow, 4)
+
+	def test_the_page_steps_do_not_raise(self):
+		"""scrollRight/scrollDown compared an int against None and raised TypeError."""
+		instance = makeTable(rowCount=None, colCount=None)
+
+		self.assertFalse(instance.scrollRight())
+		self.assertFalse(instance.scrollDown())
+
+
+class TestEdgeJumps(unittest.TestCase):
+	"""Long-press jumps land on a full screenful, not on the last row."""
+
+	def test_jump_to_last_row_keeps_the_display_full(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertTrue(instance.scrollToLastRow())
+
+		self.assertEqual(instance.firstVisibleRow, 46)
+
+	def test_jump_to_last_column_keeps_the_display_full(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertTrue(instance.scrollToLastCol())
+
+		self.assertEqual(instance.firstVisibleCol, 4)
+
+	def test_jump_to_first_row(self):
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.firstVisibleRow = 20
+
+		self.assertTrue(instance.scrollToFirstRow())
+
+		self.assertEqual(instance.firstVisibleRow, 0)
+
+	def test_jump_to_first_column(self):
+		instance = makeTable(rowCount=50, colCount=10)
+		instance.firstVisibleCol = 4
+
+		self.assertTrue(instance.scrollToFirstCol())
+
+		self.assertEqual(instance.firstVisibleCol, 0)
+
+	def test_a_table_shorter_than_the_display_stays_at_the_top(self):
+		instance = makeTable(rowCount=2, colCount=3)
+
+		self.assertFalse(instance.scrollToLastRow())
+
+		self.assertEqual(instance.firstVisibleRow, 0)
+
+	def test_jumping_where_we_already_are_reports_no_movement(self):
+		instance = makeTable(rowCount=50, colCount=10)
+
+		self.assertFalse(instance.scrollToFirstRow())
+
+	def test_jump_to_the_end_is_refused_when_the_extent_is_unknown(self):
+		instance = makeTable(rowCount=None, colCount=None)
+
+		self.assertFalse(instance.scrollToLastRow())
+		self.assertFalse(instance.scrollToLastCol())
+
+
+if __name__ == "__main__":
+	unittest.main()
