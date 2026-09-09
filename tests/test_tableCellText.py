@@ -219,8 +219,8 @@ class TestCellWindowFetch(unittest.TestCase):
 
 	def test_a_failing_cell_does_not_lose_the_draw(self):
 		self._installIA2Table()
-		self.mockTableObj.IAccessibleTable2Object.cellAt.side_effect = (
-			lambda rowIndex, colIndex: (_ for _ in ()).throw(RuntimeError("hidden"))
+		self.mockTableObj.IAccessibleTable2Object.cellAt.side_effect = lambda rowIndex, colIndex: (
+			(_ for _ in ()).throw(RuntimeError("hidden"))
 			if (rowIndex, colIndex) == (0, 0)
 			else (rowIndex, colIndex)
 		)

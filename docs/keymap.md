@@ -111,6 +111,25 @@ in that direction. The four small-step pans (`panLeft+f1`, `panRight+f4`,
 | `longPress(f3)` | Jump the tactile graphic viewport to the bottom edge |
 | `longPress(f4)` | Jump the tactile graphic viewport to the right edge |
 
+### Table mode
+
+<!-- TablePresentation in addon/presentations/table.py -->
+
+| Gesture | Action |
+|---|---|
+| `f1` | Show the previous screenful of table columns |
+| `f2` | Show the previous screenful of table rows |
+| `f3` | Show the next screenful of table rows |
+| `f4` | Show the next screenful of table columns |
+| `f1+f2` | Move the table view up one row |
+| `f3+f4` | Move the table view down one row |
+| `panLeft+f1` | Move the table view left one column |
+| `panRight+f4` | Move the table view right one column |
+| `longPress(f1)` | Jump the table view to the first column |
+| `longPress(f2)` | Jump the table view to the first row |
+| `longPress(f3)` | Jump the table view to the last row |
+| `longPress(f4)` | Jump the table view to the last column |
+
 <!-- END GENERATED: tier2 -->
 
 ## Firmware-reserved

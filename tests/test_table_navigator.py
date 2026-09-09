@@ -21,7 +21,7 @@ class FakeCellObject:
 
 
 class TestMoveNavigatorAfterScroll(unittest.TestCase):
-	"""Test the _moveNavigatorAfterScroll method."""
+	"""Test the moveNavigatorAfterScroll method."""
 
 	def setUp(self):
 		"""Set up test fixtures."""
@@ -44,7 +44,7 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 		mock_config.TableNavigatorAfterScroll = TableNavigatorAfterScroll
 
 		with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
-			self.tableInstance._moveNavigatorAfterScroll()
+			self.tableInstance.moveNavigatorAfterScroll()
 
 			# Verify _selectCell was not called
 			mock_selectCell.assert_not_called()
@@ -64,7 +64,7 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 
 		with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
 			with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
-				self.tableInstance._moveNavigatorAfterScroll()
+				self.tableInstance.moveNavigatorAfterScroll()
 
 				# Verify _selectCell was called with first cell
 				mock_selectCell.assert_called_once_with(cells[0], 0, 0)
@@ -92,7 +92,7 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 			with patch.object(type(self.tableInstance), "tableColumnCount", 4):
 				with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
 					with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
-						self.tableInstance._moveNavigatorAfterScroll()
+						self.tableInstance.moveNavigatorAfterScroll()
 
 						# Center is at 0-based (1, 2), which is 1-based (2, 3)
 						# That's cells[5] in our list
@@ -109,7 +109,7 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 		self.tableInstance.numVisibleCols = None
 
 		with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
-			self.tableInstance._moveNavigatorAfterScroll()
+			self.tableInstance.moveNavigatorAfterScroll()
 
 			# Verify _selectCell was not called
 			mock_selectCell.assert_not_called()
@@ -125,7 +125,7 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 
 		with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
 			with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
-				self.tableInstance._moveNavigatorAfterScroll()
+				self.tableInstance.moveNavigatorAfterScroll()
 
 				# Verify _selectCell was not called (no matching cell)
 				mock_selectCell.assert_not_called()
@@ -176,7 +176,7 @@ class TestCenterCellClamping(unittest.TestCase):
 
 				with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
 					with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
-						self.tableInstance._moveNavigatorAfterScroll()
+						self.tableInstance.moveNavigatorAfterScroll()
 
 						# Center should be row 2, col 1 (0-based) = row 3, col 2 (1-based)
 						mock_selectCell.assert_called_once_with(cells[5], 2, 1)
@@ -208,7 +208,7 @@ class TestCenterCellClamping(unittest.TestCase):
 
 				with patch.object(self.tableInstance, "_selectCell", return_value=True) as mock_selectCell:
 					with patch.object(self.tableInstance, "getTableCells", return_value=iter(cells)):
-						self.tableInstance._moveNavigatorAfterScroll()
+						self.tableInstance.moveNavigatorAfterScroll()
 
 						# Center should be row 4, col 1 (0-based) = row 5, col 2 (1-based)
 						mock_selectCell.assert_called_once_with(cells[1], 4, 1)

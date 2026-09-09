@@ -14,10 +14,14 @@ from __future__ import annotations
 
 import time
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+import addonHandler
 import api
+import inputCore
+from globalCommands import SCRCAT_BRAILLE
 from logHandler import log
+from scriptHandler import script
 from textInfos import FieldCommand
 
 from .base import Presentation, PresentationProvider
@@ -27,7 +31,7 @@ if TYPE_CHECKING:
 
 	from NVDAObjects import NVDAObject
 
-	from ..brailleDisplayDrivers.dotPad.driver import Display
+	from ..brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver, Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
 	from ..utils import reviewFields
@@ -35,8 +39,6 @@ if TYPE_CHECKING:
 
 # Runtime imports using NVDA's addon module loading
 if not TYPE_CHECKING:
-	import addonHandler
-
 	addon: addonHandler.Addon = addonHandler.getCodeAddon()
 	DpTactileGraphicsBuffer = addon.loadModule(
 		"brailleDisplayDrivers.dotPad.tactileBuffer",
@@ -48,6 +50,8 @@ if not TYPE_CHECKING:
 	TABLE_ROLES = table_module.TABLE_ROLES
 	TABLE_CELL_ROLES = table_module.TABLE_CELL_ROLES
 	findAncestorWithRole = table_module.findAncestorWithRole
+
+addonHandler.initTranslation()
 
 
 def getUnderlyingObject(obj: NVDAObject) -> tuple[NVDAObject, bool]:
@@ -385,6 +389,158 @@ class TablePresentation(Presentation):
 	@property
 	def name(self) -> str:
 		return "table"
+
+	def _getActiveDriver(self) -> BrailleDisplayDriver | None:
+		"""Return the active BrailleDisplayDriver, or None if unavailable."""
+		try:
+			import braille
+
+			return cast("BrailleDisplayDriver | None", braille.handler.display)  # type: ignore[union-attr]
+		except Exception:
+			return None
+
+	def _afterScroll(self, moved: bool) -> None:
+		"""Follow a viewport move with the navigator move and a redraw.
+
+		Nothing happens when the viewport did not move -- at an edge there is
+		neither a new cell to move to nor anything to redraw.
+
+		The navigator move honours the user's ``tableNavigatorAfterScroll``
+		setting, which defaults to leaving the navigator alone; it lived only on
+		``scrollForward`` / ``scrollBack`` before these gestures existed.
+
+		A presentation holds no renderer reference, so the redraw is requested
+		the same way ``BrailleDisplayDriver.script_brailleDisplay`` does. Silent
+		no-op when the driver is not available.
+		"""
+		if not moved:
+			return
+		self._tableData.moveNavigatorAfterScroll()
+		driver = self._getActiveDriver()
+		renderer = getattr(driver, "_renderer", None) if driver is not None else None
+		if renderer is None:
+			return
+		renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+
+	# --- @script handlers ---
+	#
+	# The same layout as GraphicPresentation, so the muscle memory carries
+	# between modes and both match the [DotPad320X Keys] map the library ships:
+	# single key = one screenful, f1/f4 horizontal and f2/f3 vertical; the
+	# chords that graphic mode uses for a few dots move one row or column here;
+	# a long press jumps to that edge.
+	#
+	# f2+f4 (return to braille), f1+f3 / f2+f3 (enter graphic) and the
+	# longPress(f1+f3) / longPress(f2+f3) mode switches are deliberately left
+	# unbound so they keep falling through to the driver.
+
+	@script(
+		# Translators: description of the table command to show the columns to the left.
+		description=_("Show the previous screenful of table columns"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f1",
+	)
+	def script_pageLeft(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollLeft())
+
+	@script(
+		# Translators: description of the table command to show the rows above.
+		description=_("Show the previous screenful of table rows"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f2",
+	)
+	def script_pageUp(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollUp())
+
+	@script(
+		# Translators: description of the table command to show the rows below.
+		description=_("Show the next screenful of table rows"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f3",
+	)
+	def script_pageDown(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollDown())
+
+	@script(
+		# Translators: description of the table command to show the columns to the right.
+		description=_("Show the next screenful of table columns"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f4",
+	)
+	def script_pageRight(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollRight())
+
+	@script(
+		# Translators: description of the table command to move up one row.
+		description=_("Move the table view up one row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f1+f2",
+	)
+	def script_rowUp(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByRows(-1))
+
+	@script(
+		# Translators: description of the table command to move down one row.
+		description=_("Move the table view down one row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f3+f4",
+	)
+	def script_rowDown(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByRows(1))
+
+	@script(
+		# Translators: description of the table command to move one column left.
+		description=_("Move the table view left one column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panLeft+f1",
+	)
+	def script_columnLeft(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByCols(-1))
+
+	@script(
+		# Translators: description of the table command to move one column right.
+		description=_("Move the table view right one column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panRight+f4",
+	)
+	def script_columnRight(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByCols(1))
+
+	@script(
+		# Translators: description of the table command to jump to the first column.
+		description=_("Jump the table view to the first column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f1)",
+	)
+	def script_jumpToFirstColumn(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToFirstCol())
+
+	@script(
+		# Translators: description of the table command to jump to the first row.
+		description=_("Jump the table view to the first row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f2)",
+	)
+	def script_jumpToFirstRow(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToFirstRow())
+
+	@script(
+		# Translators: description of the table command to jump to the last row.
+		description=_("Jump the table view to the last row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f3)",
+	)
+	def script_jumpToLastRow(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToLastRow())
+
+	@script(
+		# Translators: description of the table command to jump to the last column.
+		description=_("Jump the table view to the last column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f4)",
+	)
+	def script_jumpToLastColumn(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToLastCol())
 
 
 class DetectionPath(StrEnum):

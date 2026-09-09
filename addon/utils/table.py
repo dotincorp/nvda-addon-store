@@ -671,13 +671,13 @@ class Table(AutoPropertyObject):
 			# At end of row, wrap to first column of next row
 			if self.scrollDown():
 				self.firstVisibleCol = 0
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 				return True
 			return False
 		else:
 			result = self.scrollRight()
 			if result:
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 			return result
 
 	def scrollBack(self) -> bool:
@@ -698,13 +698,13 @@ class Table(AutoPropertyObject):
 					# Calculate last page of columns
 					lastPageStart = ((colCount - 1) // self.numVisibleCols) * self.numVisibleCols
 					self.firstVisibleCol = lastPageStart
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 				return True
 			return False
 		else:
 			result = self.scrollLeft()
 			if result:
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 			return result
 
 	def scrollRight(self) -> bool:
@@ -870,7 +870,7 @@ class Table(AutoPropertyObject):
 			return False
 		return self._setFirstVisible(limit, vertical=False)
 
-	def _moveNavigatorAfterScroll(self) -> None:
+	def moveNavigatorAfterScroll(self) -> None:
 		"""Move navigator object after scroll based on user setting.
 
 		Reads the tableNavigatorAfterScroll configuration and moves the
