@@ -72,6 +72,19 @@ CI pins for linting, since the add-on is checked against NVDA's own annotations.
 The hooks configured in `prek.toml` run all of the above on commit, so a clean
 commit is usually a clean CI run.
 
+## `tools/` and `scripts/`
+
+Both hold maintainer utilities; the split is what runs them.
+
+`tools/` is run unattended — by a prek hook, by CI, or by a git textconv driver.
+Everything there generates or validates tracked repo content, takes `--check` or
+`--dry-run`, and reports drift through its exit code.
+
+`scripts/` is run by a human, by hand, and is free to be interactive: open a
+browser, prompt, print instructions. Nothing in CI depends on it.
+
+New utilities go wherever that boundary puts them.
+
 ## Coding standards
 
 The add-on follows [NVDA's coding standards](https://github.com/nvaccess/nvda/blob/master/projectDocs/dev/codingStandards.md).
