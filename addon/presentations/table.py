@@ -514,9 +514,10 @@ class TableProvider(PresentationProvider):
 		1. If obj itself is a table, returns it
 		2. If obj has a .table attribute (NVDA-provided), returns that
 		   This works for native table support (Word, etc.)
-		3a. Browse mode (obj.treeInterceptor is set): virtual buffer in-memory lookup
+		3a. Virtual buffer (treeInterceptor exposes getNVDAObjectFromIdentifier): in-memory lookup
 		    via _findTableViaVbuf — zero IA2 COM calls in the not-found case.
-		3b. Non-browse: IA2 parent walk on obj's parent chain
+		3b. Everything else, non-virtual-buffer TreeInterceptors (Excel, Word)
+		    included: IA2 parent walk on obj's parent chain
 		4. Gets underlying object via review position (handles Word UIA)
 		5. If underlying obj is a table or has .table attribute, returns that
 		6. Scans underlying object's parent chain for a table
@@ -524,6 +525,7 @@ class TableProvider(PresentationProvider):
 		:param obj: The starting NVDA object.
 		:param maxDepth: Maximum parent levels to scan (steps 3b/6). None = MAX_PARENT_SCAN_DEPTH.
 		    Ignored for the virtual buffer path (step 3a) which always searches the full ancestor chain.
+		    A non-virtual-buffer TreeInterceptor takes the parent-walk path, not 3a.
 		:returns: The table NVDAObject if found, None otherwise.
 		"""
 		depth = maxDepth if maxDepth is not None else self.MAX_PARENT_SCAN_DEPTH
@@ -544,10 +546,15 @@ class TableProvider(PresentationProvider):
 		except (NotImplementedError, AttributeError):
 			pass
 
-		# 3a. Browse mode: use virtual buffer in-memory data — no IA2 COM calls.
+		# 3a. Virtual buffers only: use their in-memory field data — no IA2 COM calls.
 		# The vbuf already has the full parsed ancestor chain; steps 4-6 (review
 		# position parent walk) are unnecessary and skipped for this path.
-		if getattr(obj, "treeInterceptor", None) is not None:
+		# A TreeInterceptor that is not a virtual buffer cannot resolve a node
+		# identifier - Excel worksheets and Word documents attach one of those -
+		# so treating "has a TreeInterceptor" as "is browse mode" would strand
+		# every Excel cell on the fast path and never find its worksheet.
+		treeInterceptor = getattr(obj, "treeInterceptor", None)
+		if treeInterceptor is not None and hasattr(treeInterceptor, "getNVDAObjectFromIdentifier"):
 			return self._findTableViaVbuf(obj)
 
 		# 3b. Non-browse: scan obj's IA2 parent chain
@@ -578,7 +585,9 @@ class TableProvider(PresentationProvider):
 	def _findTableViaVbuf(self, obj: NVDAObject) -> NVDAObject | None:
 		"""Find a table ancestor using the virtual buffer's in-memory field data.
 
-		Called when obj.treeInterceptor is set (browse mode). Uses the review
+		Called only when obj.treeInterceptor is a virtual buffer - a plain
+		BrowseModeTreeInterceptor emits neither the controlIdentifier fields nor
+		the getNVDAObjectFromIdentifier method this needs. Uses the review
 		position's getTextWithFields() — the same proven path used by
 		_getCellPositionViaTextFields — so zero IA2 COM calls in the not-found
 		case (most links and paragraphs) and one accChild COM call in the
@@ -587,10 +596,9 @@ class TableProvider(PresentationProvider):
 		Layout tables are not excluded, matching the existing IA2 parent-walk
 		behaviour in steps 3b/6.
 
-		:param obj: The navigator object (treeInterceptor must be set).
+		:param obj: The navigator object (treeInterceptor must be a virtual buffer).
 		:returns: The table NVDAObject if found, None otherwise.
 		"""
-		from controlTypes import Role
 		from textInfos import FieldCommand
 
 		try:
@@ -606,7 +614,9 @@ class TableProvider(PresentationProvider):
 		if vbuf is None:
 			return None
 
-		# Walk fields in reverse order (innermost ancestor first) to find TABLE role.
+		# Walk fields in reverse order (innermost ancestor first) to find a table
+		# role. DATAGRID counts as well as TABLE: an ARIA role="grid" surfaces as
+		# the former, and TableClass accepts both.
 		for field in reversed(fields):
 			if not isinstance(field, FieldCommand):
 				continue
@@ -615,7 +625,7 @@ class TableProvider(PresentationProvider):
 			fieldData = field.field
 			if fieldData is None:
 				continue
-			if fieldData.get("role") != Role.TABLE:
+			if fieldData.get("role") not in TABLE_ROLES:
 				continue
 
 			# Found a table control field — materialise the NVDAObject.

@@ -1825,6 +1825,103 @@ class TestTableProviderFindTableViaVbuf(unittest.TestCase):
 		mock_ancestor.assert_not_called()
 
 
+class TestFindTableWithNonVirtualBufferTreeInterceptor(unittest.TestCase):
+	"""Tests for _findTable() when the TreeInterceptor is not a virtual buffer.
+
+	Excel worksheets (``ExcelBrowseModeTreeInterceptor``) and Word documents
+	(``WordDocumentTreeInterceptor``) attach a TreeInterceptor that is a plain
+	``BrowseModeTreeInterceptor``, not a ``VirtualBuffer``. It cannot resolve a
+	node identifier, so the virtual-buffer fast path can never find a table
+	there and _findTable must fall through to the parent walk.
+	"""
+
+	def setUp(self):
+		self.provider = TableProvider()
+		# ``spec=[]`` matters: a bare MagicMock answers hasattr for every
+		# attribute, including getNVDAObjectFromIdentifier, so it would be
+		# mistaken for a virtual buffer.
+		self.nonVbufTreeInterceptor = MagicMock(spec=[])
+		self.vbufTreeInterceptor = MagicMock()
+
+	def _makeCellInTable(self, treeInterceptor):
+		"""Build a table cell whose parent is a table, as Excel exposes it."""
+		table = MockTableObject(role=controlTypes.Role.TABLE)
+		cell = MockTableObject(role=controlTypes.Role.TABLECELL)
+		cell.parent = table
+		cell.treeInterceptor = treeInterceptor
+		return cell, table
+
+	def test_non_vbuf_tree_interceptor_falls_through_to_parent_walk(self):
+		"""A non-vbuf TreeInterceptor must not stop the parent walk."""
+		cell, table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		result = self.provider._findTable(cell)
+
+		self.assertIs(result, table)
+
+	def test_non_vbuf_tree_interceptor_does_not_use_vbuf_path(self):
+		"""The virtual-buffer lookup must be skipped entirely for a non-vbuf TI."""
+		cell, _table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		with patch.object(self.provider, "_findTableViaVbuf") as mockVbufLookup:
+			self.provider._findTable(cell)
+
+		mockVbufLookup.assert_not_called()
+
+	def test_can_provide_finds_excel_shaped_table(self):
+		"""canProvide must accept an Excel-shaped cell (cell -> worksheet, TI attached)."""
+		cell, _table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		self.assertTrue(self.provider.canProvide(cell))
+
+	def test_vbuf_tree_interceptor_still_skips_parent_walk(self):
+		"""A real virtual buffer keeps the fast path: no IA2 parent walk."""
+		cell, _table = self._makeCellInTable(self.vbufTreeInterceptor)
+
+		with patch("addon.presentations.table.findAncestorWithRole") as mockAncestorWalk:
+			with patch.object(self.provider, "_findTableViaVbuf", return_value=None) as mockVbufLookup:
+				result = self.provider._findTable(cell)
+
+		mockVbufLookup.assert_called_once_with(cell)
+		mockAncestorWalk.assert_not_called()
+		self.assertIsNone(result)
+
+
+class TestFindTableViaVbufDataGrid(unittest.TestCase):
+	"""_findTableViaVbuf must accept every role in TABLE_ROLES, not just TABLE."""
+
+	def setUp(self):
+		self.provider = TableProvider()
+		self.mock_vbuf = MagicMock()
+
+	@patch("addon.presentations.table.api")
+	def test_finds_datagrid_role_in_fields(self, mock_api):
+		"""An ARIA role="grid" surfaces as DATAGRID and must still be detected."""
+		from textInfos import ControlField, FieldCommand
+
+		obj = MockTableObject(role=controlTypes.Role.LINK)
+		obj.treeInterceptor = self.mock_vbuf
+
+		field = ControlField(
+			{
+				"role": controlTypes.Role.DATAGRID,
+				"controlIdentifier_docHandle": "7",
+				"controlIdentifier_ID": "9",
+			},
+		)
+		mock_review_pos = MagicMock()
+		mock_review_pos.getTextWithFields.return_value = [FieldCommand("controlStart", field)]
+		mock_api.getReviewPosition.return_value = mock_review_pos
+
+		expectedTable = MockTableObject(role=controlTypes.Role.DATAGRID)
+		self.mock_vbuf.getNVDAObjectFromIdentifier.return_value = expectedTable
+
+		result = self.provider._findTableViaVbuf(obj)
+
+		self.assertIs(result, expectedTable)
+		self.mock_vbuf.getNVDAObjectFromIdentifier.assert_called_once_with(7, 9)
+
+
 class TestTableProviderCanProvideCache(unittest.TestCase):
 	"""Tests for canProvide() obj-identity cache (avoids double _findTable per keypress)."""
 
