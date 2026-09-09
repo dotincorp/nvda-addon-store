@@ -66,7 +66,7 @@ Changes destined for the next release.
 
 ### Fixed
 - Table mode does less work per keypress: the structure of the review position is read once per update instead of three or four times, a cell's text is only fetched when its name does not already carry it, and a table that is already on the display is no longer re-detected on every navigation event.
-- Table mode now works in Microsoft Excel. The 300-cell tactile display showed multi-line braille instead of a table for most cell moves, and only occasionally showed the table. Word documents and other content NVDA reads through a non-browse-mode document interceptor benefit from the same fix.
+- Table mode now works in Microsoft Excel. The 300-cell tactile display showed multi-line braille instead of a table for most cell moves, and only occasionally showed the table. Word documents and other content NVDA reads through a non-browse-mode document interceptor are expected to benefit from the same fix.
 - Bluetooth now works on NVDA 2026.3 beta 1. That build is missing one of the Windows Bluetooth components it needs, so scanning failed as soon as a display was found; the add-on supplies the missing component from its own copy until NVDA ships it.
 - A Bluetooth connection that cannot be established now fails promptly instead of appearing to hang.
 - The display is now reliably cleared when disconnecting over USB. A slow row could previously abort clearing the rest, so a display could be left showing whatever was last written after switching displays or exiting NVDA.

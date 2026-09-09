@@ -114,6 +114,10 @@ class PresentationRenderer(AutoPropertyObject):
 		with self.queuedWriteLock:
 			self.queuedWrite = None
 
+		# The cache holds the last review position's object; the core cycle that
+		# would normally drop it has already been unregistered above.
+		reviewFields.clearCache()
+
 	def initialDisplay(self) -> None:
 		"""Trigger initial display update."""
 		try:
