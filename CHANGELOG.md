@@ -65,6 +65,7 @@ Changes destined for the next release.
 - Multi-line braille on the tactile area now leaves a single empty dot-row between lines (was two), matching the library's built-in graphic mode so the line spacing stays consistent regardless of which rendering path is active. More braille lines fit on the display as a result. Inter-line spacing is now defined once (the display's vertical cell spacing) and shared by the primary braille, table, and screen-capture renderers.
 
 ### Fixed
+- Table mode does less work per keypress: the structure of the review position is read once per update instead of three or four times, a cell's text is only fetched when its name does not already carry it, and a table that is already on the display is no longer re-detected on every navigation event.
 - Table mode now works in Microsoft Excel. The 300-cell tactile display showed multi-line braille instead of a table for most cell moves, and only occasionally showed the table. Word documents and other content NVDA reads through a non-browse-mode document interceptor benefit from the same fix.
 - Bluetooth now works on NVDA 2026.3 beta 1. That build is missing one of the Windows Bluetooth components it needs, so scanning failed as soon as a display was found; the add-on supplies the missing component from its own copy until NVDA ships it.
 - A Bluetooth connection that cannot be established now fails promptly instead of appearing to hang.
