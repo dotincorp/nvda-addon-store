@@ -90,19 +90,19 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 
 - Left Pan Key (Triangular): Scroll back through the braille text in the 20-cell area.
 - Right Pan Key (Triangular): Scroll forward through the braille text in the 20-cell area.
-- F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.
-- F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.
-- F2 Key: In a tactile graphic, scroll the graphic up.
-- F3 Key: In a tactile graphic, scroll the graphic down.
+- F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, show the previous screenful of table columns, or move to the previous chart data point.
+- F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, show the next screenful of table columns, or move to the next chart data point.
+- F2 Key: In a tactile graphic, scroll the graphic up. In a table, show the previous screenful of rows.
+- F3 Key: In a tactile graphic, scroll the graphic down. In a table, show the next screenful of rows.
 
 ### Multi Key Commands
 
-- Left Pan + F1 Key: Move the viewport left a few dots in graphics mode.
-- Right Pan + F4 Key: Move the viewport right a few dots in graphics mode.
-- F1+F2: Move the viewport up a few dots in graphics mode.
-- F3+F4: Move the viewport down a few dots in graphics mode.
+- Left Pan + F1 Key: Move the viewport left a few dots in graphics mode, or one column in table mode.
+- Right Pan + F4 Key: Move the viewport right a few dots in graphics mode, or one column in table mode.
+- F1+F2: Move the viewport up a few dots in graphics mode, or one row in table mode.
+- F3+F4: Move the viewport down a few dots in graphics mode, or one row in table mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
-- F2+F4: When showing a tactile image, return to braille mode.
+- F2+F4: When showing a tactile image or a table, return to braille mode. The mode you left comes back when you move somewhere else that calls for it.
 - F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
@@ -212,6 +212,21 @@ Button map reference, tactile graphics mode. When the review mode is explicitly 
 - F1+F2: Pan the tactile graphic view up by a few dots.
 - F3+F4: Pan the tactile graphic view down by a few dots.
 - Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation.
+
+Button map reference, table mode. When a table is shown on the 300-cell display, the buttons move the view over the table. The keys match tactile graphics mode, so the same movements apply in both:
+
+- F1 Key: Show the previous screenful of columns.
+- F4 Key: Show the next screenful of columns.
+- F2 Key: Show the previous screenful of rows.
+- F3 Key: Show the next screenful of rows.
+- Long press any of the four keys above to jump straight to that edge of the table: F1 to the first column, F4 to the last column, F2 to the first row, and F3 to the last row.
+- Left Pan + F1 Key: Move the view one column to the left.
+- Right Pan + F4 Key: Move the view one column to the right.
+- F1+F2: Move the view up one row.
+- F3+F4: Move the view down one row.
+- F2+F4: Return to braille output. Table mode comes back when you move to another table, and tactile graphics mode still starts on its own when you move to an image.
+
+Moving the view does not move your cursor unless you ask it to. The "After scrolling a table, move the navigator object" setting in the Dot Pad settings panel can move it to the first or the centre cell of the new view instead.
 
 ## Dot Pad Display Viewer
 

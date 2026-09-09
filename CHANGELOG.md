@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Changes destined for the next release.
 
 ### Added
+- Table mode now has the same buttons as tactile graphics mode. F1 and F4 show the previous and next screenful of columns, F2 and F3 the previous and next screenful of rows, and holding any of the four jumps to that edge of the table. Left Pan+F1, Right Pan+F4, F1+F2 and F3+F4 move a single column or row. See the user guide for the full map.
 - A user guide is now bundled with the add-on and opens from the Help button in NVDA's add-on store. It covers connecting over Bluetooth and USB, the navigation buttons, the relevant NVDA braille settings, tactile graphics mode, Excel and Word integration, and the Dot Pad Display Viewer. It is translatable through NVDA's Crowdin project.
 - Support for NVDA 2026.1 and later (64-bit).
 - Installing the add-on now offers to enable automatic detection of the Dot Pad, which NVDA disables by default. The question is asked once; the setting can be changed later in NVDA's braille settings under "Displays to detect automatically".
@@ -66,6 +67,9 @@ Changes destined for the next release.
 - Multi-line braille on the tactile area now leaves a single empty dot-row between lines (was two), matching the library's built-in graphic mode so the line spacing stays consistent regardless of which rendering path is active. More braille lines fit on the display as a result. Inter-line spacing is now defined once (the display's vertical cell spacing) and shared by the primary braille, table, and screen-capture renderers.
 
 ### Fixed
+- F2+F4 now returns to braille from a table, which previously appeared to do nothing: the table was left on the display even though the add-on had switched.
+- Returning to braille with F2+F4 no longer stops tactile graphics and table mode from starting again. Pressing it used to hold braille for the rest of the NVDA session, so moving to an image or a table did nothing until NVDA was restarted. It now applies only where you are: move somewhere else and the display follows again.
+- Jumping and paging through a Microsoft Excel sheet now stops at the last row and column that contain data, rather than treating the sheet as its full million rows.
 - Table mode is much faster on large web tables, such as a Google Sheets grid. Only the cells that fit on the display are now read from the page; the whole width of every row was being read before, so a wide table cost roughly a second and a half per keypress and could make NVDA briefly unresponsive.
 - Table mode does less work per keypress: the structure of the review position is read once per update instead of three or four times, a cell's text is only fetched when its name does not already carry it, and a table that is already on the display is no longer re-detected on every navigation event.
 - Table mode now works in Microsoft Excel. The 300-cell tactile display showed multi-line braille instead of a table for most cell moves, and only occasionally showed the table. Word documents and other content NVDA reads through a non-browse-mode document interceptor are expected to benefit from the same fix.
