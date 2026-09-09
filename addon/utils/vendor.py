@@ -13,8 +13,12 @@ Python versions and architectures).
 import importlib
 import struct
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Final, TypedDict, cast
+
+import addonHandler
+from logHandler import log
 
 _vendorPathInitialized: bool = False
 _winrtCollectionsGrafted: bool = False
@@ -35,9 +39,8 @@ VENDOR_TARGETS: Final[tuple[VendorTarget, ...]] = (
 
 SUPPORTED_PLATFORMS: Final[tuple[str, ...]] = tuple(t["subdir"] for t in VENDOR_TARGETS)
 
-#: The winrt release the vendored projection modules were built against. They reach
-#: winrt-runtime through a C API capsule, so pairing them with another runtime crashes
-#: the process rather than raising, hence the version gate in ``ensureWinrtCollections``.
+#: The winrt release the vendored projections were built against. They reach the runtime
+#: through a C API capsule, so pairing them with another one crashes rather than raises.
 VENDORED_WINRT_VERSION: Final = "3.2.1"
 
 
@@ -60,14 +63,10 @@ def getVendorPath() -> Path:
 		RuntimeError: If the current platform is not supported or the vendor
 			directory does not exist.
 	"""
-	import addonHandler
-
 	addon: addonHandler.Addon = cast(addonHandler.Addon, addonHandler.getCodeAddon())
 	vendorSubdir = getVendorSubdir()
 
 	if vendorSubdir not in SUPPORTED_PLATFORMS:
-		from logHandler import log
-
 		log.error("Unsupported platform: %s. Supported: %s", vendorSubdir, ", ".join(SUPPORTED_PLATFORMS))
 		raise RuntimeError(f"DotPad add-on does not support platform {vendorSubdir}")
 
@@ -123,25 +122,19 @@ def appendPackagePath(moduleName: str, path: Path) -> None:
 def ensureWinrtCollections() -> None:
 	"""Supply ``winrt.windows.foundation.collections`` when NVDA's build omits it.
 
-	NVDA 2026.3 beta 1 bundles bleak and the winrt projections, but not this one:
-	nothing in Python source imports it, only the compiled projection modules do, at C
-	level, where py2exe's module finder cannot see it. Bleak then raises
-	``ModuleNotFoundError`` the moment a BLE device is discovered.
+	NVDA 2026.3 beta 1 bundles bleak and the winrt projections but not this one -- only
+	the compiled projections import it, at C level, where py2exe's module finder cannot
+	see it -- so bleak raises ``ModuleNotFoundError`` as soon as a device is discovered.
 
-	Putting the vendor directory on ``sys.path`` cannot fix that at any position: the
-	vendored ``winrt`` is a namespace package while NVDA's frozen one is a regular
-	package, and a regular package always wins. So the missing submodule is grafted onto
-	the already imported packages instead, appended so everything NVDA does ship keeps
-	precedence.
+	Note it is grafted onto the imported packages' ``__path__`` rather than added to
+	``sys.path``: the vendored ``winrt`` is a namespace package and NVDA's frozen one is a
+	regular package, which wins from any position. Appending leaves what NVDA ships first.
 
-	The function is a no-op on builds that ship the module, and on any build whose winrt
-	runtime is not the one the vendored projections were compiled against.
+	A no-op on builds that ship the module or run a different winrt runtime.
 	"""
 	global _winrtCollectionsGrafted
 	if _winrtCollectionsGrafted:
 		return
-
-	from logHandler import log
 
 	try:
 		importlib.import_module("winrt.windows.foundation.collections")
@@ -178,9 +171,7 @@ def ensureWinrtCollections() -> None:
 
 
 def _getWinrtRuntimeVersion() -> str | None:
-	"""Return the installed winrt-runtime version, or ``None`` if it cannot be read."""
-	from importlib.metadata import PackageNotFoundError, version
-
+	"""Return NVDA's winrt-runtime version, or ``None`` if it cannot be read."""
 	try:
 		return version("winrt-runtime")
 	except PackageNotFoundError:

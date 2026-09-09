@@ -28,6 +28,8 @@ from typing import Any
 
 from logHandler import log
 
+from ..utils.vendor import ensureVendorPath, ensureWinrtCollections
+
 
 def _setUpBle() -> tuple[Any | None, bool]:
 	"""Return ``(coreBleModule, bleAvailable)`` for this NVDA version."""
@@ -37,14 +39,10 @@ def _setUpBle() -> tuple[Any | None, bool]:
 		core = None
 	if core is not None:
 		log.debug("BLE: using NVDA's built-in hwIo.ble")
-		from ..utils.vendor import ensureWinrtCollections
-
 		ensureWinrtCollections()
 		return core, True
 
 	try:
-		from ..utils.vendor import ensureVendorPath
-
 		ensureVendorPath()
 	except RuntimeError as e:
 		log.error("BLE not available: %s", e)
