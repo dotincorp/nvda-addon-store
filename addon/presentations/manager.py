@@ -82,8 +82,9 @@ class PresentationManager:
 		This method should be called whenever the navigator object changes.
 		It will select the most appropriate presentation based on:
 		1. Any forced presentation (if still valid)
-		2. The first provider that can provide, reusing active if same provider and valid
-		3. A new presentation from the matching provider
+		2. The active presentation, if its provider opts into reuse, it is still
+		   valid, and no higher-priority provider claims the object
+		3. A new presentation from the first provider that can provide
 
 		:param obj: The current navigator object.
 		:param triggerReason: The triggering event (e.g. ``TriggerReason.CARET_MOVE``),
@@ -99,9 +100,24 @@ class PresentationManager:
 				log.debug("Forced presentation %s no longer valid", self._forcedPresentation.name)
 				self._forcedPresentation = None
 
-		# 2. Find first provider that can provide
+		# 2. Walk the providers in priority order. Reaching the active
+		# presentation's own provider with the presentation still valid means
+		# every higher-priority provider has already declined this object, so
+		# the presentation on screen is the right one — reuse it rather than
+		# paying its provider's detection to be told the same thing. Only
+		# providers that opt in via ``reusesActivePresentation`` take this
+		# shortcut; for the rest ``canProvide`` remains the authority.
+		activePresentation = self._activePresentation
+		activeProvider = activePresentation.provider if activePresentation else None
 		matchingProvider: PresentationProvider | None = None
 		for provider in self._providers:
+			if (
+				activePresentation is not None
+				and provider is activeProvider
+				and provider.reusesActivePresentation
+				and activePresentation.isStillValid(triggerReason)
+			):
+				return
 			if provider.canProvide(obj):
 				matchingProvider = provider
 				break
@@ -112,15 +128,7 @@ class PresentationManager:
 			self._activePresentation = None
 			return
 
-		# 3. If same provider and still valid, reuse existing presentation
-		if (
-			self._activePresentation
-			and self._activePresentation.provider is matchingProvider
-			and self._activePresentation.isStillValid(triggerReason)
-		):
-			return
-
-		# 4. Create new presentation from matching provider
+		# 3. Create new presentation from matching provider
 		previousName = self._activePresentation.name if self._activePresentation else None
 		presentation = matchingProvider.createPresentation(obj, self.display)
 		presentation.provider = matchingProvider

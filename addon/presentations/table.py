@@ -396,6 +396,12 @@ class TableProvider(PresentationProvider):
 	def name(self) -> str:
 		return "table"
 
+	reusesActivePresentation = True
+	"""Table detection walks parents and document structure, which is far more
+	expensive than ``TablePresentation.isStillValid``. Availability is a property
+	of the object being navigated, not of this provider, so the presentation's
+	own validity check is the complete answer."""
+
 	AUTO_DETECT_PARENT_DEPTH: int = 3
 	"""Maximum number of parent levels to scan during auto-detection."""
 	MAX_PARENT_SCAN_DEPTH: int = 20

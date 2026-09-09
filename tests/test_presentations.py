@@ -407,6 +407,86 @@ class TestPresentationManagerUpdate(unittest.TestCase):
 		self.assertFalse(self.manager.hasActivePresentation)
 
 
+class TestPresentationManagerReuse(unittest.TestCase):
+	"""update() must not re-run detection for a presentation that still holds.
+
+	Detection is the expensive half of arbitration (the table provider walks
+	parents and document structure), and it was being paid on every navigation
+	event even when the presentation it would produce was already on screen.
+	"""
+
+	def setUp(self):
+		self.mock_display = MagicMock()
+		self.manager = PresentationManager(self.mock_display)
+		self.mock_obj = MagicMock()
+
+	def _makeActive(self, provider: MockProvider) -> None:
+		"""Run one update so ``provider``'s presentation becomes the active one."""
+		self.manager.update(self.mock_obj)
+		self.assertIs(self.manager.activePresentation, provider._presentation)
+
+	def _makeReusingProvider(self, name: str, should_yield: bool = True) -> MockProvider:
+		"""A provider that opts into keeping its still-valid presentation."""
+		provider = MockProvider(name=name, should_yield=should_yield)
+		provider.reusesActivePresentation = True
+		return provider
+
+	def test_valid_active_presentation_is_reused_without_detection(self):
+		higher = MockProvider(name="higher", should_yield=False)
+		active = self._makeReusingProvider("active")
+		self.manager.registerProvider(higher)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		with patch.object(active, "canProvide", wraps=active.canProvide) as mockCanProvide:
+			self.manager.update(self.mock_obj)
+
+		mockCanProvide.assert_not_called()
+		self.assertIs(self.manager.activePresentation, active._presentation)
+
+	def test_higher_priority_provider_still_takes_over(self):
+		higher = MockProvider(name="higher", should_yield=False)
+		active = self._makeReusingProvider("active")
+		self.manager.registerProvider(higher)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		higher._should_yield = True
+		self.manager.update(self.mock_obj)
+
+		self.assertIs(self.manager.activePresentation, higher._presentation)
+
+	def test_invalid_active_presentation_falls_through_to_detection(self):
+		active = self._makeReusingProvider("active")
+		fallback = MockProvider(name="fallback", should_yield=True)
+		self.manager.registerProvider(active)
+		self.manager.registerProvider(fallback)
+		self._makeActive(active)
+
+		# The presentation reports it no longer applies, and its provider no
+		# longer claims the object either: the next provider must win.
+		active._presentation._is_valid = False
+		active._should_yield = False
+		self.manager.update(self.mock_obj)
+
+		self.assertIs(self.manager.activePresentation, fallback._presentation)
+
+	def test_provider_that_has_not_opted_in_is_asked_every_time(self):
+		"""Without the opt-in, canProvide stays the authority.
+
+		A provider whose availability is its own state (a mode toggle, say) must
+		still be able to withdraw a presentation that reports itself valid.
+		"""
+		active = MockProvider(name="active", should_yield=True)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		active._should_yield = False
+		self.manager.update(self.mock_obj)
+
+		self.assertIsNone(self.manager.activePresentation)
+
+
 class TestPresentationManagerForce(unittest.TestCase):
 	"""Tests for forced presentations in PresentationManager."""
 

@@ -157,6 +157,18 @@ class PresentationProvider(ABC):
 	Subclasses may optionally override:
 	- forceForObject() - default returns None (forcing not supported)
 	- terminate() - clean up resources when provider is no longer needed
+	- reusesActivePresentation - default False (canProvide runs on every update)
+	"""
+
+	reusesActivePresentation: bool = False
+	"""Whether the manager may keep this provider's still-valid presentation
+	without re-running ``canProvide``.
+
+	Opt in only when detection is expensive *and* the presentation's
+	``isStillValid`` is a complete answer on its own. It is not one when
+	availability lives in the provider rather than in the presentation — a mode
+	toggle, for instance — because then a presentation that reports itself valid
+	must still be dropped once its provider stops offering it.
 	"""
 
 	@property
