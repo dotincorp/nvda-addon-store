@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
+	from ..utils import reviewFields
 	from ..utils.table import Table, ExcelTable, TABLE_ROLES, TABLE_CELL_ROLES, findAncestorWithRole
 
 # Runtime imports using NVDA's addon module loading
@@ -37,6 +38,7 @@ if not TYPE_CHECKING:
 	DpTactileGraphicsBuffer = addon.loadModule(
 		"brailleDisplayDrivers.dotPad.tactileBuffer",
 	).DpTactileGraphicsBuffer
+	reviewFields = addon.loadModule("utils.reviewFields")
 	table_module = addon.loadModule("utils.table")
 	Table = table_module.Table
 	ExcelTable = table_module.ExcelTable
@@ -195,7 +197,7 @@ class TablePresentation(Presentation):
 				log.debug("_getCellPositionViaTextFields: no review position")
 				return None, None
 
-			fields = reviewPos.getTextWithFields()
+			fields = reviewFields.getTextWithFields(reviewPos)
 
 			# Look for a controlStart field with TABLECELL role
 			# Iterate in reverse to find innermost cell first (handles nested tables)
@@ -605,7 +607,7 @@ class TableProvider(PresentationProvider):
 			reviewPos = api.getReviewPosition()
 			if reviewPos is None:  # type: ignore[reportUnnecessaryComparison]
 				return None
-			fields = reviewPos.getTextWithFields()
+			fields = reviewFields.getTextWithFields(reviewPos)
 		except Exception:
 			log.debugWarning("_findTableViaVbuf: failed to get review position fields", exc_info=True)
 			return None
