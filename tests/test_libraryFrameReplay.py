@@ -91,6 +91,28 @@ class TestPayloadIsRemembered(unittest.TestCase):
 		self.assertTrue(self._replay())
 		self.graphicDisplay.display.assert_called_once()
 
+	def test_a_frame_sent_under_graphic_mode_is_not_remembered(self):
+		"""Those carry the image, so replaying one would redraw the picture."""
+		graphic = makePresentation("addon.presentations.graphic.GraphicPresentation")
+
+		self._send(b"\x01" * 300, graphic)
+		self.graphicDisplay.display.reset_mock()
+
+		self.assertFalse(self._replay())
+		self.graphicDisplay.display.assert_not_called()
+
+	def test_graphic_mode_does_not_overwrite_an_earlier_braille_frame(self):
+		"""The braille frame from before the image is still the way back."""
+		table = makePresentation("addon.presentations.table.TablePresentation")
+		graphic = makePresentation("addon.presentations.graphic.GraphicPresentation")
+
+		self._send(b"\x01" * 300, table)
+		self._send(b"\x02" * 300, graphic)
+		self.graphicDisplay.display.reset_mock()
+
+		self.assertTrue(self._replay())
+		self.graphicDisplay.display.assert_called_once()
+
 
 class TestLibraryBrailleReplaysOnce(unittest.TestCase):
 	"""The presentation asks for the replay on its first render, then stops."""

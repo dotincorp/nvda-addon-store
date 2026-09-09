@@ -485,12 +485,12 @@ class Table(AutoPropertyObject):
 					firstRow,
 				)
 
-				rowCount: int | None = None
-
-				try:
-					rowCount = cast(int, self.tableObj.rowCount)  # type: ignore
-				except (NotImplementedError, AttributeError):
-					pass
+				# self.tableRowCount, not self.tableObj.rowCount: the subclass is
+				# where a truthful extent lives. An Excel worksheet reports
+				# 1,048,576 rows (and NVDA's ExcelWorksheet exposes no rowCount at
+				# all), so reading the raw object skipped this clamp entirely and
+				# disagreed with the one the edge jumps use.
+				rowCount: int | None = self.tableRowCount
 
 				if rowCount is not None and (firstRow + numVisibleRows) > rowCount:
 					firstRow = rowCount - numVisibleRows
@@ -1045,20 +1045,24 @@ class ExcelTable(Table):
 		Cached: this is a COM round trip and ``drawTable`` plus every scroll step
 		asks for it. ``Table`` does not enable NVDA's property cache, so nothing
 		else would.
+
+		Only a successful read is cached. Excel refuses COM calls freely while it
+		is busy, and caching that refusal would leave the extent unknown for the
+		life of the presentation - which the reuse shortcut keeps alive for the
+		whole worksheet visit - permanently disabling every forward scroll.
 		"""
 		if self._usedRangeBounds is not None:
 			return self._usedRangeBounds
-		bounds: tuple[int | None, int | None] = (None, None)
 		try:
 			usedRange = self.tableObj.excelWorksheetObject.UsedRange  # type: ignore
 			lastRow = int(usedRange.Row) + int(usedRange.Rows.Count) - 1
 			lastCol = int(usedRange.Column) + int(usedRange.Columns.Count) - 1
-			bounds = (lastRow, lastCol)
 		except Exception:
-			# Excel refuses COM calls freely while it is busy, and a worksheet may
-			# not expose a used range at all. An unknown extent is handled
-			# everywhere it is read.
+			# A worksheet may also not expose a used range at all. An unknown
+			# extent is handled everywhere it is read; the next call retries.
 			log.debug("ExcelTable: could not read the worksheet used range", exc_info=True)
+			return (None, None)
+		bounds: tuple[int | None, int | None] = (lastRow, lastCol)
 		self._usedRangeBounds = bounds
 		return bounds
 

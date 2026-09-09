@@ -102,7 +102,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F1+F2: Move the viewport up a few dots in graphics mode, or one row in table mode.
 - F3+F4: Move the viewport down a few dots in graphics mode, or one row in table mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
-- F2+F4: When showing a tactile image or a table, return to braille mode. The mode you left comes back when you move somewhere else that calls for it.
+- F2+F4: When showing a tactile image or a table, return to braille mode. Braille stays while you read where you are: in a table you can move from cell to cell without the table coming back. The mode you left returns when you move out of it to something else that calls for it.
 - F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
@@ -224,7 +224,7 @@ Button map reference, table mode. When a table is shown on the 300-cell display,
 - Right Pan + F4 Key: Move the view one column to the right.
 - F1+F2: Move the view up one row.
 - F3+F4: Move the view down one row.
-- F2+F4: Return to braille output. Table mode comes back when you move to another table, and tactile graphics mode still starts on its own when you move to an image.
+- F2+F4: Return to braille output. You can keep moving through the cells of the same table in braille. Table mode comes back when you leave for another table, and tactile graphics mode still starts on its own when you move to an image.
 
 Moving the view does not move your cursor unless you ask it to. The "After scrolling a table, move the navigator object" setting in the Dot Pad settings panel can move it to the first or the centre cell of the new view instead.
 

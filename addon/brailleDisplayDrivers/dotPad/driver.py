@@ -2379,6 +2379,12 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		short-circuits ``PresentationManager.update`` while it stays valid, and
 		both braille presentations always are — so forcing pinned braille for the
 		session and nothing auto-entered again, in any mode.
+
+		``onReviewMove`` rather than ``_needsRender``: a dismissal only records
+		an intent, so the providers have to be re-consulted before anything on
+		the display changes. Setting ``_needsRender`` alone would re-render the
+		presentation just dismissed. ``script_graphicDisplay`` can get away with
+		it because ``forcePresentation`` installs the new presentation itself.
 		"""
 		import api
 
@@ -2386,7 +2392,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if self._renderer is None:
 			return
 		self._renderer.presentationManager.dismissActivePresentation(navObj)
-		self._renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+		self._renderer.onReviewMove()
 
 	gestureMap = inputCore.GlobalGestureMap(
 		{

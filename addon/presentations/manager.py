@@ -47,6 +47,8 @@ class PresentationManager:
 		self._forcedPresentation: Presentation | None = None
 		self._dismissedObject: NVDAObject | None = None
 		"""The object whose presentation the user dismissed, while they stay on it."""
+		self._dismissedPresentation: Presentation | None = None
+		"""The presentation that was dismissed, for providers that scope by validity."""
 
 		# Ordered list of providers (first = highest priority)
 		self._providers: list[PresentationProvider] = []
@@ -95,7 +97,7 @@ class PresentationManager:
 			``isStillValid`` so presentations can react to specific event types.
 		"""
 		if self._forcedPresentation:
-			if self._forcedPresentation.isStillValid(triggerReason):
+			if self._stillValid(self._forcedPresentation, triggerReason):
 				self._activePresentation = self._forcedPresentation
 				return
 			else:
@@ -104,9 +106,10 @@ class PresentationManager:
 
 		# Arriving at the active presentation's own provider proves every
 		# higher-priority provider has already declined this object.
-		dismissed = self._isDismissed(obj)
+		dismissed = self._isDismissed(obj, triggerReason)
 		if not dismissed:
 			self._dismissedObject = None
+			self._dismissedPresentation = None
 
 		activePresentation = self._activePresentation
 		activeProvider = activePresentation.provider if activePresentation else None
@@ -120,7 +123,7 @@ class PresentationManager:
 				and provider is activeProvider
 				and provider.reusesActivePresentation
 			):
-				activeStillValid = activePresentation.isStillValid(triggerReason)
+				activeStillValid = self._stillValid(activePresentation, triggerReason)
 				if activeStillValid:
 					return
 			if provider.canProvide(obj):
@@ -137,7 +140,7 @@ class PresentationManager:
 		# work, as ``LibraryBraillePresentation``'s blocking library bootstrap does.
 		if activePresentation is not None and matchingProvider is activeProvider:
 			if activeStillValid is None:
-				activeStillValid = activePresentation.isStillValid(triggerReason)
+				activeStillValid = self._stillValid(activePresentation, triggerReason)
 			if activeStillValid:
 				return
 
@@ -185,6 +188,19 @@ class PresentationManager:
 		anywhere else lifts it, so another table or an image still enters its own
 		mode, and coming back later is a fresh visit.
 
+		"Anywhere else" cannot mean "any other NVDAObject" for a mode that spans
+		many of them. A table is navigated cell by cell, and every cell is a
+		different object, so an object-scoped dismissal would be undone by the
+		next arrow key and table mode would come straight back — the chord would
+		read as dead. So the dismissal also holds while the dismissed
+		presentation reports itself still valid, but only for providers that set
+		``reusesActivePresentation``. That flag already means "this
+		presentation's ``isStillValid`` is a complete answer on its own"; for
+		everything else validity is not a safe scope, since a presentation whose
+		``isStillValid`` is unconditionally True — both braille ones, screen
+		capture — would pin the dismissal for the session, which is the failure
+		this replaced forcing to avoid.
+
 		It steps back from the whole visual stack, not just the one presentation
 		named: while it holds, every provider but the braille fallback is
 		skipped. "Not this object" is what the user means by the chord, and
@@ -193,26 +209,66 @@ class PresentationManager:
 
 		:param obj: The navigator object the user is on.
 		"""
+		# Captured before the force is dropped, so a dismissal of a forced
+		# presentation is scoped by that presentation and not by whatever
+		# happened to be active underneath it.
+		self._dismissedPresentation = self._activePresentation
 		# A force outranks the providers entirely, so it has to go too, or the
 		# dismissal would change nothing.
 		self._forcedPresentation = None
 		self._dismissedObject = obj
 
-	def _isDismissed(self, obj: NVDAObject) -> bool:
-		"""Whether ``obj`` is the object whose presentation was dismissed.
+	def _isDismissed(self, obj: NVDAObject, triggerReason: TriggerReason | None = None) -> bool:
+		"""Whether the dismissal still covers ``obj``.
 
-		Compared with ``==``: NVDA mints a fresh NVDAObject per event, and
-		``NVDAObject.__eq__`` routes to ``_isEqual``, which is what identifies
-		the same element across events. Identity would forget the dismissal
-		immediately.
+		Two ways it can, either sufficient:
+
+		1. ``obj`` is the object the user dismissed. Compared with ``==``: NVDA
+		   mints a fresh NVDAObject per event, and ``NVDAObject.__eq__`` routes
+		   to ``_isEqual``, which is what identifies the same element across
+		   events. Identity would forget the dismissal immediately.
+		2. The dismissed presentation is still valid and came from a provider
+		   that opts into ``reusesActivePresentation`` — the flag that means its
+		   ``isStillValid`` is a complete answer. This is what keeps a dismissed
+		   table dismissed while the user moves from cell to cell; leaving the
+		   table invalidates the presentation and lifts it.
 		"""
-		if self._dismissedObject is None:
-			return False
 		try:
-			return self._dismissedObject == obj
+			if self._dismissedObject is not None and self._dismissedObject == obj:
+				return True
 		except Exception:
-			# A dead COM object raises from __eq__. Treat it as having moved on.
-			log.debug("Dismissed object comparison raised; lifting the dismissal", exc_info=True)
+			# A dead COM object raises from __eq__. Fall through to the
+			# presentation's own answer rather than deciding on the raise.
+			log.debug("Dismissed object comparison raised", exc_info=True)
+
+		presentation = self._dismissedPresentation
+		if presentation is None:
+			return False
+		provider = presentation.provider
+		if provider is None or not provider.reusesActivePresentation:
+			return False
+		return self._stillValid(presentation, triggerReason)
+
+	@staticmethod
+	def _stillValid(presentation: Presentation, triggerReason: TriggerReason | None) -> bool:
+		"""``presentation.isStillValid``, treating a raise as "no longer valid".
+
+		Validity checks read live application state — ``TablePresentation``'s
+		walks ``windowHandle``, an Excel worksheet name and ``navObj.table``, all
+		COM reads on objects that can die between events, and Excel refuses calls
+		outright while it is busy. Letting that escape aborts the whole update,
+		so no provider is consulted and the previous frame stays on the pins.
+		Answering False instead re-runs detection, which is what a presentation
+		whose object has gone deserves.
+		"""
+		try:
+			return presentation.isStillValid(triggerReason)
+		except Exception:
+			log.debug(
+				"Presentation %s raised from isStillValid; treating it as invalid",
+				getattr(presentation, "name", presentation),
+				exc_info=True,
+			)
 			return False
 
 	def clearForced(self) -> None:
@@ -225,6 +281,7 @@ class PresentationManager:
 		"""
 		self._forcedPresentation = None
 		self._dismissedObject = None
+		self._dismissedPresentation = None
 
 	def render(self) -> DpTactileGraphicsBuffer | None:
 		"""Render the active presentation.

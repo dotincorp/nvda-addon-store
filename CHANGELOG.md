@@ -68,7 +68,7 @@ Changes destined for the next release.
 
 ### Fixed
 - F2+F4 now returns to braille from a table, which previously appeared to do nothing: the table was left on the display even though the add-on had switched.
-- Returning to braille with F2+F4 no longer stops tactile graphics and table mode from starting again. Pressing it used to hold braille for the rest of the NVDA session, so moving to an image or a table did nothing until NVDA was restarted. It now applies only where you are: move somewhere else and the display follows again.
+- Returning to braille with F2+F4 no longer stops tactile graphics and table mode from starting again. Pressing it used to hold braille for the rest of the NVDA session, so moving to an image or a table did nothing until NVDA was restarted. It now applies only where you are: move out of the table or image and the display follows again.
 - Jumping and paging through a Microsoft Excel sheet now stops at the last row and column that contain data, rather than treating the sheet as its full million rows.
 - Table mode is much faster on large web tables, such as a Google Sheets grid. Only the cells that fit on the display are now read from the page; the whole width of every row was being read before, so a wide table cost roughly a second and a half per keypress and could make NVDA briefly unresponsive.
 - Table mode does less work per keypress: the structure of the review position is read once per update instead of three or four times, a cell's text is only fetched when its name does not already carry it, and a table that is already on the display is no longer re-detected on every navigation event.

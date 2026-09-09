@@ -83,12 +83,16 @@ def _getLibraryBytesConsumerClasses() -> tuple[type, ...]:
 _libraryBytesConsumerClasses: tuple[type, ...] | None = None
 
 _lastPayload: bytes | None = None
-"""The most recent payload the library sent, whether or not the gate passed it.
+"""The most recent braille payload the library sent, gate passed or not.
 
 A presentation that draws the tactile area itself leaves that drawing on the
 pins when it goes away, because the library-braille presentation writes nothing
 of its own and the library will not re-send a frame for a mode it is already in.
 Keeping the frames we discard means the way back has something to show.
+
+Frames arriving under graphic mode are the exception and are not kept: those
+carry the tactile image rather than braille, so replaying one would redraw the
+picture instead of the text.
 """
 
 
@@ -170,9 +174,6 @@ def renderTactileBytes(payload: bytes) -> None:
 		clamped / zero-padded with a warning.
 	"""
 	global _lastPayload
-	# Remembered before the gate: a frame discarded now is exactly the frame to
-	# show when a library-bytes consumer becomes active again.
-	_lastPayload = payload
 
 	# Gate: only library-bytes-consuming presentations may write to the
 	# multi-line area. Other presentations own the area via NVDA-driven
@@ -181,6 +182,15 @@ def renderTactileBytes(payload: bytes) -> None:
 	try:
 		activePresentation = _getActivePresentation()
 		allowedClasses = _getLibraryBytesConsumerClasses()
+
+		# Remembered before the gate decides — a frame discarded now is exactly
+		# the frame to show when a library-bytes consumer becomes active again —
+		# but never a frame produced under graphic mode. Those carry the tactile
+		# image, so replaying one on the way back to braille would redraw the
+		# picture the renderer's graphic terminate() just cleared.
+		if getattr(activePresentation, "name", None) != "graphic":
+			_lastPayload = payload
+
 		if not isinstance(activePresentation, allowedClasses):
 			activeName = type(activePresentation).__name__ if activePresentation else "None"
 			log.debug(

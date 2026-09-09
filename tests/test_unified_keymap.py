@@ -251,7 +251,10 @@ class TestScriptBrailleDisplay(unittest.TestCase):
 			fakeNavObj,
 		)
 		driver._renderer.presentationManager.forcePresentation.assert_not_called()
-		self.assertTrue(driver._renderer._needsRender)
+		# A dismissal only records an intent, so the providers have to run again
+		# before anything on the display changes. Setting ``_needsRender`` alone
+		# would re-render the presentation just dismissed.
+		driver._renderer.onReviewMove.assert_called_once_with()
 
 	def test_no_op_when_renderer_is_none(self):
 		"""Defensive: if the renderer isn't attached yet (early startup), no-op."""

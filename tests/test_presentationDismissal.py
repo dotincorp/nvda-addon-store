@@ -41,6 +41,16 @@ class _Element:
 		return hash(self.key)
 
 
+class ReusingProvider(MockProvider):
+	"""A provider whose presentation's validity is a complete answer.
+
+	``TableProvider`` is the only real one. The flag is what lets a dismissal
+	outlive the object it was made on.
+	"""
+
+	reusesActivePresentation = True
+
+
 class TestDismissal(unittest.TestCase):
 	def setUp(self):
 		self.manager = PresentationManager(MagicMock())
@@ -157,6 +167,77 @@ class TestDismissal(unittest.TestCase):
 		self.manager.update(_Element("image"))
 
 		self.assertIs(self.manager.activePresentation, self.visual._presentation)
+
+	def test_a_provider_that_does_not_reuse_lifts_on_any_other_object(self):
+		"""The contrast to the table case below: validity is not a safe scope here.
+
+		``MockPresentation.isStillValid`` is unconditionally True, as both
+		braille presentations and screen capture are. Scoping by validity for
+		those would pin the dismissal for the session.
+		"""
+		self.manager.update(_Element("image"))
+		self.manager.dismissActivePresentation(_Element("image"))
+
+		self.manager.update(_Element("somewhere else"))
+
+		self.assertIs(self.manager.activePresentation, self.visual._presentation)
+
+
+class TestDismissalScopedByPresentation(unittest.TestCase):
+	"""A mode that spans many objects stays dismissed while its presentation holds.
+
+	A table is navigated cell by cell and every cell is a different NVDAObject,
+	so an object-scoped dismissal would be undone by the next arrow key and
+	table mode would come straight back.
+	"""
+
+	def setUp(self):
+		self.manager = PresentationManager(MagicMock())
+		self.table = ReusingProvider(name="table", should_yield=True)
+		self.braille = MockProvider(name="braille", should_yield=True)
+		self.manager.registerProvider(self.table)
+		self.manager.registerProvider(self.braille)
+
+	def test_the_dismissal_survives_moving_to_another_cell(self):
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+
+		self.manager.update(_Element("cell2"))
+
+		self.assertIs(self.manager.activePresentation, self.braille._presentation)
+
+	def test_leaving_the_table_lifts_the_dismissal(self):
+		"""Its presentation reporting itself invalid is what "left" means."""
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+		self.manager.update(_Element("cell2"))
+
+		self.table._presentation._is_valid = False
+		self.manager.update(_Element("a paragraph"))
+
+		self.assertIs(self.manager.activePresentation, self.table._presentation)
+
+	def test_a_raising_validity_check_lifts_the_dismissal(self):
+		"""A dead COM object must not strand the display on braille."""
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+
+		def boom(triggerReason=None):
+			raise RuntimeError("dead COM object")
+
+		self.table._presentation.isStillValid = boom
+		self.manager.update(_Element("cell2"))
+
+		self.assertIs(self.manager.activePresentation, self.table._presentation)
+
+	def test_clearing_the_force_also_lifts_a_presentation_scoped_dismissal(self):
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+
+		self.manager.clearForced()
+		self.manager.update(_Element("cell2"))
+
+		self.assertIs(self.manager.activePresentation, self.table._presentation)
 
 
 if __name__ == "__main__":
