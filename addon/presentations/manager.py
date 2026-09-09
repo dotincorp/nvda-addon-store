@@ -185,6 +185,12 @@ class PresentationManager:
 		anywhere else lifts it, so another table or an image still enters its own
 		mode, and coming back later is a fresh visit.
 
+		It steps back from the whole visual stack, not just the one presentation
+		named: while it holds, every provider but the braille fallback is
+		skipped. "Not this object" is what the user means by the chord, and
+		which provider would have claimed the object next is not something they
+		can see.
+
 		:param obj: The navigator object the user is on.
 		"""
 		# A force outranks the providers entirely, so it has to go too, or the
@@ -210,8 +216,15 @@ class PresentationManager:
 			return False
 
 	def clearForced(self) -> None:
-		"""Clear forced presentation, return to auto-detect."""
+		"""Clear forced presentation, return to auto-detect.
+
+		Also lifts a dismissal. Both pin what is on screen against the
+		providers, and every caller of this means "an explicit mode request
+		should win now" - turning screen capture on while still standing on a
+		dismissed object would otherwise appear to do nothing.
+		"""
 		self._forcedPresentation = None
+		self._dismissedObject = None
 
 	def render(self) -> DpTactileGraphicsBuffer | None:
 		"""Render the active presentation.

@@ -794,6 +794,10 @@ class Table(AutoPropertyObject):
 		:param vertical: True for rows, False for columns.
 		:returns: True if the viewport moved.
 		"""
+		# Annotated because the result is assigned back to the attribute it is
+		# read from, and pyright cannot infer a type through that cycle.
+		current: int
+		limit: int | None
 		if vertical:
 			pageSize = self.numVisibleRows
 			current = self.firstVisibleRow or 0
@@ -813,7 +817,11 @@ class Table(AutoPropertyObject):
 				return False
 			limit = current
 
-		newFirst = max(0, min(target, limit))
+		# max(limit, current) rather than limit alone: a page step can leave the
+		# view past the last full page (scrollRight lands on a partial trailing
+		# page), and clamping to limit there would send a *forward* single step
+		# backwards.
+		newFirst = max(0, min(target, max(limit, current)))
 		if newFirst == current:
 			return False
 		if vertical:

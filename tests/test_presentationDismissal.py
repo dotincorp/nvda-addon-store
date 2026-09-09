@@ -143,6 +143,21 @@ class TestDismissal(unittest.TestCase):
 		self.assertFalse(self.manager.isForcedMode)
 		self.assertIs(self.manager.activePresentation, self.braille._presentation)
 
+	def test_clearing_the_force_also_lifts_the_dismissal(self):
+		"""Screen capture clears the force so its toggle wins; it must win over this too.
+
+		The skip keeps only the last provider, so a live dismissal would swallow
+		a screen-capture toggle - which sits at the front of the list - and the
+		toggle would look dead.
+		"""
+		element = _Element("image")
+		self.manager.dismissActivePresentation(element)
+
+		self.manager.clearForced()
+		self.manager.update(_Element("image"))
+
+		self.assertIs(self.manager.activePresentation, self.visual._presentation)
+
 
 if __name__ == "__main__":
 	unittest.main()

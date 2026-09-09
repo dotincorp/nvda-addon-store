@@ -33,6 +33,53 @@ def makeTable(rowCount, colCount, visibleRows=4, visibleCols=6):
 	return instance
 
 
+class TestAStepNeverMovesBackwards(unittest.TestCase):
+	"""A page step can leave the view past the last full page.
+
+	scrollRight/scrollDown land on a partial trailing page, so the view can sit
+	beyond the clamp the single steps use. Clamping to it there would turn a
+	press of "right one column" into a jump several columns left.
+	"""
+
+	def _pastTheLastFullPage(self):
+		instance = makeTable(rowCount=13, colCount=10, visibleRows=4, visibleCols=3)
+		instance.firstVisibleCol = 6
+		instance.firstVisibleRow = 8
+		self.assertTrue(instance.scrollRight(), "setup: expected a partial trailing page")
+		self.assertTrue(instance.scrollDown(), "setup: expected a partial trailing page")
+		self.assertEqual((instance.firstVisibleRow, instance.firstVisibleCol), (12, 9))
+		return instance
+
+	def test_stepping_right_at_a_partial_last_page_refuses(self):
+		instance = self._pastTheLastFullPage()
+
+		self.assertFalse(instance.scrollByCols(1))
+
+		self.assertEqual(instance.firstVisibleCol, 9)
+
+	def test_stepping_down_at_a_partial_last_page_refuses(self):
+		instance = self._pastTheLastFullPage()
+
+		self.assertFalse(instance.scrollByRows(1))
+
+		self.assertEqual(instance.firstVisibleRow, 12)
+
+	def test_stepping_back_from_there_still_works(self):
+		instance = self._pastTheLastFullPage()
+
+		self.assertTrue(instance.scrollByCols(-1))
+
+		self.assertEqual(instance.firstVisibleCol, 8)
+
+	def test_the_edge_jump_still_lands_on_the_last_full_page(self):
+		"""Pulling back to a full display is what the jump is for."""
+		instance = self._pastTheLastFullPage()
+
+		self.assertTrue(instance.scrollToLastCol())
+
+		self.assertEqual(instance.firstVisibleCol, 7)
+
+
 class TestSingleStepStepping(unittest.TestCase):
 	"""One row or column at a time — what the chorded gestures move by."""
 
