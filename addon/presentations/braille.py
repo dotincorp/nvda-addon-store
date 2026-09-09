@@ -379,6 +379,7 @@ class LibraryBraillePresentation(Presentation):
 		"""
 		super().__init__()
 		self._display = display
+		self._hasReplayed = False
 		# Bootstrap the library with the current focused control. Same
 		# defensive shape as scrollBack — silent no-op when the driver
 		# / library aren't available.
@@ -472,13 +473,39 @@ class LibraryBraillePresentation(Presentation):
 		return driver is not None and bool(getattr(driver, "_libraryReady", False))
 
 	def render(self, display: Display) -> DpTactileGraphicsBuffer | None:
-		"""No-op render — the library writes the multi-line area autonomously.
+		"""Replay the library's last frame once, then leave the area to it.
 
-		Returning ``None`` tells ``PresentationRenderer.update()`` to skip
-		its own write to ``graphicDisplay``; the library's
-		``TactileDisplayUpdated`` callback path is the single writer.
+		Returning ``None`` tells ``PresentationRenderer.update()`` to skip its
+		own write to ``graphicDisplay``; the library's ``TactileDisplayUpdated``
+		callback path is the single writer from then on.
+
+		The replay covers the way in. Whatever drew the tactile area before —
+		a table, a chart, a screen capture — is still on the pins, and the
+		library will not re-send a frame just because we switched, since as far
+		as it is concerned it never left text mode. Only the first render
+		replays, so a frame that has since arrived is never undone by an older
+		one.
 		"""
+		if not self._hasReplayed:
+			self._hasReplayed = True
+			try:
+				self._replayLastLibraryFrame()
+			except Exception:
+				log.debug("LibraryBraillePresentation: replaying the last frame failed", exc_info=True)
 		return None
+
+	def _replayLastLibraryFrame(self) -> None:
+		"""Ask the SimulateDisplay path to re-draw its last payload.
+
+		Imported at call time: ``simulatedDisplay`` reaches back into this
+		module for the gate's class list, so a module-level import would close
+		the cycle.
+		"""
+		if TYPE_CHECKING:
+			from ..tactileDisplayAPI import simulatedDisplay
+		else:
+			simulatedDisplay = addon.loadModule("tactileDisplayAPI.simulatedDisplay")
+		simulatedDisplay.replayLastPayload()
 
 	def scrollBack(self) -> bool:
 		"""Pan the library's viewport up by one display height (F1)."""

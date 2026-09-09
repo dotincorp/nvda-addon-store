@@ -82,6 +82,37 @@ def _getLibraryBytesConsumerClasses() -> tuple[type, ...]:
 
 _libraryBytesConsumerClasses: tuple[type, ...] | None = None
 
+_lastPayload: bytes | None = None
+"""The most recent payload the library sent, whether or not the gate passed it.
+
+A presentation that draws the tactile area itself leaves that drawing on the
+pins when it goes away, because the library-braille presentation writes nothing
+of its own and the library will not re-send a frame for a mode it is already in.
+Keeping the frames we discard means the way back has something to show.
+"""
+
+
+def forgetLastPayload() -> None:
+	"""Drop the remembered frame. For tests; nothing in the addon needs it."""
+	global _lastPayload
+	_lastPayload = None
+
+
+def replayLastPayload() -> bool:
+	"""Re-draw the most recent library payload.
+
+	Ungated by design: the caller is the presentation that consumes library
+	bytes, asking for the frame it would have received had it been active when
+	the frame arrived.
+
+	:returns: True if a frame was drawn.
+	"""
+	payload = _lastPayload
+	if payload is None:
+		return False
+	_drawPayload(payload)
+	return True
+
 
 def _getBrailleHandler() -> Any:
 	"""Return NVDA's ``braille.handler`` — wrapped so tests can monkey-patch it.
@@ -138,6 +169,11 @@ def renderTactileBytes(payload: bytes) -> None:
 		``physicalNumRows * physicalNumCols``; mismatched lengths are
 		clamped / zero-padded with a warning.
 	"""
+	global _lastPayload
+	# Remembered before the gate: a frame discarded now is exactly the frame to
+	# show when a library-bytes consumer becomes active again.
+	_lastPayload = payload
+
 	# Gate: only library-bytes-consuming presentations may write to the
 	# multi-line area. Other presentations own the area via NVDA-driven
 	# rendering; their content would be clobbered if we passed bytes
@@ -158,6 +194,15 @@ def renderTactileBytes(payload: bytes) -> None:
 		log.exception("renderTactileBytes: gate isinstance check raised; discarding")
 		return
 
+	_drawPayload(payload)
+
+
+def _drawPayload(payload: bytes) -> None:
+	"""Turn a library payload into device writes. No gate; callers apply it.
+
+	:param payload: Bytes in standard braille cell notation, row-major over the
+		graphic display.
+	"""
 	graphicDisplay = _getGraphicDisplay()
 	if graphicDisplay is None:
 		# No graphic display attached — nothing to render. The session

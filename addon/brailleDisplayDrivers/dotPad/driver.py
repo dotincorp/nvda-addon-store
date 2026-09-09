@@ -2369,21 +2369,23 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		gesture="br(dotPad):f2+f4",
 	)
 	def script_brailleDisplay(self, _gesture: inputCore.InputGesture):
-		"""Force braille rendering of the current navigator object.
+		"""Step back from the presentation on screen, to braille.
 
-		The symmetric mirror of ``script_graphicDisplay``. Asks the renderer's
-		PresentationManager to force the "braille" presentation on the
-		navigator object. ``BrailleProvider._doCreatePresentation`` reads the
-		``[dotPad] brailleSource`` config and selects ``BraillePresentation``
-		(NVDA-cursor-driven) or ``LibraryBraillePresentation`` (library-driven)
-		accordingly — this script doesn't read the config itself.
+		The symmetric mirror of ``script_graphicDisplay``. Dismisses whatever is
+		on the tactile area for as long as the navigator stays on this object,
+		which leaves the braille provider to win by ordinary fallback.
+
+		It dismisses rather than forcing braille because a forced presentation
+		short-circuits ``PresentationManager.update`` while it stays valid, and
+		both braille presentations always are — so forcing pinned braille for the
+		session and nothing auto-entered again, in any mode.
 		"""
 		import api
 
 		navObj = api.getNavigatorObject()
 		if self._renderer is None:
 			return
-		self._renderer.presentationManager.forcePresentation("braille", navObj)
+		self._renderer.presentationManager.dismissActivePresentation(navObj)
 		self._renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
 
 	gestureMap = inputCore.GlobalGestureMap(

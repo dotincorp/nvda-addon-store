@@ -45,6 +45,8 @@ class PresentationManager:
 		self.display = display
 		self._activePresentation: Presentation | None = None
 		self._forcedPresentation: Presentation | None = None
+		self._dismissedObject: NVDAObject | None = None
+		"""The object whose presentation the user dismissed, while they stay on it."""
 
 		# Ordered list of providers (first = highest priority)
 		self._providers: list[PresentationProvider] = []
@@ -102,12 +104,17 @@ class PresentationManager:
 
 		# Arriving at the active presentation's own provider proves every
 		# higher-priority provider has already declined this object.
+		dismissed = self._isDismissed(obj)
+		if not dismissed:
+			self._dismissedObject = None
+
 		activePresentation = self._activePresentation
 		activeProvider = activePresentation.provider if activePresentation else None
 		# None until the presentation has been asked, so it is asked once.
 		activeStillValid: bool | None = None
 		matchingProvider: PresentationProvider | None = None
-		for provider in self._providers:
+		candidates = self._providers[-1:] if dismissed else self._providers
+		for provider in candidates:
 			if (
 				activePresentation is not None
 				and provider is activeProvider
@@ -165,6 +172,42 @@ class PresentationManager:
 			self._activePresentation = presentation
 			return True
 		return False
+
+	def dismissActivePresentation(self, obj: NVDAObject) -> None:
+		"""Step back from the presentation on screen for as long as ``obj`` is current.
+
+		The way out of a visual mode. Forcing braille instead would pin it: a
+		forced presentation short-circuits ``update`` while it stays valid, and
+		both braille presentations always are, so nothing would auto-enter again
+		in any mode until a screen-capture toggle cleared it.
+
+		Dismissing instead lets braille win by ordinary fallback. Moving
+		anywhere else lifts it, so another table or an image still enters its own
+		mode, and coming back later is a fresh visit.
+
+		:param obj: The navigator object the user is on.
+		"""
+		# A force outranks the providers entirely, so it has to go too, or the
+		# dismissal would change nothing.
+		self._forcedPresentation = None
+		self._dismissedObject = obj
+
+	def _isDismissed(self, obj: NVDAObject) -> bool:
+		"""Whether ``obj`` is the object whose presentation was dismissed.
+
+		Compared with ``==``: NVDA mints a fresh NVDAObject per event, and
+		``NVDAObject.__eq__`` routes to ``_isEqual``, which is what identifies
+		the same element across events. Identity would forget the dismissal
+		immediately.
+		"""
+		if self._dismissedObject is None:
+			return False
+		try:
+			return self._dismissedObject == obj
+		except Exception:
+			# A dead COM object raises from __eq__. Treat it as having moved on.
+			log.debug("Dismissed object comparison raised; lifting the dismissal", exc_info=True)
+			return False
 
 	def clearForced(self) -> None:
 		"""Clear forced presentation, return to auto-detect."""
