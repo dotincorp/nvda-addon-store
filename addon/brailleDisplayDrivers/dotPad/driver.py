@@ -2391,7 +2391,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			"globalCommands.GlobalCommands": {
 				"braille_scrollBack": "br(dotPad):panLeft",
 				"braille_scrollForward": "br(dotPad):panRight",
-				"review_activate": "br(dotPad):f3",
 			},
 		},
 	)

@@ -93,9 +93,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.
 - F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.
 - F2 Key: In a tactile graphic, scroll the graphic up.
-- F3 Key:
-    - In braille mode: Activate or execute the currently focused navigator object, equivalent to NVDA+enter.
-    - In a tactile graphic: Scroll the graphic down.
+- F3 Key: In a tactile graphic, scroll the graphic down. It no longer activates the navigator object by default; you can assign that yourself in NVDA's Input Gestures dialog, under Object navigation.
 
 ### Multi Key Commands
 
@@ -198,7 +196,6 @@ Button map reference, standard mode:
 - F1 Key: Scroll back in the 300-cell multiline area, or move to the previous chart data point.
 - F4 Key: Scroll forward in the 300-cell multiline area, or move to the next chart data point.
 - F2+F4: Return to standard braille output from the tactile viewer, or trigger the tactile object blueprint visualization mode.
-- F3 Key: Serves as the hardware enter button, or executes the currently focused navigator object.
 - F1+F3 or F2+F3: Enter tactile graphics mode when the cursor is placed on a letter, emoji, graphic, text selection, or on a math equation in Microsoft Word.
 
 Button map reference, tactile graphics mode. When the review mode is explicitly set to tactile graphics, the button configuration adjusts to let you navigate and manipulate the viewport of the graphic or math equation directly from the hardware:

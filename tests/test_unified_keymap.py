@@ -187,14 +187,24 @@ def _flattenedGlobalCommandsMap() -> dict[str, str]:
 
 
 class TestDriverGestureMap(unittest.TestCase):
-	"""Driver gestureMap shrinks from 10 to 3 entries after feature 020."""
+	"""Driver gestureMap holds only the two pan keys.
 
-	def test_gestureMap_has_only_three_entries(self):
+	Feature 020 shrank it from 10 entries to 3; ``review_activate`` on ``f3``
+	was dropped afterwards so graphic mode could have the key for pan-down.
+	"""
+
+	def test_gestureMap_has_only_the_pan_keys(self):
 		entries = _flattenedGlobalCommandsMap()
 		self.assertEqual(
 			set(entries.keys()),
-			{"braille_scrollBack", "braille_scrollForward", "review_activate"},
+			{"braille_scrollBack", "braille_scrollForward"},
 		)
+
+	def test_review_activate_is_not_bound(self):
+		"""``f3`` belongs to the active presentation now; a Tier 0 binding
+		would take it back from every mode. Removed gestures are listed in
+		``docs/keymap.md`` with their rebinding path."""
+		self.assertNotIn("review_activate", _flattenedGlobalCommandsMap())
 
 	def test_dropped_kb_emulation_entries_absent(self):
 		"""The seven ``kb:*`` keyboard-emulation entries dropped by feature 020
