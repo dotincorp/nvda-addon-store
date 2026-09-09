@@ -93,7 +93,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, or move to the previous chart data point.
 - F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, or move to the next chart data point.
 - F2 Key: In a tactile graphic, scroll the graphic up.
-- F3 Key: In a tactile graphic, scroll the graphic down. It no longer activates the navigator object by default; you can assign that yourself in NVDA's Input Gestures dialog, under Object navigation.
+- F3 Key: In a tactile graphic, scroll the graphic down.
 
 ### Multi Key Commands
 
