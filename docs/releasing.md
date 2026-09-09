@@ -98,6 +98,15 @@ unlabelled, and we have no permission to label it afterwards. So each submission
 is a human filling in the
 [registration form](https://github.com/nvaccess/addon-datastore/issues/new?template=registerAddon.yml).
 
+`scripts/openStoreSubmission.ps1` takes the busywork out of that: it reads the
+`.nvda-addon` asset URL off the release and opens the form with the title,
+download URL, source URL, publisher and licence already filled in. **Channel is
+the exception** — GitHub's issue form silently ignores query-parameter prefills
+for `dropdown` fields (checked 2026-09-09: the option text, the option index and
+every option value all leave the combobox on "None", while text inputs on the
+same page load prefill fine), so it has to be picked by hand. The script says so
+on the way out.
+
 `lastTestedNVDAVersion` gates which channel is available: if it names an API
 version flagged `"experimental": true` in the datastore's
 `transform/nvdaAPIVersions.json`, the submission must go to `beta` or `dev`. See

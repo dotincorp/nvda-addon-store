@@ -138,11 +138,6 @@ only.
 Nothing about this is automatic, and it cannot be — the datastore's intake
 fires on an issue **label** that only the web form applies.
 
-1. Get the `.nvda-addon` asset's download URL from the release.
-2. Open the [registration form](https://github.com/nvaccess/addon-datastore/issues/new?template=registerAddon.yml).
-3. Channel: match the release type (`dev` / `beta` / `stable`).
-4. Submit, then watch the generated PR for validation failures.
-
 Before submitting to **stable**, check that `addon_lastTestedNVDAVersion` does
 not name an API version flagged `"experimental": true` in the datastore's
 `transform/nvdaAPIVersions.json` — such a submission is forced onto beta or dev:
@@ -151,6 +146,29 @@ not name an API version flagged `"experimental": true` in the datastore's
 gh api repos/nvaccess/addon-datastore/contents/transform/nvdaAPIVersions.json `
   -H "Accept: application/vnd.github.raw"
 ```
+
+Then open the prefilled registration form in the user's default browser:
+
+```powershell
+pwsh scripts/openStoreSubmission.ps1 -Version <version> -Channel <stable|beta|dev>
+```
+
+The script reads the `.nvda-addon` asset URL off the release (so a missing or
+still-building release fails here rather than producing a submission that 404s
+during validation), fills in source URL, publisher and licence, and sets the
+title to `[Submit add-on]: dotPad <version>` — the template's default title is
+`[Submit add-on]: ` and the `title` parameter **replaces** it, so the prefix has
+to be passed explicitly.
+
+**Channel arrives empty and the user must set it by hand.** This is not a bug in
+the script. GitHub's issue form ignores query-parameter prefills for `dropdown`
+fields — verified against this template on 2026-09-09: text inputs prefilled on
+the same page load while the Channel combobox read "None" for the option text
+(`channel=dev`), for the option index (`channel=2`), and for every option value.
+Tell the user which channel to pick when you hand them the URL; do not quietly
+leave it to them to notice.
+
+Then: submit, and watch the generated PR for validation failures.
 
 ## Do not
 
