@@ -367,15 +367,16 @@ class Table(AutoPropertyObject):
 		):
 			rowNum = cell.rowNumber - 1
 			colNum = cell.columnNumber - 1
-			textInfo: textInfos.TextInfo | None = None
-			if isinstance(cell, NVDAObject):
-				textInfo = cell.makeTextInfo(textInfos.POSITION_ALL)
-			text = _filterCellText(
-				cast(
-					str,
-					cell.name or getattr(textInfo, "text", "  "),
-				),
-			)
+			# Only reach for the cell's text when its name is empty. Building a
+			# TextInfo is a cross-process call, and it was previously paid for
+			# every drawn cell on every render just to discard the result.
+			text = cell.name
+			if not text:
+				textInfo: textInfos.TextInfo | None = None
+				if isinstance(cell, NVDAObject):
+					textInfo = cell.makeTextInfo(textInfos.POSITION_ALL)
+				text = getattr(textInfo, "text", "  ")
+			text = _filterCellText(cast(str, text))
 			if len(text) > self.maxCharsPerCell:
 				text = text.strip()
 			if len(text) < self.maxCharsPerCell:
