@@ -77,6 +77,10 @@ class TestDrawStats(unittest.TestCase):
 		self.mockTableObj = Mock()
 		self.mockTableObj.role = table.ROLE_TABLE
 		self.mockTableObj.name = "Test Table"
+		# These tests are about the row-walking path; a bare Mock would otherwise
+		# answer for the cell-window interfaces and take the other one.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
 		self.tableInstance = table.Table(self.mockTableObj, hCellPadding=1, vCellPadding=1)
 		self.tableInstance.tableCurrentRow = 0
 		self.tableInstance.tableCurrentCol = 0
@@ -131,6 +135,122 @@ class TestDrawStats(unittest.TestCase):
 
 		self.assertEqual(self.tableInstance.lastDrawStats.rowsMaterialised, 50)
 		self.assertLess(self.tableInstance.lastDrawStats.cellsDrawn, 50)
+
+
+class TestCellWindowFetch(unittest.TestCase):
+	"""Only the cells that will be drawn should be fetched.
+
+	Walking rows asks for row.children, which NVDA builds eagerly, so the full
+	width of every row is turned into NVDAObjects however few columns fit on the
+	display. Measured at ~11ms per cell object in Google Sheets, which is where a
+	1.7s draw of a 25-column table came from.
+	"""
+
+	def setUp(self):
+		self.mockTableObj = Mock()
+		self.mockTableObj.role = table.ROLE_TABLE
+		self.mockTableObj.name = "Test Table"
+		self.mockTableObj.rowCount = 15
+		self.mockTableObj.columnCount = 25
+		self.tableInstance = table.Table(self.mockTableObj, hCellPadding=1, vCellPadding=1)
+		self.fetched: list[tuple[int, int]] = []
+
+	def _installIA2Table(self, spans: dict | None = None) -> None:
+		"""Give the table an IAccessibleTable2 whose cellAt records its lookups.
+
+		``spans`` maps a requested coordinate to the coordinate of the cell that
+		actually covers it, standing in for a merged cell.
+		"""
+		spans = spans or {}
+
+		def cellAt(rowIndex, colIndex):
+			self.fetched.append((rowIndex, colIndex))
+			return (rowIndex, colIndex)
+
+		ia2Table = Mock()
+		ia2Table.cellAt.side_effect = cellAt
+		self.mockTableObj.IAccessibleTable2Object = ia2Table
+
+		def makeCell(raw):
+			rowIndex, colIndex = spans.get(raw, raw)
+			cell = Mock(spec=NVDAObject)
+			cell.rowNumber = rowIndex + 1
+			cell.columnNumber = colIndex + 1
+			cell.name = "ab"
+			cell.columnSpan = 1
+			return cell
+
+		self.tableInstance._makeCellFromIA2 = makeCell
+
+	def test_only_the_visible_window_is_fetched(self):
+		self._installIA2Table()
+
+		cells = list(self.tableInstance.getTableCells(0, 0, maxCellsPerRow=6, maxRows=5))
+
+		self.assertEqual(len(cells), 30)
+		self.assertEqual(len(self.fetched), 30)
+		self.assertEqual(max(col for _row, col in self.fetched), 5)
+		self.assertEqual(max(row for row, _col in self.fetched), 4)
+
+	def test_the_window_is_offset_by_the_scroll_position(self):
+		self._installIA2Table()
+
+		list(self.tableInstance.getTableCells(10, 5, maxCellsPerRow=6, maxRows=5))
+
+		self.assertEqual(min(self.fetched), (5, 10))
+		self.assertEqual(max(self.fetched), (9, 15))
+
+	def test_the_window_is_clamped_to_the_table(self):
+		"""A window running off the end must not ask for coordinates that do not exist."""
+		self._installIA2Table()
+
+		list(self.tableInstance.getTableCells(22, 13, maxCellsPerRow=6, maxRows=5))
+
+		self.assertEqual(max(row for row, _col in self.fetched), 14)
+		self.assertEqual(max(col for _row, col in self.fetched), 24)
+
+	def test_a_merged_cell_is_yielded_once(self):
+		"""cellAt answers for every coordinate a merged cell spans."""
+		self._installIA2Table(spans={(0, 1): (0, 0), (1, 0): (0, 0), (1, 1): (0, 0)})
+
+		cells = list(self.tableInstance.getTableCells(0, 0, maxCellsPerRow=2, maxRows=2))
+
+		self.assertEqual(len(cells), 1)
+
+	def test_a_failing_cell_does_not_lose_the_draw(self):
+		self._installIA2Table()
+		self.mockTableObj.IAccessibleTable2Object.cellAt.side_effect = (
+			lambda rowIndex, colIndex: (_ for _ in ()).throw(RuntimeError("hidden"))
+			if (rowIndex, colIndex) == (0, 0)
+			else (rowIndex, colIndex)
+		)
+
+		cells = list(self.tableInstance.getTableCells(0, 0, maxCellsPerRow=3, maxRows=2))
+
+		self.assertEqual(len(cells), 5)
+
+	def test_a_table_without_the_interface_still_walks_rows(self):
+		# A bare Mock answers every attribute, so the interfaces have to be
+		# denied explicitly or the window fetch is taken for a table that has no
+		# such interface at all.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
+		rows = []
+		for rowNumber in range(1, 4):
+			cell = Mock(spec=NVDAObject)
+			cell.rowNumber = rowNumber
+			cell.columnNumber = 1
+			cell.name = "ab"
+			cell.columnSpan = 1
+			row = Mock()
+			row.role = table.ROLE_TABLEROW
+			row.children = [cell]
+			rows.append(row)
+		self.mockTableObj.children = rows
+
+		cells = list(self.tableInstance.getTableCells(0, 0, maxCellsPerRow=6, maxRows=5))
+
+		self.assertEqual(len(cells), 3)
 
 
 if __name__ == "__main__":

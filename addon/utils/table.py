@@ -15,9 +15,9 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABC
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import api
 import core
@@ -73,6 +73,29 @@ CELL_TEXT_FILTER_CHARS: set[str] = {
 }
 
 
+_CellT = TypeVar("_CellT")
+
+
+def _timeIteration(cells: Iterable[_CellT], stats: TableDrawStats) -> Iterator[_CellT]:
+	"""Yield from ``cells``, accumulating the time spent producing each one.
+
+	Fetching cells is a separate cost from drawing them, and on a table the
+	application serves out of process it dominates. Timing it here rather than
+	inside the producer keeps every producer path measured the same way.
+	"""
+	iterator = iter(cells)
+	while True:
+		started = time.perf_counter()
+		try:
+			cell = next(iterator)
+		except StopIteration:
+			stats.cellFetchSeconds += time.perf_counter() - started
+			return
+		stats.cellFetchSeconds += time.perf_counter() - started
+		stats.cellsMaterialised += 1
+		yield cell
+
+
 def _filterCellText(text: str) -> str:
 	"""Filter invisible/placeholder characters from cell text.
 
@@ -124,7 +147,9 @@ class TableDrawStats:
 	"""
 
 	cellsDrawn: int = 0
+	cellsMaterialised: int = 0
 	rowsMaterialised: int = 0
+	cellFetchSeconds: float = 0.0
 	cellTextSeconds: float = 0.0
 	totalSeconds: float = 0.0
 
@@ -218,6 +243,100 @@ class Table(AutoPropertyObject):
 		self.hCellPadding = hCellPadding
 		self.vCellpadding = vCellPadding
 
+	def _makeCellFromIA2(self, rawCell: Any) -> NVDAObject:
+		"""Wrap a raw IAccessible cell pointer in an NVDAObject.
+
+		Split out so tests can exercise the window fetch without COM.
+		"""
+		from IAccessibleHandler import IA2
+		from NVDAObjects.IAccessible import IAccessible
+
+		return IAccessible(
+			IAccessibleObject=rawCell.QueryInterface(IA2.IAccessible2),
+			IAccessibleChildID=0,
+		)
+
+	def _getIA2CellAccessor(self) -> Callable[[int, int], Any] | None:
+		"""Return a ``(rowIndex, colIndex) -> raw cell`` callable, or None.
+
+		Both IAccessibleTable2 and its predecessor can hand back a single cell by
+		coordinate. Mirrors what NVDA's own table navigation does in
+		``NVDAObjects.IAccessible.ia2Web``.
+		"""
+		table2: Any = getattr(self.tableObj, "IAccessibleTable2Object", None)
+		if table2 is not None:
+
+			def cellAt(rowIndex: int, colIndex: int) -> Any:
+				return table2.cellAt(rowIndex, colIndex)
+
+			return cellAt
+
+		table1: Any = getattr(self.tableObj, "IAccessibleTableObject", None)
+		if table1 is not None:
+
+			def accessibleAt(rowIndex: int, colIndex: int) -> Any:
+				return table1.accessibleAt(rowIndex, colIndex)
+
+			return accessibleAt
+
+		return None
+
+	def _getCellWindow(
+		self,
+		startAtCol: int,
+		startAtRow: int,
+		maxCellsPerRow: int,
+		maxRows: int | None,
+	) -> list[NVDAObject] | None:
+		"""Fetch just the cells that will be drawn, one lookup each.
+
+		Walking rows instead means asking for ``row.children``, which NVDA builds
+		eagerly: the whole row is turned into NVDAObjects however few columns fit
+		on the display. On a table served out of process that is the entire cost
+		of a draw — measured at ~11ms per cell object in Google Sheets, so a
+		25-column table cost ~1.7s to show six columns of it.
+
+		:returns: The cells in the window, or None if the table cannot serve
+			cells by coordinate and the caller should walk rows instead.
+		"""
+		accessor = self._getIA2CellAccessor()
+		if accessor is None:
+			return None
+
+		endCol = startAtCol + maxCellsPerRow
+		if self.tableColumnCount is not None:
+			endCol = min(endCol, self.tableColumnCount)
+		endRow = startAtRow + maxRows if maxRows is not None else self.tableRowCount
+		if endRow is None:
+			# No row count to bound an open-ended request; walking rows at least
+			# terminates on its own.
+			return None
+		if self.tableRowCount is not None:
+			endRow = min(endRow, self.tableRowCount)
+
+		cells: list[NVDAObject] = []
+		seen: set[tuple[Any, Any]] = set()
+		for rowIndex in range(startAtRow, endRow):
+			for colIndex in range(startAtCol, endCol):
+				try:
+					rawCell = accessor(rowIndex, colIndex)
+					if rawCell is None:
+						continue
+					cell = cast(Any, self._makeCellFromIA2(rawCell))
+					# A merged cell answers for every coordinate it spans, so the
+					# same cell comes back more than once; drawTable expects each
+					# one only once and handles the span itself.
+					key = (cell.rowNumber, cell.columnNumber)
+				except Exception:
+					# Ragged rows, hidden cells and out-of-range coordinates all
+					# raise here. One missing cell must not lose the whole draw.
+					continue
+				if key in seen:
+					continue
+				seen.add(key)
+				cells.append(cell)
+		return cells
+
 	def getTableCells(
 		self,
 		startAtCol: int = 0,
@@ -225,6 +344,11 @@ class Table(AutoPropertyObject):
 		maxCellsPerRow: int = 20,
 		maxRows: int | None = None,
 	) -> Iterator[FakeNVDAObjectCell]:
+		window = self._getCellWindow(startAtCol, startAtRow, maxCellsPerRow, maxRows)
+		if window is not None:
+			yield from cast(list[FakeNVDAObjectCell], window)
+			return
+
 		rows: list[NVDAObject] = []
 		for c in self.tableObj.children:
 			if c.role == ROLE_TABLEROW:
@@ -383,12 +507,13 @@ class Table(AutoPropertyObject):
 		self.firstVisibleCol = firstCol
 		self.firstVisibleRow = firstRow
 
-		for cell in self.getTableCells(
+		cellsToDraw = self.getTableCells(
 			firstCol,
 			firstRow,
 			maxCellsPerRow=numVisibleCols,
 			maxRows=numVisibleRows,
-		):
+		)
+		for cell in _timeIteration(cellsToDraw, self.lastDrawStats):
 			rowNum = cell.rowNumber - 1
 			colNum = cell.columnNumber - 1
 			# Only reach for the cell's text when its name is empty. Building a
@@ -436,11 +561,13 @@ class Table(AutoPropertyObject):
 				# them. A diagnostic must never be able to break a render.
 				tableSize = "unknown"
 			log.debug(
-				"Table draw: %d cells in %.1fms (cell text %.1fms), "
-				"%d rows materialised for %sx%s visible, table %s",
+				"Table draw: %d cells in %.1fms (fetch %.1fms, cell text %.1fms), "
+				"%d cells and %d rows materialised for %sx%s visible, table %s",
 				stats.cellsDrawn,
 				stats.totalSeconds * 1000,
+				stats.cellFetchSeconds * 1000,
 				stats.cellTextSeconds * 1000,
+				stats.cellsMaterialised,
 				stats.rowsMaterialised,
 				numVisibleRows,
 				numVisibleCols,
