@@ -37,6 +37,9 @@ def _setUpBle() -> tuple[Any | None, bool]:
 		core = None
 	if core is not None:
 		log.debug("BLE: using NVDA's built-in hwIo.ble")
+		from ..utils.vendor import ensureWinrtCollections
+
+		ensureWinrtCollections()
 		return core, True
 
 	try:
