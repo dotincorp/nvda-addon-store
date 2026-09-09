@@ -297,7 +297,12 @@ class Table(AutoPropertyObject):
 		25-column table cost ~1.7s to show six columns of it.
 
 		:returns: The cells in the window, or None if the table cannot serve
-			cells by coordinate and the caller should walk rows instead.
+			cells by coordinate and the caller should walk rows instead. A window
+			that should have held cells but yielded none also returns None, so a
+			table that exposes the interface but refuses every lookup gets the
+			row walk rather than an empty frame. That is a second chance, not a
+			guarantee: a window covered entirely by one cell spanning in from
+			outside it comes back empty from either path.
 		"""
 		accessor = self._getIA2CellAccessor()
 		if accessor is None:
@@ -334,7 +339,16 @@ class Table(AutoPropertyObject):
 				if key in seen:
 					continue
 				seen.add(key)
+				# A cell spanning into the window from above or to the left
+				# answers for these coordinates but starts outside them, so
+				# drawTable would place it at a negative offset and paint a
+				# fragment of it over the first visible row or column. The row
+				# walk never produced such a cell; skip it for parity.
+				if (cell.rowNumber - 1) < startAtRow or (cell.columnNumber - 1) < startAtCol:
+					continue
 				cells.append(cell)
+		if not cells and endRow > startAtRow and endCol > startAtCol:
+			return None
 		return cells
 
 	def getTableCells(
@@ -653,7 +667,10 @@ class Table(AutoPropertyObject):
 		if self.numVisibleCols is None or self.numVisibleRows is None:
 			# Table not yet drawn
 			return False
-		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:  # type: ignore
+		colCount = self.tableColumnCount
+		# A table that does not report its width cannot say where a row ends, so
+		# there is nothing to wrap at; the plain right step still refuses safely.
+		if colCount is not None and firstVisibleCol + self.numVisibleCols >= colCount:
 			# At end of row, wrap to first column of next row
 			if self.scrollDown():
 				self.firstVisibleCol = 0
