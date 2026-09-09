@@ -12,6 +12,8 @@ table content to the tactile display.
 
 from __future__ import annotations
 
+import logging
+import time
 from typing import TYPE_CHECKING
 
 import api
@@ -413,6 +415,8 @@ class TableProvider(PresentationProvider):
 		# Avoids expensive _findTable being called twice
 		self._cachedTable: NVDAObject | None = None
 		self._cachedForObj: NVDAObject | None = None
+		self._lastDetectionPath: str = "none"
+		"""Which branch of _findTable resolved the last lookup, for the debug line."""
 
 	def canProvide(self, obj: NVDAObject) -> bool:
 		"""Check if this provider can create a presentation for the object.
@@ -427,7 +431,20 @@ class TableProvider(PresentationProvider):
 		# a second expensive lookup.
 		if obj is self._cachedForObj:
 			return self._cachedTable is not None
+		detectionStarted = time.perf_counter()
 		tableObj = self._findTable(obj, maxDepth=self.AUTO_DETECT_PARENT_DEPTH)
+		if log.isEnabledFor(logging.DEBUG):
+			# Detection is the expensive half of arbitration and runs on
+			# navigation events; which branch answered decides where any
+			# optimisation belongs.
+			log.debug(
+				# %r on the role: Role is an IntEnum, so %s prints the bare number.
+				"Table detection: %s in %.1fms via %s (role %r)",
+				"found" if tableObj is not None else "not found",
+				(time.perf_counter() - detectionStarted) * 1000,
+				self._lastDetectionPath,
+				getattr(obj, "role", None),
+			)
 		# Cache for use in _doCreatePresentation
 		self._cachedTable = tableObj
 		self._cachedForObj = obj
@@ -538,8 +555,11 @@ class TableProvider(PresentationProvider):
 		"""
 		depth = maxDepth if maxDepth is not None else self.MAX_PARENT_SCAN_DEPTH
 
+		self._lastDetectionPath = "not found"
+
 		# 1. If obj IS a table, return it
 		if obj.role in TABLE_ROLES:
+			self._lastDetectionPath = "self"
 			return obj
 
 		# 2. Try obj.table attribute first (works for Word IAccessible, native tables).
@@ -550,6 +570,7 @@ class TableProvider(PresentationProvider):
 		try:
 			table = getattr(obj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
+				self._lastDetectionPath = "obj.table"
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
@@ -563,11 +584,14 @@ class TableProvider(PresentationProvider):
 		# every Excel cell on the fast path and never find its worksheet.
 		treeInterceptor = getattr(obj, "treeInterceptor", None)
 		if treeInterceptor is not None and hasattr(treeInterceptor, "getNVDAObjectFromIdentifier"):
-			return self._findTableViaVbuf(obj)
+			tableObj = self._findTableViaVbuf(obj)
+			self._lastDetectionPath = "vbuf" if tableObj is not None else "vbuf (miss)"
+			return tableObj
 
 		# 3b. Non-browse: scan obj's IA2 parent chain
 		table = findAncestorWithRole(obj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
 		if table is not None:
+			self._lastDetectionPath = "parent walk"
 			return table
 
 		# 4. Try review position's underlying object (handles Word UIA)
@@ -577,18 +601,23 @@ class TableProvider(PresentationProvider):
 
 		# 5. Check if underlying obj is a table
 		if underlyingObj.role in TABLE_ROLES:
+			self._lastDetectionPath = "review position"
 			return underlyingObj
 
 		# Try underlying obj.table attribute (same role-validation as step 2).
 		try:
 			table = getattr(underlyingObj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
+				self._lastDetectionPath = "review position .table"
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
 
 		# 6. Scan underlying object's parent chain
-		return findAncestorWithRole(underlyingObj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
+		table = findAncestorWithRole(underlyingObj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
+		if table is not None:
+			self._lastDetectionPath = "review position parent walk"
+		return table
 
 	def _findTableViaVbuf(self, obj: NVDAObject) -> NVDAObject | None:
 		"""Find a table ancestor using the virtual buffer's in-memory field data.

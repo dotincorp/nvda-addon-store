@@ -12,6 +12,8 @@ DpTactileGraphicsBuffer.
 
 from __future__ import annotations
 
+import logging
+import time
 from abc import ABC
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
@@ -111,6 +113,23 @@ def findAncestorWithRole(
 
 
 @dataclass
+class TableDrawStats:
+	"""What one ``drawTable`` pass cost, for the debug line it emits.
+
+	``rowsMaterialised`` is the number this exists for: NVDA builds an
+	NVDAObject for every child it hands us, so a table that exposes hundreds of
+	rows costs hundreds of object constructions to draw the handful that fit on
+	the display. Comparing it against ``cellsDrawn`` says whether a slow table
+	is slow in row collection or somewhere else.
+	"""
+
+	cellsDrawn: int = 0
+	rowsMaterialised: int = 0
+	cellTextSeconds: float = 0.0
+	totalSeconds: float = 0.0
+
+
+@dataclass
 class FakeNVDAObjectCell(ABC):
 	rowNumber: int
 	columnNumber: int
@@ -185,6 +204,7 @@ class Table(AutoPropertyObject):
 		self.firstVisibleCol = firstVisibleCol
 		self.numVisibleCols: int | None = None
 		self.numVisibleRows: int | None = None
+		self.lastDrawStats = TableDrawStats()
 
 		if obj.role in TABLE_ROLES:
 			self.tableObj = obj
@@ -213,6 +233,7 @@ class Table(AutoPropertyObject):
 				for gc in c.children:
 					if gc.role == ROLE_TABLEROW:
 						rows.append(gc)
+		self.lastDrawStats.rowsMaterialised = len(rows)
 
 		endCol = startAtCol + maxCellsPerRow
 		endRow = startAtRow + maxRows if maxRows is not None else None
@@ -301,6 +322,9 @@ class Table(AutoPropertyObject):
 		firstRow: int | None = None,
 		firstCol: int | None = None,
 	):
+		drawStarted = time.perf_counter()
+		self.lastDrawStats = TableDrawStats()
+
 		if height is None:
 			height = buffer.height
 		if width is None:
@@ -370,6 +394,7 @@ class Table(AutoPropertyObject):
 			# Only reach for the cell's text when its name is empty. Building a
 			# TextInfo is a cross-process call, and it was previously paid for
 			# every drawn cell on every render just to discard the result.
+			textStarted = time.perf_counter()
 			text = cell.name
 			if not text:
 				textInfo: textInfos.TextInfo | None = None
@@ -377,6 +402,8 @@ class Table(AutoPropertyObject):
 					textInfo = cell.makeTextInfo(textInfos.POSITION_ALL)
 				text = getattr(textInfo, "text", "  ")
 			text = _filterCellText(cast(str, text))
+			self.lastDrawStats.cellTextSeconds += time.perf_counter() - textStarted
+			self.lastDrawStats.cellsDrawn += 1
 			if len(text) > self.maxCharsPerCell:
 				text = text.strip()
 			if len(text) < self.maxCharsPerCell:
@@ -394,6 +421,30 @@ class Table(AutoPropertyObject):
 				border=self.tableCellBorder,
 				borderBottom=borderBottom,
 				colspan=cell.columnSpan,
+			)
+
+		stats = self.lastDrawStats
+		stats.totalSeconds = time.perf_counter() - drawStarted
+		if log.isEnabledFor(logging.DEBUG):
+			# One line per draw, and only when debug logging is on: this is the
+			# measurement a slow-table report is diagnosed from, and re-deriving
+			# it means shipping the user another instrumented build.
+			try:
+				tableSize = "%sx%s" % (self.tableRowCount, self.tableColumnCount)
+			except Exception:
+				# Both are COM reads, and an application that is busy can refuse
+				# them. A diagnostic must never be able to break a render.
+				tableSize = "unknown"
+			log.debug(
+				"Table draw: %d cells in %.1fms (cell text %.1fms), "
+				"%d rows materialised for %sx%s visible, table %s",
+				stats.cellsDrawn,
+				stats.totalSeconds * 1000,
+				stats.cellTextSeconds * 1000,
+				stats.rowsMaterialised,
+				numVisibleRows,
+				numVisibleCols,
+				tableSize,
 			)
 
 	def drawCell(

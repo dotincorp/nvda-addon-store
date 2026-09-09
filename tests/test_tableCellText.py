@@ -70,5 +70,68 @@ class TestCellTextSource(unittest.TestCase):
 		self.assertEqual(drawnText, "from text info")
 
 
+class TestDrawStats(unittest.TestCase):
+	"""The draw records what it cost, for the debug line a slow-table report needs."""
+
+	def setUp(self):
+		self.mockTableObj = Mock()
+		self.mockTableObj.role = table.ROLE_TABLE
+		self.mockTableObj.name = "Test Table"
+		self.tableInstance = table.Table(self.mockTableObj, hCellPadding=1, vCellPadding=1)
+		self.tableInstance.tableCurrentRow = 0
+		self.tableInstance.tableCurrentCol = 0
+		self.buffer = MagicMock()
+		self.buffer.height = 40
+		self.buffer.width = 60
+
+	def _makeCell(self, row: int, col: int) -> Mock:
+		cell = Mock(spec=NVDAObject)
+		cell.rowNumber = row
+		cell.columnNumber = col
+		cell.name = "ab"
+		cell.columnSpan = 1
+		return cell
+
+	def test_cells_drawn_is_counted(self):
+		cells = [self._makeCell(1, 1), self._makeCell(1, 2), self._makeCell(2, 1)]
+
+		with patch.object(self.tableInstance, "getTableCells", return_value=cells):
+			with patch.object(self.tableInstance, "drawCell"):
+				self.tableInstance.drawTable(self.buffer, 0, 0)
+
+		self.assertEqual(self.tableInstance.lastDrawStats.cellsDrawn, 3)
+		self.assertGreater(self.tableInstance.lastDrawStats.totalSeconds, 0)
+
+	def test_stats_reset_between_draws(self):
+		cells = [self._makeCell(1, 1)]
+
+		with patch.object(self.tableInstance, "getTableCells", return_value=cells):
+			with patch.object(self.tableInstance, "drawCell"):
+				self.tableInstance.drawTable(self.buffer, 0, 0)
+				self.tableInstance.drawTable(self.buffer, 0, 0)
+
+		self.assertEqual(self.tableInstance.lastDrawStats.cellsDrawn, 1)
+
+	def test_rows_materialised_counts_every_row_object_built(self):
+		"""The count must reflect the whole child walk, not the rows drawn.
+
+		This is the number that says whether a slow table is slow because NVDA
+		built an object for every row in the document to draw the few that fit.
+		"""
+		rows = []
+		for rowNumber in range(1, 51):
+			row = Mock()
+			row.role = table.ROLE_TABLEROW
+			row.children = [self._makeCell(rowNumber, 1)]
+			rows.append(row)
+		self.mockTableObj.children = rows
+
+		with patch.object(self.tableInstance, "drawCell"):
+			self.tableInstance.drawTable(self.buffer, 0, 0)
+
+		self.assertEqual(self.tableInstance.lastDrawStats.rowsMaterialised, 50)
+		self.assertLess(self.tableInstance.lastDrawStats.cellsDrawn, 50)
+
+
 if __name__ == "__main__":
 	unittest.main()
