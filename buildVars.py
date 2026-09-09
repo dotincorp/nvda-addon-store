@@ -61,15 +61,10 @@ addon_info = AddonInfo(
 	# Last NVDA version supported/tested
 	# (e.g. "2018.4.0", ideally more recent than minimum version)
 	#
-	# Held at the newest *finalised* NVDA API version on purpose. The add-on
-	# store rejects a stable-channel submission whose lastTestedNVDAVersion
-	# names an API version flagged "experimental": true in the datastore's
-	# transform/nvdaAPIVersions.json — such a submission has to go to beta or
-	# dev. 2026.2 is still experimental (in beta at the time of writing), so
-	# naming it here would block a stable release for no benefit: we do test
-	# against newer NVDA, this field only advertises the newest API we promise
-	# compatibility with. Raise it once 2026.2 is final.
-	addon_lastTestedNVDAVersion="2026.1.1",
+	# Only ever name a *finalised* API version: the store bumps a stable
+	# submission to beta or dev if this names one still flagged experimental in
+	# the datastore's transform/nvdaAPIVersions.json.
+	addon_lastTestedNVDAVersion="2026.2",
 	# Add-on update channel (default is None, denoting stable releases,
 	# and for development releases, use "dev".)
 	# Do not change unless you know what you are doing!
