@@ -15,9 +15,9 @@ on:
 #   - "lint": true picks the single ref the lint job type-checks against. Keep it on the newest
 #     *stable* tag so alpha churn can never fail lint for reasons unrelated to the add-on.
 #   - "experimental": true makes a row informational (continue-on-error), for refs that move.
-#   - The "alpha" row tracks nvaccess/nvda master, which is the 2026.3 alpha line today. There is
-#     no "alpha" branch and no 2026.3 tags. Once 2026.3 branches to beta, master rolls to 2026.4 --
-#     at that point pin this row to release-2026.3betaN instead.
+#   - The "alpha" row tracks nvaccess/nvda master, which is the 2027.1 alpha line today. There is
+#     no "alpha" branch and no 2027.1 tags. Keep it on master: when the next release branches to
+#     beta, add a row pinned to its newest release-YYYY.NbetaN tag rather than repointing this one.
 #   - "runner" picks the image for that ref, because which Visual Studio NVDA builds against is a
 #     property of the ref, not of the add-on. NVDA gained VS 2026 support between 2026.1 and
 #     2026.2: on windows-2025-vs2026, release-2026.1 aborts while reading its SConscript with
