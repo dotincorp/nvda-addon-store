@@ -471,6 +471,24 @@ class TestPresentationManagerReuse(unittest.TestCase):
 
 		self.assertIs(self.manager.activePresentation, fallback._presentation)
 
+	def test_presentation_is_not_rebuilt_when_its_provider_still_claims_the_object(self):
+		"""Reuse is not limited to opted-in providers; only skipping canProvide is.
+
+		Rebuilding is not free — LibraryBraillePresentation's constructor makes a
+		blocking library call and re-enables the library's UIA subscription — so a
+		provider that has not opted in must still keep its valid presentation.
+		"""
+		active = MockProvider(name="active", should_yield=True)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+		self.assertEqual(active._call_count, 1)
+
+		self.manager.update(self.mock_obj)
+		self.manager.update(self.mock_obj)
+
+		self.assertEqual(active._call_count, 1)
+		self.assertIs(self.manager.activePresentation, active._presentation)
+
 	def test_provider_that_has_not_opted_in_is_asked_every_time(self):
 		"""Without the opt-in, canProvide stays the authority.
 

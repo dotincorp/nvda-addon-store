@@ -82,8 +82,9 @@ class PresentationManager:
 		This method should be called whenever the navigator object changes.
 		It will select the most appropriate presentation based on:
 		1. Any forced presentation (if still valid)
-		2. The active presentation, if its provider opts into reuse, it is still
-		   valid, and no higher-priority provider claims the object
+		2. The active presentation, if it is still valid and its own provider is
+		   the first that can provide. A provider that opts into reuse is taken
+		   at its presentation's word before ``canProvide`` runs at all.
 		3. A new presentation from the first provider that can provide
 
 		:param obj: The current navigator object.
@@ -109,15 +110,18 @@ class PresentationManager:
 		# shortcut; for the rest ``canProvide`` remains the authority.
 		activePresentation = self._activePresentation
 		activeProvider = activePresentation.provider if activePresentation else None
+		activeStillValid: bool | None = None
+		"""``None`` until the active presentation has been asked, so it is asked once."""
 		matchingProvider: PresentationProvider | None = None
 		for provider in self._providers:
 			if (
 				activePresentation is not None
 				and provider is activeProvider
 				and provider.reusesActivePresentation
-				and activePresentation.isStillValid(triggerReason)
 			):
-				return
+				activeStillValid = activePresentation.isStillValid(triggerReason)
+				if activeStillValid:
+					return
 			if provider.canProvide(obj):
 				matchingProvider = provider
 				break
@@ -128,7 +132,18 @@ class PresentationManager:
 			self._activePresentation = None
 			return
 
-		# 3. Create new presentation from matching provider
+		# 3. Same provider and still valid: keep the presentation. Every provider
+		# gets this, opted in or not — the opt-in above only decides whether
+		# ``canProvide`` had to run first. Rebuilding instead is not free: a
+		# presentation's constructor can carry real work, as
+		# ``LibraryBraillePresentation``'s blocking library bootstrap does.
+		if activePresentation is not None and matchingProvider is activeProvider:
+			if activeStillValid is None:
+				activeStillValid = activePresentation.isStillValid(triggerReason)
+			if activeStillValid:
+				return
+
+		# 4. Create new presentation from matching provider
 		previousName = self._activePresentation.name if self._activePresentation else None
 		presentation = matchingProvider.createPresentation(obj, self.display)
 		presentation.provider = matchingProvider
