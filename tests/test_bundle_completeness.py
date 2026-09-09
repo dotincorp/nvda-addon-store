@@ -39,7 +39,7 @@ _BUNDLE_DIR = Path(__file__).resolve().parent.parent / "addon" / "tactileDisplay
 # imports it any more.
 _REQUIRED_DLLS = (
 	"TactileDisplayAPI.dll",
-	"DotPadSDK-3.0.1.dll",
+	"DotPadSDK-3.0.2.dll",
 	"Mecab.dll",
 	"TTBEngine.dll",
 	"libmathcat_c.dll",

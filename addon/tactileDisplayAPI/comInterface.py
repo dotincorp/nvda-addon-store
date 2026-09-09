@@ -3,7 +3,7 @@
 # See the file COPYING.txt for more details.
 # Copyright (C) 2023-2026 Dot Incorporated
 
-"""comtypes interface declaration for ITactileDisplayAPI (v1.38).
+"""comtypes interface declaration for ITactileDisplayAPI (v1.40).
 
 This file is the single source of truth for the library's vtable layout.
 The interface was renamed ``ITactileDisplayImpl`` in the v1.22 typelib but
@@ -15,12 +15,17 @@ It inherits IUnknown (slots 0-2) and IDispatch (slots 3-6) from comtypes,
 so the ``_methods_`` list starts at vtable slot 7 (the first library-
 specific method, ``Connect``).
 
-v1.23 → v1.38 vtable change
+v1.23 → v1.40 vtable change
 -----------------------------
 None. ``validateComVtable.py --check`` reports both interfaces IN SYNC
-against the v1.0.38 typelib: ``ITactileDisplayAPI`` still has 33 methods
-(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The fifteen
+against the v1.0.40 typelib: ``ITactileDisplayAPI`` still has 33 methods
+(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The seventeen
 intervening vendor releases were behaviour and rendering fixes only.
+
+v1.40 fixes graph panning (full display width on the single-key steps, one
+tick mark on the small steps) and graph label placement outside grade 2;
+v1.39 fixes MSAA focus tracking inside win32 menus. No vtable slots changed
+in either.
 
 v1.38 decouples panning from viewport operations internally and reworks the
 shipped ``[DotPad320X Keys]`` map so TactileDisplayAPI, JAWS and NVDA agree
