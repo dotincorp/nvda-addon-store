@@ -19,6 +19,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from addon.presentations import PresentationManager
+from addon.presentations.manager import MAX_UNANSWERABLE_VALIDITY_CHECKS
 
 from .test_presentations import MockProvider
 
@@ -217,8 +218,54 @@ class TestDismissalScopedByPresentation(unittest.TestCase):
 
 		self.assertIs(self.manager.activePresentation, self.table._presentation)
 
-	def test_a_raising_validity_check_lifts_the_dismissal(self):
-		"""A dead COM object must not strand the display on braille."""
+	def _raiseFrom(self, presentation, times: int) -> None:
+		"""Make ``isStillValid`` raise the next ``times`` calls, then answer True."""
+		remaining = [times]
+
+		def maybeBoom(triggerReason=None):
+			if remaining[0] > 0:
+				remaining[0] -= 1
+				raise RuntimeError("Excel is busy")
+			return True
+
+		presentation.isStillValid = maybeBoom
+
+	def test_a_momentary_refusal_does_not_lift_the_dismissal(self):
+		"""Excel rejects COM calls whenever it is busy - typing in a cell, say.
+
+		Reading a refusal as "no longer valid" would bring the table back in the
+		middle of reading the sheet in braille, which is precisely what the
+		chord was pressed to stop.
+		"""
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+		self._raiseFrom(self.table._presentation, times=2)
+
+		self.manager.update(_Element("cell2"))
+		self.manager.update(_Element("cell3"))
+
+		self.assertIs(self.manager.activePresentation, self.braille._presentation)
+
+	def test_the_dismissal_survives_the_application_recovering(self):
+		self.manager.update(_Element("cell1"))
+		self.manager.dismissActivePresentation(_Element("cell1"))
+		self._raiseFrom(self.table._presentation, times=2)
+
+		for _ in range(6):
+			self.manager.update(_Element("cell2"))
+
+		self.assertIs(
+			self.manager.activePresentation,
+			self.braille._presentation,
+			"a recovered check answering True must not spend the budget",
+		)
+
+	def test_a_check_that_never_answers_gives_the_display_back(self):
+		"""An object that is really gone raises every time.
+
+		Holding on that forever would strand the display on braille for the
+		session - the pinning this replaced forcing to avoid.
+		"""
 		self.manager.update(_Element("cell1"))
 		self.manager.dismissActivePresentation(_Element("cell1"))
 
@@ -226,7 +273,8 @@ class TestDismissalScopedByPresentation(unittest.TestCase):
 			raise RuntimeError("dead COM object")
 
 		self.table._presentation.isStillValid = boom
-		self.manager.update(_Element("cell2"))
+		for _ in range(MAX_UNANSWERABLE_VALIDITY_CHECKS + 1):
+			self.manager.update(_Element("cell2"))
 
 		self.assertIs(self.manager.activePresentation, self.table._presentation)
 
@@ -238,6 +286,47 @@ class TestDismissalScopedByPresentation(unittest.TestCase):
 		self.manager.update(_Element("cell2"))
 
 		self.assertIs(self.manager.activePresentation, self.table._presentation)
+
+
+class TestAForcedPresentationSurvivesAnUnanswerableCheck(unittest.TestCase):
+	"""Forcing is the most explicit thing the user can say about the mode.
+
+	Guarding isStillValid stops a raise aborting the whole update, but a raise
+	must not then read as False either: False drops the force, so a table forced
+	with a long press would silently un-force the moment Excel refused one COM
+	call. Before the guard a raise left the force alone, and it still must.
+	"""
+
+	def setUp(self):
+		self.manager = PresentationManager(MagicMock())
+		self.table = ReusingProvider(name="table", should_yield=True)
+		self.braille = MockProvider(name="braille", should_yield=True)
+		self.manager.registerProvider(self.table)
+		self.manager.registerProvider(self.braille)
+
+	def test_a_raising_check_keeps_the_force(self):
+		self.manager.forcePresentation("table", _Element("cell1"))
+
+		def boom(triggerReason=None):
+			raise RuntimeError("Excel is busy")
+
+		forced = self.manager.activePresentation
+		assert forced is not None
+		forced.isStillValid = boom
+		self.manager.update(_Element("cell2"))
+
+		self.assertTrue(self.manager.isForcedMode)
+		self.assertIs(self.manager.activePresentation, forced)
+
+	def test_a_check_that_answers_no_still_drops_the_force(self):
+		self.manager.forcePresentation("table", _Element("cell1"))
+		forced = self.manager.activePresentation
+		assert forced is not None
+		forced._is_valid = False
+
+		self.manager.update(_Element("a paragraph"))
+
+		self.assertFalse(self.manager.isForcedMode)
 
 
 if __name__ == "__main__":
