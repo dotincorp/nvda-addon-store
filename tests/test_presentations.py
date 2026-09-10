@@ -428,7 +428,7 @@ class TestPresentationManagerReuse(unittest.TestCase):
 	def _makeReusingProvider(self, name: str, should_yield: bool = True) -> MockProvider:
 		"""A provider that opts into keeping its still-valid presentation."""
 		provider = MockProvider(name=name, should_yield=should_yield)
-		provider.reusesActivePresentation = True
+		provider.validityIsAuthoritative = True
 		return provider
 
 	def test_valid_active_presentation_is_reused_without_detection(self):
@@ -583,7 +583,7 @@ class TestPresentationManagerForce(unittest.TestCase):
 
 
 class TestPresentationManagerClearForced(unittest.TestCase):
-	"""Tests for clearForced() in PresentationManager."""
+	"""Tests for clearOverrides() in PresentationManager."""
 
 	def setUp(self):
 		"""Set up test fixtures."""
@@ -592,7 +592,7 @@ class TestPresentationManagerClearForced(unittest.TestCase):
 		self.mock_obj = MagicMock()
 
 	def test_clear_forced_returns_to_auto_detect(self):
-		"""Test that clearForced returns to auto-detect mode."""
+		"""Test that clearOverrides returns to auto-detect mode."""
 		# Set up providers
 		forced_provider = MockProvider(name="forced")
 		auto_provider = MockProvider(name="auto")
@@ -604,7 +604,7 @@ class TestPresentationManagerClearForced(unittest.TestCase):
 		self.assertTrue(self.manager.isForcedMode)
 
 		# Clear forced
-		self.manager.clearForced()
+		self.manager.clearOverrides()
 		self.assertFalse(self.manager.isForcedMode)
 		self.assertIsNone(self.manager.forcedPresentation)
 
@@ -613,9 +613,9 @@ class TestPresentationManagerClearForced(unittest.TestCase):
 		self.assertEqual(self.manager.activePresentation.name, "forced_presentation")
 
 	def test_clear_forced_when_not_forced(self):
-		"""Test that clearForced is safe to call when not in forced mode."""
+		"""Test that clearOverrides is safe to call when not in forced mode."""
 		self.assertFalse(self.manager.isForcedMode)
-		self.manager.clearForced()  # Should not raise
+		self.manager.clearOverrides()  # Should not raise
 		self.assertFalse(self.manager.isForcedMode)
 
 

@@ -413,7 +413,7 @@ class PresentationRenderer(AutoPropertyObject):
 		autonomous braille would keep showing.
 		"""
 		if enabled:
-			self._presentationManager.clearForced()
+			self._presentationManager.clearOverrides()
 		self._screenCaptureProvider.setEnabled(enabled)
 		self.onReviewMove()
 
@@ -426,6 +426,6 @@ class PresentationRenderer(AutoPropertyObject):
 		"""
 		newState = self._screenCaptureProvider.toggle()
 		if newState:
-			self._presentationManager.clearForced()
+			self._presentationManager.clearOverrides()
 		self.onReviewMove()
 		return newState

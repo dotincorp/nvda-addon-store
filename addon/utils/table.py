@@ -779,22 +779,13 @@ class Table(AutoPropertyObject):
 		return True
 
 	def scrollLeft(self) -> bool:
-		"""Scrolls the table presentation to the left by the number of visible columns.
+		"""Move the viewport one screenful of columns to the left.
 
-		Returns:
-			bool: True if the table was scrolled, False if it was already at the beginning.
+		:returns: True if the viewport moved.
 		"""
-		firstVisibleCol: int = self.firstVisibleCol or 0
 		if self.numVisibleCols is None:
 			return False
-		if firstVisibleCol == 0:
-			return False
-		if firstVisibleCol - self.numVisibleCols < 0:
-			# Scroll to the left edge
-			self.firstVisibleCol = 0
-			return True
-		self.firstVisibleCol = firstVisibleCol - self.numVisibleCols
-		return True
+		return self.scrollByCols(-self.numVisibleCols)
 
 	def scrollDown(self) -> bool:
 		"""Scrolls the table presentation down by the number of visible rows.
@@ -811,22 +802,13 @@ class Table(AutoPropertyObject):
 		return True
 
 	def scrollUp(self) -> bool:
-		"""Scrolls the table presentation up by the number of visible rows.
+		"""Move the viewport one screenful of rows up.
 
-		Returns:
-			bool: True if the table was scrolled, False if it was already at the beginning.
+		:returns: True if the viewport moved.
 		"""
 		if self.numVisibleRows is None:
 			return False
-		firstVisibleRow: int = self.firstVisibleRow or 0
-		if firstVisibleRow == 0:
-			return False
-		if firstVisibleRow - self.numVisibleRows < 0:
-			# Scroll to the top
-			self.firstVisibleRow = 0
-			return True
-		self.firstVisibleRow = firstVisibleRow - self.numVisibleRows
-		return True
+		return self.scrollByRows(-self.numVisibleRows)
 
 	def _lastFullPageStart(self, count: int | None, pageSize: int | None) -> int | None:
 		"""First index of the last screenful that still fills the display.
@@ -851,8 +833,6 @@ class Table(AutoPropertyObject):
 		:param vertical: True for rows, False for columns.
 		:returns: True if the viewport moved.
 		"""
-		# Annotated because the result is assigned back to the attribute it is
-		# read from, and pyright cannot infer a type through that cycle.
 		current: int
 		limit: int | None
 		if vertical:

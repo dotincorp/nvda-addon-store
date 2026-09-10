@@ -102,7 +102,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F1+F2: Move the viewport up a few dots in graphics mode, or one row in table mode.
 - F3+F4: Move the viewport down a few dots in graphics mode, or one row in table mode.
 - F1+F3: Convert the letter, emoji, graphic or selection to a tactile image. Long press for screen capture mode.
-- F2+F4: When showing a tactile image or a table, return to braille mode. Braille stays while you read where you are: in a table you can move from cell to cell without the table coming back. The mode you left returns when you move out of it to something else that calls for it.
+- F2+F4: When showing a tactile image or a table, return to braille mode.
 - F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.

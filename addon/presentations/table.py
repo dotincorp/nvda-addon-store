@@ -572,7 +572,7 @@ class TableProvider(PresentationProvider):
 	def name(self) -> str:
 		return "table"
 
-	reusesActivePresentation = True
+	validityIsAuthoritative = True
 	"""Table detection walks parents and document structure, which is far more
 	expensive than ``TablePresentation.isStillValid``. Availability is a property
 	of the object being navigated, not of this provider, so the presentation's

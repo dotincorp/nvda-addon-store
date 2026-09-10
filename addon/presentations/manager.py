@@ -131,12 +131,12 @@ class PresentationManager:
 		# None until the presentation has been asked, so it is asked once.
 		activeStillValid: bool | None = None
 		matchingProvider: PresentationProvider | None = None
-		candidates = self._providers[-1:] if dismissed else self._providers
+		candidates = [p for p in self._providers if p.isFallback] if dismissed else self._providers
 		for provider in candidates:
 			if (
 				activePresentation is not None
 				and provider is activeProvider
-				and provider.reusesActivePresentation
+				and provider.validityIsAuthoritative
 			):
 				# None counts as a no here: re-running detection costs a walk,
 				# where holding a presentation we could not vouch for risks
@@ -176,7 +176,7 @@ class PresentationManager:
 		auto-detection. The forced presentation remains active until:
 		- It becomes invalid (isStillValid returns False)
 		- Another presentation is forced
-		- clearForced is called
+		- clearOverrides is called
 
 		:param providerName: The name of the provider to force.
 		:param obj: The current navigator object.
@@ -195,45 +195,25 @@ class PresentationManager:
 		return False
 
 	def dismissActivePresentation(self, obj: NVDAObject) -> None:
-		"""Step back from the presentation on screen for as long as ``obj`` is current.
+		"""Step back from whatever is on the tactile area, towards braille.
 
-		The way out of a visual mode. Forcing braille instead would pin it: a
-		forced presentation short-circuits ``update`` while it stays valid, and
-		both braille presentations always are, so nothing would auto-enter again
-		in any mode until a screen-capture toggle cleared it.
+		The way out of a visual mode. Forcing braille instead would pin it for
+		the session: a forced presentation short-circuits ``update`` while it
+		stays valid, and both braille presentations always are.
 
-		Dismissing instead lets braille win by ordinary fallback. Moving
-		anywhere else lifts it, so another table or an image still enters its own
-		mode, and coming back later is a fresh visit.
-
-		"Anywhere else" cannot mean "any other NVDAObject" for a mode that spans
-		many of them. A table is navigated cell by cell, and every cell is a
-		different object, so an object-scoped dismissal would be undone by the
-		next arrow key and table mode would come straight back — the chord would
-		read as dead. So the dismissal also holds while the dismissed
-		presentation reports itself still valid, but only for providers that set
-		``reusesActivePresentation``. That flag already means "this
-		presentation's ``isStillValid`` is a complete answer on its own"; for
-		everything else validity is not a safe scope, since a presentation whose
-		``isStillValid`` is unconditionally True — both braille ones, screen
-		capture — would pin the dismissal for the session, which is the failure
-		this replaced forcing to avoid.
-
-		It steps back from the whole visual stack, not just the one presentation
-		named: while it holds, every provider but the braille fallback is
-		skipped. "Not this object" is what the user means by the chord, and
-		which provider would have claimed the object next is not something they
-		can see.
+		It steps back from the whole visual stack, not just the presentation
+		named. "Not this" is what the user means by the chord, and which
+		provider would have claimed the object next is not something they can
+		see. ``_isDismissed`` decides how long that holds.
 
 		:param obj: The navigator object the user is on.
 		"""
 		# Captured before the force is dropped, so a dismissal of a forced
-		# presentation is scoped by that presentation and not by whatever
+		# presentation is scoped by that presentation rather than by whatever
 		# happened to be active underneath it.
 		self._dismissedPresentation = self._activePresentation
 		self._unanswerableChecks = 0
-		# A force outranks the providers entirely, so it has to go too, or the
-		# dismissal would change nothing.
+		# A force outranks the providers entirely, so it has to go too.
 		self._forcedPresentation = None
 		self._dismissedObject = obj
 
@@ -247,7 +227,7 @@ class PresentationManager:
 		   to ``_isEqual``, which is what identifies the same element across
 		   events. Identity would forget the dismissal immediately.
 		2. The dismissed presentation is still valid and came from a provider
-		   that opts into ``reusesActivePresentation`` — the flag that means its
+		   that opts into ``validityIsAuthoritative`` — the flag that means its
 		   ``isStillValid`` is a complete answer. This is what keeps a dismissed
 		   table dismissed while the user moves from cell to cell; leaving the
 		   table invalidates the presentation and lifts it.
@@ -264,7 +244,7 @@ class PresentationManager:
 		if presentation is None:
 			return False
 		provider = presentation.provider
-		if provider is None or not provider.reusesActivePresentation:
+		if provider is None or not provider.validityIsAuthoritative:
 			return False
 
 		valid = self._stillValid(presentation, triggerReason)
@@ -291,19 +271,12 @@ class PresentationManager:
 	def _stillValid(presentation: Presentation, triggerReason: TriggerReason | None) -> bool | None:
 		"""``presentation.isStillValid``, with a third answer for "could not tell".
 
-		Validity checks read live application state — ``TablePresentation``'s
-		walks ``windowHandle``, an Excel worksheet name and ``navObj.table``, all
-		COM reads on objects that can die between events, and Excel refuses calls
-		outright while it is busy. Letting that escape aborts the whole update,
-		so no provider is consulted and the previous frame stays on the pins.
-
-		But a raise must not be read as False either, because False is a
-		decision: it drops a forced presentation and lifts a dismissal, both of
-		which the user asked for explicitly and neither of which a transient
-		``RPC_E_CALL_REJECTED`` should undo. So a raise answers None — "ask again
-		next event" — and the two paths that hold user intent keep what they
-		have. Only the reuse shortcut treats None as a no, where the cost is
-		re-running detection rather than losing a mode.
+		Validity checks read live application state over COM, and Excel refuses
+		calls outright whenever it is busy. Letting that escape aborts the whole
+		update, so no provider is consulted and the stale frame stays on the
+		pins — but reading it as False is wrong too, because False is a
+		decision: it drops a forced presentation and lifts a dismissal, neither
+		of which a momentary refusal should do.
 
 		:returns: True or False as the presentation answered, or None if asking
 			raised.
@@ -318,7 +291,7 @@ class PresentationManager:
 			)
 			return None
 
-	def clearForced(self) -> None:
+	def clearOverrides(self) -> None:
 		"""Clear forced presentation, return to auto-detect.
 
 		Also lifts a dismissal. Both pin what is on screen against the

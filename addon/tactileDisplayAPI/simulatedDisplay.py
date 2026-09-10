@@ -77,10 +77,25 @@ def _getLibraryBytesConsumerClasses() -> tuple[type, ...]:
 		).LibraryBraillePresentation
 	resolved = (GraphicPresentation, LibraryBraillePresentation)
 	_libraryBytesConsumerClasses = resolved
+	global _graphicPresentationClass
+	_graphicPresentationClass = GraphicPresentation
 	return resolved
 
 
+def _getGraphicPresentationClass() -> type:
+	"""``GraphicPresentation``, resolved through the same cycle-safe path.
+
+	Its frames carry the tactile image rather than braille, which is the one
+	distinction the payload itself does not record.
+	"""
+	if _graphicPresentationClass is None:
+		_getLibraryBytesConsumerClasses()
+	assert _graphicPresentationClass is not None
+	return _graphicPresentationClass
+
+
 _libraryBytesConsumerClasses: tuple[type, ...] | None = None
+_graphicPresentationClass: type | None = None
 
 _lastPayload: bytes | None = None
 """The most recent braille payload the library sent, gate passed or not.
@@ -183,12 +198,10 @@ def renderTactileBytes(payload: bytes) -> None:
 		activePresentation = _getActivePresentation()
 		allowedClasses = _getLibraryBytesConsumerClasses()
 
-		# Remembered before the gate decides — a frame discarded now is exactly
-		# the frame to show when a library-bytes consumer becomes active again —
-		# but never a frame produced under graphic mode. Those carry the tactile
-		# image, so replaying one on the way back to braille would redraw the
-		# picture the renderer's graphic terminate() just cleared.
-		if getattr(activePresentation, "name", None) != "graphic":
+		# Remembered before the gate decides: a frame discarded now is exactly
+		# the frame to show when a library-bytes consumer becomes active again.
+		# Graphic mode is the exception - see the module note on _lastPayload.
+		if not isinstance(activePresentation, _getGraphicPresentationClass()):
 			_lastPayload = payload
 
 		if not isinstance(activePresentation, allowedClasses):

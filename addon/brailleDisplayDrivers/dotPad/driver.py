@@ -2371,20 +2371,15 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def script_brailleDisplay(self, _gesture: inputCore.InputGesture):
 		"""Step back from the presentation on screen, to braille.
 
-		The symmetric mirror of ``script_graphicDisplay``. Dismisses whatever is
-		on the tactile area for as long as the navigator stays on this object,
-		which leaves the braille provider to win by ordinary fallback.
+		The symmetric mirror of ``script_graphicDisplay``. See
+		``PresentationManager.dismissActivePresentation`` for what a dismissal
+		covers.
 
-		It dismisses rather than forcing braille because a forced presentation
-		short-circuits ``PresentationManager.update`` while it stays valid, and
-		both braille presentations always are — so forcing pinned braille for the
-		session and nothing auto-entered again, in any mode.
-
-		``onReviewMove`` rather than ``_needsRender``: a dismissal only records
+		``onReviewMove`` rather than ``requestRender``: a dismissal only records
 		an intent, so the providers have to be re-consulted before anything on
-		the display changes. Setting ``_needsRender`` alone would re-render the
-		presentation just dismissed. ``script_graphicDisplay`` can get away with
-		it because ``forcePresentation`` installs the new presentation itself.
+		the display changes. Requesting a render alone would redraw the
+		presentation just dismissed. ``script_graphicDisplay`` needs no such
+		call because ``forcePresentation`` installs its presentation itself.
 		"""
 		import api
 

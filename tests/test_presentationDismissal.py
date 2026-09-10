@@ -49,7 +49,7 @@ class ReusingProvider(MockProvider):
 	outlive the object it was made on.
 	"""
 
-	reusesActivePresentation = True
+	validityIsAuthoritative = True
 
 
 class TestDismissal(unittest.TestCase):
@@ -57,6 +57,8 @@ class TestDismissal(unittest.TestCase):
 		self.manager = PresentationManager(MagicMock())
 		self.visual = MockProvider(name="visual", should_yield=True)
 		self.braille = MockProvider(name="braille", should_yield=True)
+		# What a dismissal steps back to; the real BrailleProvider declares it.
+		self.braille.isFallback = True
 		self.manager.registerProvider(self.visual)
 		self.manager.registerProvider(self.braille)
 
@@ -101,8 +103,8 @@ class TestDismissal(unittest.TestCase):
 
 		self.assertIs(self.manager.activePresentation, self.visual._presentation)
 
-	def test_the_last_provider_is_never_dismissed(self):
-		"""Braille is the fallback; dismissing everything would leave no output."""
+	def test_the_fallback_provider_is_never_dismissed(self):
+		"""Dismissing the fallback too would leave nothing on the display."""
 		self.manager.update(_Element("image"))
 		self.manager.dismissActivePresentation(_Element("image"))
 		self.manager.update(_Element("image"))
@@ -164,7 +166,7 @@ class TestDismissal(unittest.TestCase):
 		element = _Element("image")
 		self.manager.dismissActivePresentation(element)
 
-		self.manager.clearForced()
+		self.manager.clearOverrides()
 		self.manager.update(_Element("image"))
 
 		self.assertIs(self.manager.activePresentation, self.visual._presentation)
@@ -196,6 +198,8 @@ class TestDismissalScopedByPresentation(unittest.TestCase):
 		self.manager = PresentationManager(MagicMock())
 		self.table = ReusingProvider(name="table", should_yield=True)
 		self.braille = MockProvider(name="braille", should_yield=True)
+		# What a dismissal steps back to; the real BrailleProvider declares it.
+		self.braille.isFallback = True
 		self.manager.registerProvider(self.table)
 		self.manager.registerProvider(self.braille)
 
@@ -282,7 +286,7 @@ class TestDismissalScopedByPresentation(unittest.TestCase):
 		self.manager.update(_Element("cell1"))
 		self.manager.dismissActivePresentation(_Element("cell1"))
 
-		self.manager.clearForced()
+		self.manager.clearOverrides()
 		self.manager.update(_Element("cell2"))
 
 		self.assertIs(self.manager.activePresentation, self.table._presentation)
@@ -301,6 +305,8 @@ class TestAForcedPresentationSurvivesAnUnanswerableCheck(unittest.TestCase):
 		self.manager = PresentationManager(MagicMock())
 		self.table = ReusingProvider(name="table", should_yield=True)
 		self.braille = MockProvider(name="braille", should_yield=True)
+		# What a dismissal steps back to; the real BrailleProvider declares it.
+		self.braille.isFallback = True
 		self.manager.registerProvider(self.table)
 		self.manager.registerProvider(self.braille)
 

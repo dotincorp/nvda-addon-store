@@ -593,6 +593,8 @@ class BrailleProvider(PresentationProvider):
 	presentation construction without bookkeeping overhead.
 	"""
 
+	isFallback = True
+
 	@property
 	def name(self) -> str:
 		return "braille"

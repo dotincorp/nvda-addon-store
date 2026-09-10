@@ -173,18 +173,29 @@ class PresentationProvider(ABC):
 	Subclasses may optionally override:
 	- forceForObject() - default returns None (forcing not supported)
 	- terminate() - clean up resources when provider is no longer needed
-	- reusesActivePresentation - default False (canProvide runs on every update)
+	- validityIsAuthoritative - default False (canProvide runs on every update)
 	"""
 
-	reusesActivePresentation: bool = False
-	"""Whether the manager may keep this provider's still-valid presentation
-	without re-running ``canProvide``.
+	isFallback: bool = False
+	"""Whether this provider is the last resort, offering something for anything.
 
-	Opt in only when detection is expensive *and* the presentation's
-	``isStillValid`` is a complete answer on its own. It is not one when
-	availability lives in the provider rather than in the presentation — a mode
-	toggle, for instance — because then a presentation that reports itself valid
-	must still be dropped once its provider stops offering it.
+	A dismissal steps back to the fallback providers. Marking it says which
+	those are; the alternative was "whatever happens to be registered last",
+	which would silently move the moment a provider was added.
+	"""
+
+	validityIsAuthoritative: bool = False
+	"""Whether this presentation's ``isStillValid`` is a complete answer.
+
+	False when availability lives in the provider rather than in the
+	presentation — a mode toggle, for instance — because then a presentation
+	that reports itself valid must still be dropped once its provider stops
+	offering it.
+
+	Two things rely on it: the manager keeps a still-valid presentation without
+	re-running ``canProvide``, and a dismissal stays in force while the
+	presentation it dismissed reports itself valid. Expensive detection is a
+	reason to want the first, not part of the contract.
 	"""
 
 	@property
