@@ -96,6 +96,24 @@ After copying, keep `tests/test_bundle_completeness.py::_REQUIRED_DLLS` in step
 with the drop — the vendor both bumps `DotPadSDK-<version>.dll`'s filename and
 occasionally drops a companion DLL entirely.
 
+**Compare the drop against the tree, not against the previous drop.** It is the
+tree that ships, and the two diverge whenever a copy step was skipped. Hash every
+companion file both ways before concluding "unchanged":
+
+```powershell
+foreach ($f in 'DotPadSDK-3.0.2.dll','MeCab.dll','TTBEngine.dll','libmathcat_c.dll') {
+    $i = (Get-FileHash ".scratch\install\$f" -Algorithm SHA256).Hash
+    $c = (Get-FileHash "addon\tactileDisplayAPI\$f" -Algorithm SHA256).Hash
+    "{0,-24} {1}" -f $f, $(if ($i -eq $c) { 'SAME' } else { 'DIFF' })
+}
+```
+
+`MathCATRules/` is the trap here: the repo tracks the vendor's `.zip` archives,
+while the library extracts `.yaml` beside them at runtime and a
+`.git/info/exclude` entry hides the extraction. Comparing the loose `.yaml`
+reports sweeping drift that does not exist — hash the `.zip` files, or just read
+`git status` after replacing the directory.
+
 ## Step 1: Check vtable sync
 
 ```powershell
