@@ -275,9 +275,14 @@ class TablePresentation(Presentation):
 					firstCol = td.firstVisibleCol or 0
 					rowInView = firstRow <= currentRow < firstRow + td.numVisibleRows
 					colInView = firstCol <= currentCol < firstCol + td.numVisibleCols
-					if not rowInView or not colInView:
-						# Reset scroll position to trigger auto-centering in drawTable
+					# Per axis, not both together. Resetting both meant stepping
+					# down out of view also re-centred the columns, throwing the
+					# view back to the left of the row; following the cursor
+					# down should move straight down, the way panning a graphic
+					# does. None asks drawTable to auto-centre that axis.
+					if not rowInView:
 						td.firstVisibleRow = None
+					if not colInView:
 						td.firstVisibleCol = None
 
 		buffer = DpTactileGraphicsBuffer(display.physicalNumCols, display.physicalNumRows)

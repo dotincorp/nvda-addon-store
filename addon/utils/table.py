@@ -240,7 +240,10 @@ class Table(AutoPropertyObject):
 		else:
 			raise ValueError(f"table must be an NVDA object with a table role, got {obj.role}")
 
-		self.tableCaption = self.tableObj.name or obj.description
+		# Stripped: a name of " " is truthy, and draw() would reserve five dot
+		# rows for it and then paint nothing there - a blank band above the
+		# table that reads as the view starting a row too low.
+		self.tableCaption = (self.tableObj.name or obj.description or "").strip()
 		self.hCellPadding = hCellPadding
 		self.vCellpadding = vCellPadding
 
@@ -448,6 +451,13 @@ class Table(AutoPropertyObject):
 
 		return rowCount
 
+	def invalidateExtentCache(self) -> None:
+		"""Drop any cached row/column count before a draw.
+
+		A no-op here, because the base getters read the object every time.
+		Subclasses that cache a COM round trip override it.
+		"""
+
 	def drawTable(
 		self,
 		buffer: DpTactileGraphicsBuffer,
@@ -460,14 +470,23 @@ class Table(AutoPropertyObject):
 	):
 		drawStarted = time.perf_counter()
 		self.lastDrawStats = TableDrawStats()
+		# The extent can change under us - the user types into a cell past the
+		# end - and the presentation this table belongs to survives the whole
+		# visit, so anything cached on it is cached effectively forever.
+		self.invalidateExtentCache()
 
 		if height is None:
 			height = buffer.height
 		if width is None:
 			width = buffer.width
 
-		self.numVisibleRows = numVisibleRows = height // self.tableCellHeight
-		self.numVisibleCols = numVisibleCols = width // self.tableCellWidth
+		# -1 because adjacent cells share a border: a cell is drawn from its
+		# origin through origin + cellHeight inclusive (drawCell puts the bottom
+		# border at topY + tableCellHeight), so N cells span N * cellHeight + 1
+		# dots, not N * cellHeight. Without it the last row's bottom border fell
+		# one dot outside the buffer and was clipped away. Same on both axes.
+		self.numVisibleRows = numVisibleRows = max(0, (height - 1) // self.tableCellHeight)
+		self.numVisibleCols = numVisibleCols = max(0, (width - 1) // self.tableCellWidth)
 
 		if firstRow is None:
 			firstRow = 0
@@ -573,7 +592,8 @@ class Table(AutoPropertyObject):
 				tableSize = "unknown"
 			log.debug(
 				"Table draw: %d cells in %.1fms (fetch %.1fms, cell text %.1fms), "
-				"%d cells and %d rows materialised for %sx%s visible, table %s",
+				"%d cells and %d rows materialised for %sx%s visible at r%s c%s, "
+				"cursor r%s c%s, table %s, caption %r, instance %s",
 				stats.cellsDrawn,
 				stats.totalSeconds * 1000,
 				stats.cellFetchSeconds * 1000,
@@ -582,7 +602,15 @@ class Table(AutoPropertyObject):
 				stats.rowsMaterialised,
 				numVisibleRows,
 				numVisibleCols,
+				firstRow,
+				firstCol,
+				self.tableCurrentRow,
+				self.tableCurrentCol,
 				tableSize,
+				self.tableCaption,
+				# A changing id means the presentation was rebuilt and the
+				# viewport was reset rather than scrolled.
+				id(self),
 			)
 
 	def drawCell(
@@ -1062,6 +1090,12 @@ class ExcelTable(Table):
 			# extent is handled everywhere it is read; the next call retries.
 			log.debug("ExcelTable: could not read the worksheet used range", exc_info=True)
 			return (None, None)
+		# Never report an extent that excludes where the user is. UsedRange
+		# lags: it does not grow until Excel notices the edit, so navigating to
+		# or typing in a cell past the end would otherwise clamp the viewport
+		# behind the cursor and the view would stop following.
+		lastRow = max(lastRow, (self.tableCurrentRow or 0) + 1)
+		lastCol = max(lastCol, (self.tableCurrentCol or 0) + 1)
 		bounds: tuple[int | None, int | None] = (lastRow, lastCol)
 		self._usedRangeBounds = bounds
 		return bounds
@@ -1071,6 +1105,9 @@ class ExcelTable(Table):
 
 	def _get_tableRowCount(self) -> int | None:
 		return self._getUsedRangeBounds()[0]
+
+	def invalidateExtentCache(self) -> None:
+		self._usedRangeBounds = None
 
 	def getTableCells(
 		self,

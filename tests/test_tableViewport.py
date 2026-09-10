@@ -6,6 +6,7 @@
 """Tests for the table viewport steps that the table-mode gestures drive."""
 
 import unittest
+from unittest import mock
 from unittest.mock import Mock
 
 # addon.presentations first: addon.utils.table's runtime loadModule pulls the
@@ -31,6 +32,57 @@ def makeTable(rowCount, colCount, visibleRows=4, visibleCols=6):
 	instance.firstVisibleRow = 0
 	instance.firstVisibleCol = 0
 	return instance
+
+
+class TestTheLastRowAndColumnFitOnTheDisplay(unittest.TestCase):
+	"""Adjacent cells share a border, so N cells need N * size + 1 dots.
+
+	Sizing the viewport with a plain floor division claimed one row and one
+	column too many, and the bottom cell border of the last row fell one dot
+	outside the buffer and was clipped away.
+	"""
+
+	def _drawInto(self, height, width):
+		instance = makeTable(rowCount=50, colCount=50)
+		buffer = Mock()
+		buffer.height = height
+		buffer.width = width
+		with mock.patch.object(instance, "getTableCells", return_value=[]):
+			instance.drawTable(buffer, 0, 0)
+		return instance
+
+	def test_an_exact_multiple_leaves_room_for_the_final_border(self):
+		instance = makeTable(rowCount=50, colCount=50)
+		cellHeight = instance.tableCellHeight
+		drawn = self._drawInto(height=cellHeight * 4, width=1000)
+
+		self.assertEqual(drawn.numVisibleRows, 3)
+
+	def test_the_bottom_border_lands_inside_the_buffer(self):
+		instance = makeTable(rowCount=50, colCount=50)
+		cellHeight = instance.tableCellHeight
+		height = cellHeight * 4
+		drawn = self._drawInto(height=height, width=1000)
+
+		rows = drawn.numVisibleRows
+		assert rows is not None
+		lastDrawnDotRow = rows * cellHeight
+		self.assertLess(lastDrawnDotRow, height, "the last bottom border must fit")
+
+	def test_one_dot_of_slack_buys_the_row_back(self):
+		instance = makeTable(rowCount=50, colCount=50)
+		cellHeight = instance.tableCellHeight
+		drawn = self._drawInto(height=cellHeight * 4 + 1, width=1000)
+
+		self.assertEqual(drawn.numVisibleRows, 4)
+
+	def test_columns_are_sized_the_same_way(self):
+		"""The right border sits at leftX + cellWidth, exactly as the bottom does."""
+		instance = makeTable(rowCount=50, colCount=50)
+		cellWidth = instance.tableCellWidth
+		drawn = self._drawInto(height=1000, width=cellWidth * 5)
+
+		self.assertEqual(drawn.numVisibleCols, 4)
 
 
 class TestAStepNeverMovesBackwards(unittest.TestCase):

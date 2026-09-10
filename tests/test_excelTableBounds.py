@@ -40,6 +40,10 @@ def makeExcelTable(worksheet):
 	# what made drawTable's clamp skip itself on exactly this table type.
 	del tableObj.rowCount
 	del tableObj.columnCount
+	# Nothing in NVDA or the add-on defines these either; only a Mock answers
+	# the hasattr, which would seed the current cell with a Mock instead of None.
+	del tableObj._currentRow
+	del tableObj._currentCol
 	return table.ExcelTable(tableObj, hCellPadding=1, vCellPadding=1)
 
 
@@ -141,6 +145,48 @@ class TestARefusalIsNotCached(unittest.TestCase):
 		instance.tableColumnCount
 
 		self.assertEqual(usedRangeProperty.call_count, 2)
+
+
+class TestTheExtentFollowsTheCursor(unittest.TestCase):
+	"""UsedRange lags behind the user, so it cannot be the only bound.
+
+	It does not grow until Excel notices an edit, and it is read through a
+	presentation that survives the whole worksheet visit. Reported alone, the
+	viewport clamped behind the cursor and stopped following as soon as the
+	user stepped past the last used row.
+	"""
+
+	def test_a_cursor_past_the_used_range_widens_the_extent(self):
+		instance = makeExcelTable(makeWorksheet(firstRow=1, rowCount=7, firstCol=1, colCount=3))
+		instance.tableCurrentRow = 9  # row 10, two rows past the used range
+		instance.tableCurrentCol = 4
+
+		self.assertEqual(instance.tableRowCount, 10)
+		self.assertEqual(instance.tableColumnCount, 5)
+
+	def test_a_cursor_inside_the_used_range_does_not_shrink_it(self):
+		instance = makeExcelTable(makeWorksheet(firstRow=1, rowCount=29, firstCol=1, colCount=25))
+		instance.tableCurrentRow = 2
+		instance.tableCurrentCol = 2
+
+		self.assertEqual(instance.tableRowCount, 29)
+		self.assertEqual(instance.tableColumnCount, 25)
+
+	def test_a_draw_re_reads_the_extent(self):
+		"""Otherwise typing past the end never widens it: the cache outlives the edit."""
+		worksheet = makeWorksheet(firstRow=1, rowCount=7, firstCol=1, colCount=3)
+		instance = makeExcelTable(worksheet)
+		self.assertEqual(instance.tableRowCount, 7)
+
+		# The user types into A10; Excel now reports a larger used range.
+		worksheet.UsedRange.Rows.Count = 10
+		buffer = Mock()
+		buffer.height = 40
+		buffer.width = 60
+		with mock.patch.object(instance, "getTableCells", return_value=[]):
+			instance.drawTable(buffer, 0, 0)
+
+		self.assertEqual(instance.tableRowCount, 10)
 
 
 class TestScrollingWithAnUnknownExtent(unittest.TestCase):
