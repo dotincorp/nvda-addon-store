@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import time
 from enum import StrEnum
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import addonHandler
 import api
@@ -24,18 +24,17 @@ from logHandler import log
 from scriptHandler import script
 from textInfos import FieldCommand
 
-from .base import Presentation, PresentationProvider
+from .base import Presentation, PresentationProvider, getActiveRenderer
 
 if TYPE_CHECKING:
 	from locationHelper import RectLTRB
-
 	from NVDAObjects import NVDAObject
 
-	from ..brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver, Display
+	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
 	from ..utils import reviewFields
-	from ..utils.table import Table, ExcelTable, TABLE_ROLES, TABLE_CELL_ROLES, findAncestorWithRole
+	from ..utils.table import TABLE_CELL_ROLES, TABLE_ROLES, ExcelTable, Table, findAncestorWithRole
 
 # Runtime imports using NVDA's addon module loading
 if not TYPE_CHECKING:
@@ -332,28 +331,34 @@ class TablePresentation(Presentation):
 		# Check 2: For Excel, verify same worksheet (detects worksheet switch)
 		tableWorksheet = getattr(self._tableObj, "excelWorksheetObject", None)
 		if tableWorksheet is not None:
-			# This is an Excel table - check worksheet identity
-			try:
-				# Get worksheet from navigator or its parent (cells are direct children of worksheet)
-				navWorksheet = getattr(navObj, "excelWorksheetObject", None)
-				if navWorksheet is None:
-					parent = getattr(navObj, "parent", None)
-					if parent is not None:
-						navWorksheet = getattr(parent, "excelWorksheetObject", None)
+			# This is an Excel table - check worksheet identity.
+			#
+			# A COM failure here is deliberately not caught. Excel refuses calls
+			# whenever it is busy, which includes the moment the user types in a
+			# cell, and answering False would report a worksheet switch that did
+			# not happen — dropping a forced table or lifting a dismissal in the
+			# middle of reading one. ``PresentationManager._stillValid`` is the
+			# only caller of this method; it turns a raise into "could not tell"
+			# and asks again on the next event, which is the truthful answer.
+			# Swallowing it here is what made that third answer unreachable on
+			# the one table type it was written for.
+			#
+			# Get worksheet from navigator or its parent (cells are direct children of worksheet)
+			navWorksheet = getattr(navObj, "excelWorksheetObject", None)
+			if navWorksheet is None:
+				parent = getattr(navObj, "parent", None)
+				if parent is not None:
+					navWorksheet = getattr(parent, "excelWorksheetObject", None)
 
-				if navWorksheet is not None:
-					# Compare worksheet names (more reliable than COM object identity)
-					if tableWorksheet.Name != navWorksheet.Name:
-						log.debug(
-							"Table invalid: worksheet changed (%s != %s)",
-							tableWorksheet.Name,
-							navWorksheet.Name,
-						)
-						return False
-			except Exception:
-				# COM access failed - assume invalid to be safe
-				log.debug("Table invalid: COM access failed during worksheet check")
-				return False
+			if navWorksheet is not None:
+				# Compare worksheet names (more reliable than COM object identity)
+				if tableWorksheet.Name != navWorksheet.Name:
+					log.debug(
+						"Table invalid: worksheet changed (%s != %s)",
+						tableWorksheet.Name,
+						navWorksheet.Name,
+					)
+					return False
 
 		# Check 3: Quick check - does NVDA think we're in the same table?
 		try:
@@ -395,15 +400,6 @@ class TablePresentation(Presentation):
 	def name(self) -> str:
 		return "table"
 
-	def _getActiveDriver(self) -> BrailleDisplayDriver | None:
-		"""Return the active BrailleDisplayDriver, or None if unavailable."""
-		try:
-			import braille
-
-			return cast("BrailleDisplayDriver | None", braille.handler.display)  # type: ignore[union-attr]
-		except Exception:
-			return None
-
 	def _afterScroll(self, moved: bool) -> None:
 		"""Follow a viewport move with the navigator move and a redraw.
 
@@ -414,18 +410,16 @@ class TablePresentation(Presentation):
 		setting, which defaults to leaving the navigator alone; it lived only on
 		``scrollForward`` / ``scrollBack`` before these gestures existed.
 
-		A presentation holds no renderer reference, so the redraw is requested
-		the same way ``BrailleDisplayDriver.script_brailleDisplay`` does. Silent
-		no-op when the driver is not available.
+		A presentation holds no renderer reference, so the redraw goes through
+		the driver. Silent no-op when there is no renderer to ask.
 		"""
 		if not moved:
 			return
 		self._tableData.moveNavigatorAfterScroll()
-		driver = self._getActiveDriver()
-		renderer = getattr(driver, "_renderer", None) if driver is not None else None
+		renderer = getActiveRenderer()
 		if renderer is None:
 			return
-		renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+		renderer.requestRender()
 
 	# --- @script handlers ---
 	#

@@ -2356,7 +2356,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if self._renderer is None:
 			return
 		self._renderer.presentationManager.forcePresentation("graphic", navObj)
-		self._renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+		self._renderer.requestRender()
 
 	@script(
 		description=_(

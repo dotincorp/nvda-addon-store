@@ -27,6 +27,11 @@ class TestMoveNavigatorAfterScroll(unittest.TestCase):
 		"""Set up test fixtures."""
 		# Create mock table object
 		self.mockTableObj = Mock()
+		# A table with no IA2 interfaces, so reaching a cell means scanning the
+		# visible window - the path these tests are about. A bare Mock would
+		# answer the coordinate lookup instead and never take it.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
 		self.mockTableObj.role = table.ROLE_TABLE
 		self.mockTableObj.name = "Test Table"
 
@@ -137,6 +142,11 @@ class TestCenterCellClamping(unittest.TestCase):
 	def setUp(self):
 		"""Set up test fixtures."""
 		self.mockTableObj = Mock()
+		# A table with no IA2 interfaces, so reaching a cell means scanning the
+		# visible window - the path these tests are about. A bare Mock would
+		# answer the coordinate lookup instead and never take it.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
 		self.mockTableObj.role = table.ROLE_TABLE
 		self.mockTableObj.name = "Test Table"
 
@@ -220,6 +230,11 @@ class TestSelectCellRegularTable(unittest.TestCase):
 	def setUp(self):
 		"""Set up test fixtures."""
 		self.mockTableObj = Mock()
+		# A table with no IA2 interfaces, so reaching a cell means scanning the
+		# visible window - the path these tests are about. A bare Mock would
+		# answer the coordinate lookup instead and never take it.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
 		self.mockTableObj.role = table.ROLE_TABLE
 		self.mockTableObj.UIAElement = None  # Not a UIA table
 		self.tableInstance = table.Table(self.mockTableObj, hCellPadding=1, vCellPadding=1)
@@ -275,6 +290,11 @@ class TestSelectCellVirtualBuffer(unittest.TestCase):
 	def setUp(self):
 		"""Set up test fixtures."""
 		self.mockTableObj = Mock()
+		# A table with no IA2 interfaces, so reaching a cell means scanning the
+		# visible window - the path these tests are about. A bare Mock would
+		# answer the coordinate lookup instead and never take it.
+		self.mockTableObj.IAccessibleTable2Object = None
+		self.mockTableObj.IAccessibleTableObject = None
 		self.mockTableObj.role = table.ROLE_TABLE
 		self.mockTableObj.UIAElement = None  # Not a UIA table for these tests
 		self.tableInstance = table.Table(self.mockTableObj, hCellPadding=1, vCellPadding=1)

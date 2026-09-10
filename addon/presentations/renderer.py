@@ -379,7 +379,7 @@ class PresentationRenderer(AutoPropertyObject):
 		Rendering is deferred to the next coreCycle.
 		"""
 		self._presentationManager.scrollBack()
-		self._needsRender = True
+		self.requestRender()
 
 	def scrollForward(self) -> None:
 		"""Scroll the active presentation forward.
@@ -389,6 +389,16 @@ class PresentationRenderer(AutoPropertyObject):
 		Rendering is deferred to the next coreCycle.
 		"""
 		self._presentationManager.scrollForward()
+		self.requestRender()
+
+	def requestRender(self) -> None:
+		"""Redraw the active presentation on the next core cycle.
+
+		The public form of what callers used to do by writing ``_needsRender``
+		through whatever chain reached a renderer. Note this repaints what is
+		already active; use ``onReviewMove`` when the providers have to choose
+		again, as they do after a dismissal.
+		"""
 		self._needsRender = True
 
 	def setScreenCaptureMode(self, enabled: bool) -> None:

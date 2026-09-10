@@ -266,19 +266,11 @@ class Table(AutoPropertyObject):
 		"""
 		table2: Any = getattr(self.tableObj, "IAccessibleTable2Object", None)
 		if table2 is not None:
-
-			def cellAt(rowIndex: int, colIndex: int) -> Any:
-				return table2.cellAt(rowIndex, colIndex)
-
-			return cellAt
+			return table2.cellAt
 
 		table1: Any = getattr(self.tableObj, "IAccessibleTableObject", None)
 		if table1 is not None:
-
-			def accessibleAt(rowIndex: int, colIndex: int) -> Any:
-				return table1.accessibleAt(rowIndex, colIndex)
-
-			return accessibleAt
+			return table1.accessibleAt
 
 		return None
 
@@ -941,22 +933,58 @@ class Table(AutoPropertyObject):
 			targetRow = firstRow + (actualVisibleRows // 2)
 			targetCol = firstCol + (actualVisibleCols // 2)
 
-		# Find target cell
-		for cell in self.getTableCells(
+		if self._selectCellAt(targetRow, targetCol):
+			return
+
+		log.debug("Could not find cell at row %s, col %s", targetRow, targetCol)
+
+	def _selectCellAt(self, targetRow: int, targetCol: int) -> bool:
+		"""Move to the cell at a 0-based coordinate.
+
+		Split from the scan it replaces because every scroll gesture runs this,
+		and fetching the whole visible window to find one cell in it cost a
+		second pass over cells the redraw is about to fetch again - on a table
+		served out of process, tens of cross-process calls per keypress.
+
+		:returns: True if the navigator or focus moved.
+		"""
+		cell = self._getCellAt(targetRow, targetCol)
+		if cell is not None:
+			return self._selectCell(cell, targetRow, targetCol)
+
+		# No lookup by coordinate on this table, so the window is the only way
+		# to reach a cell object.
+		if self.numVisibleCols is None or self.numVisibleRows is None:
+			return False
+		for candidate in self.getTableCells(
 			self.firstVisibleCol or 0,
 			self.firstVisibleRow or 0,
 			self.numVisibleCols,
 			self.numVisibleRows,
 		):
 			# getTableCells uses 1-based, we calculated 0-based
-			if cell.rowNumber - 1 == targetRow and cell.columnNumber - 1 == targetCol:
-				# Try to move navigator/focus to the target cell
-				if self._selectCell(cell, targetRow, targetCol):
-					return
+			if candidate.rowNumber - 1 == targetRow and candidate.columnNumber - 1 == targetCol:
+				return self._selectCell(candidate, targetRow, targetCol)
+		return False
 
-		log.debug("Could not find cell at row %s, col %s", targetRow, targetCol)
+	def _getCellAt(self, row: int, col: int) -> Any:
+		"""One cell by 0-based coordinate, or None if this table cannot serve one.
 
-	def _selectCell(self, cell: FakeNVDAObjectCell, row: int, col: int) -> bool:
+		:returns: A cell object, or None to fall back to scanning the window.
+		"""
+		accessor = self._getIA2CellAccessor()
+		if accessor is None:
+			return None
+		try:
+			rawCell = accessor(row, col)
+		except Exception:
+			log.debug("No cell at row %s, col %s", row, col, exc_info=True)
+			return None
+		if rawCell is None:
+			return None
+		return self._makeCellFromIA2(rawCell)
+
+	def _selectCell(self, cell: FakeNVDAObjectCell | None, row: int, col: int) -> bool:
 		"""Select/navigate to a table cell.
 
 		For virtual buffers in browse mode (web tables, Word browse mode),
@@ -1169,7 +1197,17 @@ class ExcelTable(Table):
 			sourceObject=excelCell,  # Store for later resolution to NVDA object
 		)
 
-	def _selectCell(self, cell: FakeNVDAObjectCell, row: int, col: int) -> bool:
+	def _selectCellAt(self, targetRow: int, targetCol: int) -> bool:
+		"""Go straight to the COM selection, with no cell object at all.
+
+		``_selectCell`` below re-fetches the cell from these coordinates in its
+		deferred callback and never reads the object it is handed, so finding
+		one first was pure cost - and on Excel the only way to find one is to
+		build the whole visible window out of COM round trips.
+		"""
+		return self._selectCell(None, targetRow, targetCol)
+
+	def _selectCell(self, cell: FakeNVDAObjectCell | None, row: int, col: int) -> bool:
 		"""Select an Excel cell via COM.
 
 		Excel fake cells aren't real NVDA objects. Instead, we use Excel's COM

@@ -117,10 +117,7 @@ class TestTableGestureActions(unittest.TestCase):
 		self.tableData = MagicMock()
 		self.presentation._tableData = self.tableData
 		self.renderer = MagicMock()
-		self.renderer._needsRender = False
-		driver = MagicMock()
-		driver._renderer = self.renderer
-		patcher = patch.object(self.presentation, "_getActiveDriver", return_value=driver)
+		patcher = patch("addon.presentations.table.getActiveRenderer", return_value=self.renderer)
 		patcher.start()
 		self.addCleanup(patcher.stop)
 
@@ -168,7 +165,7 @@ class TestTableGestureActions(unittest.TestCase):
 
 		self._run("script_rowDown")
 
-		self.assertTrue(self.renderer._needsRender)
+		self.renderer.requestRender.assert_called_once_with()
 
 	def test_the_navigator_follows_the_users_setting(self):
 		"""Only scrollForward/scrollBack moved the navigator; every step must."""
@@ -184,12 +181,12 @@ class TestTableGestureActions(unittest.TestCase):
 
 		self._run("script_rowDown")
 
-		self.assertFalse(self.renderer._needsRender)
+		self.renderer.requestRender.assert_not_called()
 		self.tableData.moveNavigatorAfterScroll.assert_not_called()
 
-	def test_a_missing_driver_is_a_silent_no_op(self):
+	def test_a_missing_renderer_is_a_silent_no_op(self):
 		self.tableData.scrollByRows.return_value = True
-		with patch.object(self.presentation, "_getActiveDriver", return_value=None):
+		with patch("addon.presentations.table.getActiveRenderer", return_value=None):
 			self._run("script_rowDown")
 
 

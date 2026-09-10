@@ -24,6 +24,22 @@ if TYPE_CHECKING:
 	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
+	from .renderer import PresentationRenderer
+
+
+def getActiveRenderer() -> PresentationRenderer | None:
+	"""The renderer driving the attached display, or None if there is none.
+
+	A presentation is handed a display, not a renderer, so anything that needs
+	to ask for a repaint has to find one. Module-level so tests can patch it,
+	and imported lazily because the renderer lives downstream of this module.
+	"""
+	try:
+		import braille
+
+		return getattr(braille.handler.display, "_renderer", None)  # type: ignore[union-attr]
+	except Exception:
+		return None
 
 
 class Presentation(ScriptableObject, ABC):
