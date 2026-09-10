@@ -314,6 +314,7 @@ class Table(AutoPropertyObject):
 
 		cells: list[NVDAObject] = []
 		seen: set[tuple[Any, Any]] = set()
+		covered: set[tuple[int, int]] = set()
 		for rowIndex in range(startAtRow, endRow):
 			for colIndex in range(startAtCol, endCol):
 				try:
@@ -325,6 +326,12 @@ class Table(AutoPropertyObject):
 					# same cell comes back more than once; drawTable expects each
 					# one only once and handles the span itself.
 					key = (cell.rowNumber, cell.columnNumber)
+					# This coordinate is spoken for, whether or not the cell is
+					# drawn below. The probe is the authority rather than the
+					# cell's span: a merged cell answers at every coordinate it
+					# covers, so recording the coordinate we asked about needs
+					# no span attributes and cannot disagree with them.
+					covered.add((rowIndex, colIndex))
 				except Exception:
 					# Ragged rows, hidden cells and out-of-range coordinates all
 					# raise here. One missing cell must not lose the whole draw.
@@ -342,7 +349,37 @@ class Table(AutoPropertyObject):
 				cells.append(cell)
 		if not cells and endRow > startAtRow and endCol > startAtCol:
 			return None
+		cells.extend(
+			cast("list[NVDAObject]", self._fillEmptyCells(covered, startAtRow, endRow, startAtCol, endCol)),
+		)
 		return cells
+
+	@staticmethod
+	def _fillEmptyCells(
+		covered: set[tuple[int, int]],
+		startAtRow: int,
+		endRow: int,
+		startAtCol: int,
+		endCol: int,
+	) -> list[FakeNVDAObjectCell]:
+		"""Blank cells for coordinates the table served nothing for.
+
+		A ragged table - Google Sheets' screen-reader view has one, where the
+		header row holds fewer cells than the data rows below it - leaves gaps
+		inside the window. Drawing nothing there draws no border either, so the
+		short row visibly stopped partway across while every row under it ran
+		the full width. A reader cannot tell a missing cell from an empty one,
+		and the inconsistent grid is what misleads, so the gaps are filled.
+
+		Narrowing the window to the shortest row instead would hide real data,
+		the same way bounding an Excel sheet by its used range did.
+		"""
+		return [
+			FakeNVDAObjectCell(rowNumber=rowIndex + 1, columnNumber=colIndex + 1, name="")
+			for rowIndex in range(startAtRow, endRow)
+			for colIndex in range(startAtCol, endCol)
+			if (rowIndex, colIndex) not in covered
+		]
 
 	def getTableCells(
 		self,
