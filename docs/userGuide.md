@@ -141,9 +141,13 @@ If you want to change what the F1 to F4 or panning keys do, go to NVDA menu, Pre
 
 This add-on includes Dot's Tactile Display API library to introduce seamless, real-time tactile graphics directly into the Windows environment, allowing blind users to physically feel layout shapes, diagrams and formatting structure.
 
-### Microsoft Excel Data and Table Mode
+### Table Mode
 
-When interacting with spreadsheets, the add-on maps distinct information across your dual displays. The 300-cell graphical display transforms spreadsheet data into a physical, tactile table layout, allowing you to feel cell barriers and vertical alignments. Simultaneously, the exact structural text content of the currently focused cell is shown in braille on the 20-cell text display.
+When your cursor lands on a table, the 300-cell display switches to a tactile grid: you feel the cell borders and the columns lining up, rather than a run of braille. The 20-cell braille display keeps showing the text of the cell you are on. This works in Microsoft Excel, in tables on web pages, and in tables in documents.
+
+Table mode starts on its own. If you are on a table but the display has not switched, long press F2+F3 to force it: this looks outward from your cursor for a table to show. Press F2+F4 to go back to braille output.
+
+The buttons that move the view over the table are listed under "Button map reference, table mode" below.
 
 ### Tactile Letter and Shape Rendering (Hybrid Mode)
 
@@ -219,14 +223,14 @@ Button map reference, table mode. When a table is shown on the 300-cell display,
 - F4 Key: Show the next screenful of columns.
 - F2 Key: Show the previous screenful of rows.
 - F3 Key: Show the next screenful of rows.
-- Long press any of the four keys above to jump straight to that edge of the table: F1 to the first column, F4 to the last column, F2 to the first row, and F3 to the last row.
+- Long press any of the four keys above to jump straight to that edge of the table: F1 to the first column, F4 to the last column, F2 to the first row, and F3 to the last row. In a spreadsheet, the edges are the last row and column that contain data, not the end of the sheet itself.
 - Left Pan + F1 Key: Move the view one column to the left.
 - Right Pan + F4 Key: Move the view one column to the right.
 - F1+F2: Move the view up one row.
 - F3+F4: Move the view down one row.
 - F2+F4: Return to braille output. You can keep moving through the cells of the same table in braille. Table mode comes back when you leave for another table, and tactile graphics mode still starts on its own when you move to an image.
 
-Moving the view does not move your cursor unless you ask it to. The "After scrolling a table, move the navigator object" setting in the Dot Pad settings panel can move it to the first or the centre cell of the new view instead.
+Moving the view does not move your cursor unless you ask it to. The "After scrolling a table, move the navigator object" setting in the Dot Pad settings panel can move it to the first or the centre cell of the new view instead. Moving your cursor the other way round does bring the view with it: if you move out of the visible part of the table, the view follows in that direction only, so moving down keeps your place across the row.
 
 ## Dot Pad Display Viewer
 
