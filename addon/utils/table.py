@@ -12,7 +12,6 @@ DpTactileGraphicsBuffer.
 
 from __future__ import annotations
 
-import logging
 import time
 from abc import ABC
 from collections.abc import Callable, Iterable, Iterator
@@ -24,6 +23,7 @@ import core
 import eventHandler
 import textInfos
 from baseObject import AutoPropertyObject
+from IAccessibleHandler import IA2
 from controlTypes import (
 	ROLE_DATAGRID,
 	ROLE_DATAITEM,
@@ -37,6 +37,7 @@ from controlTypes import (
 )
 from logHandler import log
 from NVDAObjects import NVDAObject
+from NVDAObjects.IAccessible import IAccessible
 from tactile.braille import drawBrailleCells as drawBrailleCellsOnTactileBuffer
 
 if TYPE_CHECKING:
@@ -248,9 +249,6 @@ class Table(AutoPropertyObject):
 
 		Split out so tests can exercise the window fetch without COM.
 		"""
-		from IAccessibleHandler import IA2
-		from NVDAObjects.IAccessible import IAccessible
-
 		return IAccessible(
 			IAccessibleObject=rawCell.QueryInterface(IA2.IAccessible2),
 			IAccessibleChildID=0,
@@ -530,9 +528,8 @@ class Table(AutoPropertyObject):
 		for cell in _timeIteration(cellsToDraw, self.lastDrawStats):
 			rowNum = cell.rowNumber - 1
 			colNum = cell.columnNumber - 1
-			# Only reach for the cell's text when its name is empty. Building a
-			# TextInfo is a cross-process call, and it was previously paid for
-			# every drawn cell on every render just to discard the result.
+			# makeTextInfo is a cross-process call, and the name usually carries
+			# the text already.
 			textStarted = time.perf_counter()
 			text = cell.name
 			if not text:
@@ -564,7 +561,7 @@ class Table(AutoPropertyObject):
 
 		stats = self.lastDrawStats
 		stats.totalSeconds = time.perf_counter() - drawStarted
-		if log.isEnabledFor(logging.DEBUG):
+		if log.isEnabledFor(log.DEBUG):
 			# One line per draw, and only when debug logging is on: this is the
 			# measurement a slow-table report is diagnosed from, and re-deriving
 			# it means shipping the user another instrumented build.

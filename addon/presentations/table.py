@@ -12,12 +12,13 @@ table content to the tactile display.
 
 from __future__ import annotations
 
-import logging
 import time
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 import api
 from logHandler import log
+from textInfos import FieldCommand
 
 from .base import Presentation, PresentationProvider
 
@@ -191,7 +192,6 @@ class TablePresentation(Presentation):
 		:returns: Tuple of (rowNumber, columnNumber) 1-based, both None if not found.
 		"""
 		from controlTypes import Role
-		from textInfos import FieldCommand
 
 		try:
 			reviewPos = api.getReviewPosition()
@@ -387,6 +387,25 @@ class TablePresentation(Presentation):
 		return "table"
 
 
+class DetectionPath(StrEnum):
+	"""Which branch of ``_findTable`` answered.
+
+	Detection is the expensive half of arbitration and runs on every navigation
+	event, so the debug line reports which branch paid for it - that is what
+	says where an optimisation belongs.
+	"""
+
+	NOT_FOUND = "not found"
+	SELF = "self"
+	OBJ_TABLE = "obj.table"
+	VBUF = "vbuf"
+	VBUF_MISS = "vbuf (miss)"
+	PARENT_WALK = "parent walk"
+	REVIEW_POSITION = "review position"
+	REVIEW_POSITION_TABLE = "review position .table"
+	REVIEW_POSITION_PARENT_WALK = "review position parent walk"
+
+
 class TableProvider(PresentationProvider):
 	"""Provider that creates table presentations.
 
@@ -415,7 +434,7 @@ class TableProvider(PresentationProvider):
 		# Avoids expensive _findTable being called twice
 		self._cachedTable: NVDAObject | None = None
 		self._cachedForObj: NVDAObject | None = None
-		self._lastDetectionPath: str = "none"
+		self._lastDetectionPath: DetectionPath | None = None
 		"""Which branch of _findTable resolved the last lookup, for the debug line."""
 
 	def canProvide(self, obj: NVDAObject) -> bool:
@@ -433,10 +452,7 @@ class TableProvider(PresentationProvider):
 			return self._cachedTable is not None
 		detectionStarted = time.perf_counter()
 		tableObj = self._findTable(obj, maxDepth=self.AUTO_DETECT_PARENT_DEPTH)
-		if log.isEnabledFor(logging.DEBUG):
-			# Detection is the expensive half of arbitration and runs on
-			# navigation events; which branch answered decides where any
-			# optimisation belongs.
+		if log.isEnabledFor(log.DEBUG):
 			log.debug(
 				# %r on the role: Role is an IntEnum, so %s prints the bare number.
 				"Table detection: %s in %.1fms via %s (role %r)",
@@ -555,11 +571,11 @@ class TableProvider(PresentationProvider):
 		"""
 		depth = maxDepth if maxDepth is not None else self.MAX_PARENT_SCAN_DEPTH
 
-		self._lastDetectionPath = "not found"
+		self._lastDetectionPath = DetectionPath.NOT_FOUND
 
 		# 1. If obj IS a table, return it
 		if obj.role in TABLE_ROLES:
-			self._lastDetectionPath = "self"
+			self._lastDetectionPath = DetectionPath.SELF
 			return obj
 
 		# 2. Try obj.table attribute first (works for Word IAccessible, native tables).
@@ -570,7 +586,7 @@ class TableProvider(PresentationProvider):
 		try:
 			table = getattr(obj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
-				self._lastDetectionPath = "obj.table"
+				self._lastDetectionPath = DetectionPath.OBJ_TABLE
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
@@ -585,13 +601,13 @@ class TableProvider(PresentationProvider):
 		treeInterceptor = getattr(obj, "treeInterceptor", None)
 		if treeInterceptor is not None and hasattr(treeInterceptor, "getNVDAObjectFromIdentifier"):
 			tableObj = self._findTableViaVbuf(obj)
-			self._lastDetectionPath = "vbuf" if tableObj is not None else "vbuf (miss)"
+			self._lastDetectionPath = DetectionPath.VBUF if tableObj is not None else DetectionPath.VBUF_MISS
 			return tableObj
 
 		# 3b. Non-browse: scan obj's IA2 parent chain
 		table = findAncestorWithRole(obj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
 		if table is not None:
-			self._lastDetectionPath = "parent walk"
+			self._lastDetectionPath = DetectionPath.PARENT_WALK
 			return table
 
 		# 4. Try review position's underlying object (handles Word UIA)
@@ -601,14 +617,14 @@ class TableProvider(PresentationProvider):
 
 		# 5. Check if underlying obj is a table
 		if underlyingObj.role in TABLE_ROLES:
-			self._lastDetectionPath = "review position"
+			self._lastDetectionPath = DetectionPath.REVIEW_POSITION
 			return underlyingObj
 
 		# Try underlying obj.table attribute (same role-validation as step 2).
 		try:
 			table = getattr(underlyingObj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
-				self._lastDetectionPath = "review position .table"
+				self._lastDetectionPath = DetectionPath.REVIEW_POSITION_TABLE
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
@@ -616,7 +632,7 @@ class TableProvider(PresentationProvider):
 		# 6. Scan underlying object's parent chain
 		table = findAncestorWithRole(underlyingObj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
 		if table is not None:
-			self._lastDetectionPath = "review position parent walk"
+			self._lastDetectionPath = DetectionPath.REVIEW_POSITION_PARENT_WALK
 		return table
 
 	def _findTableViaVbuf(self, obj: NVDAObject) -> NVDAObject | None:
@@ -636,8 +652,6 @@ class TableProvider(PresentationProvider):
 		:param obj: The navigator object (treeInterceptor must be a virtual buffer).
 		:returns: The table NVDAObject if found, None otherwise.
 		"""
-		from textInfos import FieldCommand
-
 		try:
 			reviewPos = api.getReviewPosition()
 			if reviewPos is None:  # type: ignore[reportUnnecessaryComparison]

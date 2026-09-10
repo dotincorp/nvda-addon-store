@@ -186,7 +186,6 @@ class PresentationRenderer(AutoPropertyObject):
 			refresh, mode toggle, initial paint). Forwarded to the active
 			presentation's ``isStillValid`` so it can react to specific event types.
 		"""
-		# Guard against calls during termination
 		if self._isTerminating:
 			return
 
@@ -227,7 +226,6 @@ class PresentationRenderer(AutoPropertyObject):
 		if presentation changed or returned True. Finally drops the review-fields
 		cache, whose entries are only valid for the cycle that made them.
 		"""
-		# Guard against calls during termination
 		if self._isTerminating:
 			return
 

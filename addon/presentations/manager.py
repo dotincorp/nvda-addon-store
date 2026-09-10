@@ -92,7 +92,6 @@ class PresentationManager:
 			or ``None`` when no discrete navigation event applies. Forwarded to
 			``isStillValid`` so presentations can react to specific event types.
 		"""
-		# 1. Check forced presentation
 		if self._forcedPresentation:
 			if self._forcedPresentation.isStillValid(triggerReason):
 				self._activePresentation = self._forcedPresentation
@@ -101,17 +100,12 @@ class PresentationManager:
 				log.debug("Forced presentation %s no longer valid", self._forcedPresentation.name)
 				self._forcedPresentation = None
 
-		# 2. Walk the providers in priority order. Reaching the active
-		# presentation's own provider with the presentation still valid means
-		# every higher-priority provider has already declined this object, so
-		# the presentation on screen is the right one — reuse it rather than
-		# paying its provider's detection to be told the same thing. Only
-		# providers that opt in via ``reusesActivePresentation`` take this
-		# shortcut; for the rest ``canProvide`` remains the authority.
+		# Arriving at the active presentation's own provider proves every
+		# higher-priority provider has already declined this object.
 		activePresentation = self._activePresentation
 		activeProvider = activePresentation.provider if activePresentation else None
+		# None until the presentation has been asked, so it is asked once.
 		activeStillValid: bool | None = None
-		"""``None`` until the active presentation has been asked, so it is asked once."""
 		matchingProvider: PresentationProvider | None = None
 		for provider in self._providers:
 			if (
@@ -132,11 +126,8 @@ class PresentationManager:
 			self._activePresentation = None
 			return
 
-		# 3. Same provider and still valid: keep the presentation. Every provider
-		# gets this, opted in or not — the opt-in above only decides whether
-		# ``canProvide`` had to run first. Rebuilding instead is not free: a
-		# presentation's constructor can carry real work, as
-		# ``LibraryBraillePresentation``'s blocking library bootstrap does.
+		# Rebuilding is not free: a presentation's constructor can carry real
+		# work, as ``LibraryBraillePresentation``'s blocking library bootstrap does.
 		if activePresentation is not None and matchingProvider is activeProvider:
 			if activeStillValid is None:
 				activeStillValid = activePresentation.isStillValid(triggerReason)
