@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import braille
 import config
 from braille import Region
 from logHandler import log
@@ -332,8 +333,6 @@ def _getActiveDotPadDriver() -> BrailleDisplayDriver | None:
 	``patch("addon.presentations.braille._getActiveDotPadDriver", ...)``.
 	"""
 	try:
-		import braille
-
 		display = braille.handler.display  # type: ignore[union-attr]
 	except Exception:
 		return None

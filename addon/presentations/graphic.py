@@ -34,6 +34,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import addonHandler
+import braille
 import controlTypes
 import inputCore
 from globalCommands import SCRCAT_BRAILLE
@@ -401,8 +402,6 @@ class GraphicPresentation(Presentation):
 	def _getActiveDriver(self) -> BrailleDisplayDriver | None:
 		"""Return the active BrailleDisplayDriver, or None if unavailable."""
 		try:
-			import braille
-
 			return cast("BrailleDisplayDriver | None", braille.handler.display)  # type: ignore[union-attr]
 		except Exception:
 			return None

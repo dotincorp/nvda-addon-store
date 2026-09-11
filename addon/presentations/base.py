@@ -16,6 +16,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+import braille
 from baseObject import ScriptableObject
 
 if TYPE_CHECKING:
@@ -31,12 +32,12 @@ def getActiveRenderer() -> PresentationRenderer | None:
 	"""The renderer driving the attached display, or None if there is none.
 
 	A presentation is handed a display, not a renderer, so anything that needs
-	to ask for a repaint has to find one. Module-level so tests can patch it,
-	and imported lazily because the renderer lives downstream of this module.
+	to ask for a repaint has to find one. Module-level so tests can patch it.
+
+	Guarded because the handler and its display can both be absent - during
+	shutdown, or with no display attached.
 	"""
 	try:
-		import braille
-
 		return getattr(braille.handler.display, "_renderer", None)  # type: ignore[union-attr]
 	except Exception:
 		return None
