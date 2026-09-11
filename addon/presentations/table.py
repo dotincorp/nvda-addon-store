@@ -421,17 +421,11 @@ class TablePresentation(Presentation):
 			return
 		renderer.requestRender()
 
-	# --- @script handlers ---
+	# The layout mirrors GraphicPresentation, so muscle memory carries between
+	# modes and both match the [DotPad320X Keys] map the library ships.
 	#
-	# The same layout as GraphicPresentation, so the muscle memory carries
-	# between modes and both match the [DotPad320X Keys] map the library ships:
-	# single key = one screenful, f1/f4 horizontal and f2/f3 vertical; the
-	# chords that graphic mode uses for a few dots move one row or column here;
-	# a long press jumps to that edge.
-	#
-	# f2+f4 (return to braille), f1+f3 / f2+f3 (enter graphic) and the
-	# longPress(f1+f3) / longPress(f2+f3) mode switches are deliberately left
-	# unbound so they keep falling through to the driver.
+	# f2+f4, f1+f3, f2+f3 and the longPress mode switches are deliberately left
+	# unbound, so they keep falling through to the driver.
 
 	@script(
 		# Translators: description of the table command to show the columns to the left.
