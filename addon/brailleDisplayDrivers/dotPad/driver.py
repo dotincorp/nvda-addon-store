@@ -21,6 +21,7 @@ from typing import (
 from weakref import ref
 
 import addonHandler
+import api
 import bdDetect
 import braille
 import core
@@ -2301,8 +2302,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		gesture="br(dotPad):longPress(f2+f3)",
 	)
 	def script_forceTableMode(self, _gesture: inputCore.InputGesture):
-		import api
-
 		if not self._renderer:
 			return
 
@@ -2350,8 +2349,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		the driver's worker. Works for non-Role.GRAPHIC objects too (via
 		``GraphicProvider.forceForObject``).
 		"""
-		import api
-
 		navObj = api.getNavigatorObject()
 		if self._renderer is None:
 			return
@@ -2381,8 +2378,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		presentation just dismissed. ``script_graphicDisplay`` needs no such
 		call because ``forcePresentation`` installs its presentation itself.
 		"""
-		import api
-
 		navObj = api.getNavigatorObject()
 		if self._renderer is None:
 			return
