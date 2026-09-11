@@ -82,15 +82,16 @@ class PresentationManager:
 		This method should be called whenever the navigator object changes.
 		It will select the most appropriate presentation based on:
 		1. Any forced presentation (if still valid)
-		2. The first provider that can provide, reusing active if same provider and valid
-		3. A new presentation from the matching provider
+		2. The active presentation, if it is still valid and its own provider is
+		   the first that can provide. A provider that opts into reuse is taken
+		   at its presentation's word before ``canProvide`` runs at all.
+		3. A new presentation from the first provider that can provide
 
 		:param obj: The current navigator object.
 		:param triggerReason: The triggering event (e.g. ``TriggerReason.CARET_MOVE``),
 			or ``None`` when no discrete navigation event applies. Forwarded to
 			``isStillValid`` so presentations can react to specific event types.
 		"""
-		# 1. Check forced presentation
 		if self._forcedPresentation:
 			if self._forcedPresentation.isStillValid(triggerReason):
 				self._activePresentation = self._forcedPresentation
@@ -99,9 +100,22 @@ class PresentationManager:
 				log.debug("Forced presentation %s no longer valid", self._forcedPresentation.name)
 				self._forcedPresentation = None
 
-		# 2. Find first provider that can provide
+		# Arriving at the active presentation's own provider proves every
+		# higher-priority provider has already declined this object.
+		activePresentation = self._activePresentation
+		activeProvider = activePresentation.provider if activePresentation else None
+		# None until the presentation has been asked, so it is asked once.
+		activeStillValid: bool | None = None
 		matchingProvider: PresentationProvider | None = None
 		for provider in self._providers:
+			if (
+				activePresentation is not None
+				and provider is activeProvider
+				and provider.reusesActivePresentation
+			):
+				activeStillValid = activePresentation.isStillValid(triggerReason)
+				if activeStillValid:
+					return
 			if provider.canProvide(obj):
 				matchingProvider = provider
 				break
@@ -112,13 +126,13 @@ class PresentationManager:
 			self._activePresentation = None
 			return
 
-		# 3. If same provider and still valid, reuse existing presentation
-		if (
-			self._activePresentation
-			and self._activePresentation.provider is matchingProvider
-			and self._activePresentation.isStillValid(triggerReason)
-		):
-			return
+		# Rebuilding is not free: a presentation's constructor can carry real
+		# work, as ``LibraryBraillePresentation``'s blocking library bootstrap does.
+		if activePresentation is not None and matchingProvider is activeProvider:
+			if activeStillValid is None:
+				activeStillValid = activePresentation.isStillValid(triggerReason)
+			if activeStillValid:
+				return
 
 		# 4. Create new presentation from matching provider
 		previousName = self._activePresentation.name if self._activePresentation else None

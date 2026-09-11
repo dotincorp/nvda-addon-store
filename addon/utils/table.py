@@ -12,16 +12,18 @@ DpTactileGraphicsBuffer.
 
 from __future__ import annotations
 
+import time
 from abc import ABC
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import api
 import core
 import eventHandler
 import textInfos
 from baseObject import AutoPropertyObject
+from IAccessibleHandler import IA2
 from controlTypes import (
 	ROLE_DATAGRID,
 	ROLE_DATAITEM,
@@ -35,6 +37,7 @@ from controlTypes import (
 )
 from logHandler import log
 from NVDAObjects import NVDAObject
+from NVDAObjects.IAccessible import IAccessible
 from tactile.braille import drawBrailleCells as drawBrailleCellsOnTactileBuffer
 
 if TYPE_CHECKING:
@@ -69,6 +72,29 @@ TABLE_CELL_ROLES: list[Role] = [ROLE_DATAITEM, ROLE_TABLECELL, ROLE_TABLECOLUMNH
 CELL_TEXT_FILTER_CHARS: set[str] = {
 	"\ufffc",  # Object Replacement Character (used by Google Docs for empty cells)
 }
+
+
+_CellT = TypeVar("_CellT")
+
+
+def _timeIteration(cells: Iterable[_CellT], stats: TableDrawStats) -> Iterator[_CellT]:
+	"""Yield from ``cells``, accumulating the time spent producing each one.
+
+	Fetching cells is a separate cost from drawing them, and on a table the
+	application serves out of process it dominates. Timing it here rather than
+	inside the producer keeps every producer path measured the same way.
+	"""
+	iterator = iter(cells)
+	while True:
+		started = time.perf_counter()
+		try:
+			cell = next(iterator)
+		except StopIteration:
+			stats.cellFetchSeconds += time.perf_counter() - started
+			return
+		stats.cellFetchSeconds += time.perf_counter() - started
+		stats.cellsMaterialised += 1
+		yield cell
 
 
 def _filterCellText(text: str) -> str:
@@ -108,6 +134,25 @@ def findAncestorWithRole(
 			return current
 		current = current.parent
 	return None
+
+
+@dataclass
+class TableDrawStats:
+	"""What one ``drawTable`` pass cost, for the debug line it emits.
+
+	``rowsMaterialised`` is the number this exists for: NVDA builds an
+	NVDAObject for every child it hands us, so a table that exposes hundreds of
+	rows costs hundreds of object constructions to draw the handful that fit on
+	the display. Comparing it against ``cellsDrawn`` says whether a slow table
+	is slow in row collection or somewhere else.
+	"""
+
+	cellsDrawn: int = 0
+	cellsMaterialised: int = 0
+	rowsMaterialised: int = 0
+	cellFetchSeconds: float = 0.0
+	cellTextSeconds: float = 0.0
+	totalSeconds: float = 0.0
 
 
 @dataclass
@@ -185,6 +230,7 @@ class Table(AutoPropertyObject):
 		self.firstVisibleCol = firstVisibleCol
 		self.numVisibleCols: int | None = None
 		self.numVisibleRows: int | None = None
+		self.lastDrawStats = TableDrawStats()
 
 		if obj.role in TABLE_ROLES:
 			self.tableObj = obj
@@ -198,6 +244,111 @@ class Table(AutoPropertyObject):
 		self.hCellPadding = hCellPadding
 		self.vCellpadding = vCellPadding
 
+	def _makeCellFromIA2(self, rawCell: Any) -> NVDAObject:
+		"""Wrap a raw IAccessible cell pointer in an NVDAObject.
+
+		Split out so tests can exercise the window fetch without COM.
+		"""
+		return IAccessible(
+			IAccessibleObject=rawCell.QueryInterface(IA2.IAccessible2),
+			IAccessibleChildID=0,
+		)
+
+	def _getIA2CellAccessor(self) -> Callable[[int, int], Any] | None:
+		"""Return a ``(rowIndex, colIndex) -> raw cell`` callable, or None.
+
+		Both IAccessibleTable2 and its predecessor can hand back a single cell by
+		coordinate. Mirrors what NVDA's own table navigation does in
+		``NVDAObjects.IAccessible.ia2Web``.
+		"""
+		table2: Any = getattr(self.tableObj, "IAccessibleTable2Object", None)
+		if table2 is not None:
+
+			def cellAt(rowIndex: int, colIndex: int) -> Any:
+				return table2.cellAt(rowIndex, colIndex)
+
+			return cellAt
+
+		table1: Any = getattr(self.tableObj, "IAccessibleTableObject", None)
+		if table1 is not None:
+
+			def accessibleAt(rowIndex: int, colIndex: int) -> Any:
+				return table1.accessibleAt(rowIndex, colIndex)
+
+			return accessibleAt
+
+		return None
+
+	def _getCellWindow(
+		self,
+		startAtCol: int,
+		startAtRow: int,
+		maxCellsPerRow: int,
+		maxRows: int | None,
+	) -> list[NVDAObject] | None:
+		"""Fetch just the cells that will be drawn, one lookup each.
+
+		Walking rows instead means asking for ``row.children``, which NVDA builds
+		eagerly: the whole row is turned into NVDAObjects however few columns fit
+		on the display. On a table served out of process that is the entire cost
+		of a draw — measured at ~11ms per cell object in Google Sheets, so a
+		25-column table cost ~1.7s to show six columns of it.
+
+		:returns: The cells in the window, or None if the table cannot serve
+			cells by coordinate and the caller should walk rows instead. A window
+			that should have held cells but yielded none also returns None, so a
+			table that exposes the interface but refuses every lookup gets the
+			row walk rather than an empty frame. That is a second chance, not a
+			guarantee: a window covered entirely by one cell spanning in from
+			outside it comes back empty from either path.
+		"""
+		accessor = self._getIA2CellAccessor()
+		if accessor is None:
+			return None
+
+		endCol = startAtCol + maxCellsPerRow
+		if self.tableColumnCount is not None:
+			endCol = min(endCol, self.tableColumnCount)
+		endRow = startAtRow + maxRows if maxRows is not None else self.tableRowCount
+		if endRow is None:
+			# No row count to bound an open-ended request; walking rows at least
+			# terminates on its own.
+			return None
+		if self.tableRowCount is not None:
+			endRow = min(endRow, self.tableRowCount)
+
+		cells: list[NVDAObject] = []
+		seen: set[tuple[Any, Any]] = set()
+		for rowIndex in range(startAtRow, endRow):
+			for colIndex in range(startAtCol, endCol):
+				try:
+					rawCell = accessor(rowIndex, colIndex)
+					if rawCell is None:
+						continue
+					cell = cast(Any, self._makeCellFromIA2(rawCell))
+					# A merged cell answers for every coordinate it spans, so the
+					# same cell comes back more than once; drawTable expects each
+					# one only once and handles the span itself.
+					key = (cell.rowNumber, cell.columnNumber)
+				except Exception:
+					# Ragged rows, hidden cells and out-of-range coordinates all
+					# raise here. One missing cell must not lose the whole draw.
+					continue
+				if key in seen:
+					continue
+				seen.add(key)
+				# A cell spanning into the window from above or to the left
+				# answers for these coordinates but starts outside them, so
+				# drawTable would place it at a negative offset and paint a
+				# fragment of it over the first visible row or column. The row
+				# walk never produced such a cell; skip it for parity.
+				if (cell.rowNumber - 1) < startAtRow or (cell.columnNumber - 1) < startAtCol:
+					continue
+				cells.append(cell)
+		if not cells and endRow > startAtRow and endCol > startAtCol:
+			return None
+		return cells
+
 	def getTableCells(
 		self,
 		startAtCol: int = 0,
@@ -205,6 +356,11 @@ class Table(AutoPropertyObject):
 		maxCellsPerRow: int = 20,
 		maxRows: int | None = None,
 	) -> Iterator[FakeNVDAObjectCell]:
+		window = self._getCellWindow(startAtCol, startAtRow, maxCellsPerRow, maxRows)
+		if window is not None:
+			yield from cast(list[FakeNVDAObjectCell], window)
+			return
+
 		rows: list[NVDAObject] = []
 		for c in self.tableObj.children:
 			if c.role == ROLE_TABLEROW:
@@ -213,6 +369,7 @@ class Table(AutoPropertyObject):
 				for gc in c.children:
 					if gc.role == ROLE_TABLEROW:
 						rows.append(gc)
+		self.lastDrawStats.rowsMaterialised = len(rows)
 
 		endCol = startAtCol + maxCellsPerRow
 		endRow = startAtRow + maxRows if maxRows is not None else None
@@ -301,6 +458,9 @@ class Table(AutoPropertyObject):
 		firstRow: int | None = None,
 		firstCol: int | None = None,
 	):
+		drawStarted = time.perf_counter()
+		self.lastDrawStats = TableDrawStats()
+
 		if height is None:
 			height = buffer.height
 		if width is None:
@@ -359,23 +519,27 @@ class Table(AutoPropertyObject):
 		self.firstVisibleCol = firstCol
 		self.firstVisibleRow = firstRow
 
-		for cell in self.getTableCells(
+		cellsToDraw = self.getTableCells(
 			firstCol,
 			firstRow,
 			maxCellsPerRow=numVisibleCols,
 			maxRows=numVisibleRows,
-		):
+		)
+		for cell in _timeIteration(cellsToDraw, self.lastDrawStats):
 			rowNum = cell.rowNumber - 1
 			colNum = cell.columnNumber - 1
-			textInfo: textInfos.TextInfo | None = None
-			if isinstance(cell, NVDAObject):
-				textInfo = cell.makeTextInfo(textInfos.POSITION_ALL)
-			text = _filterCellText(
-				cast(
-					str,
-					cell.name or getattr(textInfo, "text", "  "),
-				),
-			)
+			# makeTextInfo is a cross-process call, and the name usually carries
+			# the text already.
+			textStarted = time.perf_counter()
+			text = cell.name
+			if not text:
+				textInfo: textInfos.TextInfo | None = None
+				if isinstance(cell, NVDAObject):
+					textInfo = cell.makeTextInfo(textInfos.POSITION_ALL)
+				text = getattr(textInfo, "text", "  ")
+			text = _filterCellText(cast(str, text))
+			self.lastDrawStats.cellTextSeconds += time.perf_counter() - textStarted
+			self.lastDrawStats.cellsDrawn += 1
 			if len(text) > self.maxCharsPerCell:
 				text = text.strip()
 			if len(text) < self.maxCharsPerCell:
@@ -393,6 +557,32 @@ class Table(AutoPropertyObject):
 				border=self.tableCellBorder,
 				borderBottom=borderBottom,
 				colspan=cell.columnSpan,
+			)
+
+		stats = self.lastDrawStats
+		stats.totalSeconds = time.perf_counter() - drawStarted
+		if log.isEnabledFor(log.DEBUG):
+			# One line per draw, and only when debug logging is on: this is the
+			# measurement a slow-table report is diagnosed from, and re-deriving
+			# it means shipping the user another instrumented build.
+			try:
+				tableSize = "%sx%s" % (self.tableRowCount, self.tableColumnCount)
+			except Exception:
+				# Both are COM reads, and an application that is busy can refuse
+				# them. A diagnostic must never be able to break a render.
+				tableSize = "unknown"
+			log.debug(
+				"Table draw: %d cells in %.1fms (fetch %.1fms, cell text %.1fms), "
+				"%d cells and %d rows materialised for %sx%s visible, table %s",
+				stats.cellsDrawn,
+				stats.totalSeconds * 1000,
+				stats.cellFetchSeconds * 1000,
+				stats.cellTextSeconds * 1000,
+				stats.cellsMaterialised,
+				stats.rowsMaterialised,
+				numVisibleRows,
+				numVisibleCols,
+				tableSize,
 			)
 
 	def drawCell(
@@ -474,7 +664,10 @@ class Table(AutoPropertyObject):
 		if self.numVisibleCols is None or self.numVisibleRows is None:
 			# Table not yet drawn
 			return False
-		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:  # type: ignore
+		colCount = self.tableColumnCount
+		# A table that does not report its width cannot say where a row ends, so
+		# there is nothing to wrap at; the plain right step still refuses safely.
+		if colCount is not None and firstVisibleCol + self.numVisibleCols >= colCount:
 			# At end of row, wrap to first column of next row
 			if self.scrollDown():
 				self.firstVisibleCol = 0

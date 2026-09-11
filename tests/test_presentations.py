@@ -407,6 +407,104 @@ class TestPresentationManagerUpdate(unittest.TestCase):
 		self.assertFalse(self.manager.hasActivePresentation)
 
 
+class TestPresentationManagerReuse(unittest.TestCase):
+	"""update() must not re-run detection for a presentation that still holds.
+
+	Detection is the expensive half of arbitration (the table provider walks
+	parents and document structure), and it was being paid on every navigation
+	event even when the presentation it would produce was already on screen.
+	"""
+
+	def setUp(self):
+		self.mock_display = MagicMock()
+		self.manager = PresentationManager(self.mock_display)
+		self.mock_obj = MagicMock()
+
+	def _makeActive(self, provider: MockProvider) -> None:
+		"""Run one update so ``provider``'s presentation becomes the active one."""
+		self.manager.update(self.mock_obj)
+		self.assertIs(self.manager.activePresentation, provider._presentation)
+
+	def _makeReusingProvider(self, name: str, should_yield: bool = True) -> MockProvider:
+		"""A provider that opts into keeping its still-valid presentation."""
+		provider = MockProvider(name=name, should_yield=should_yield)
+		provider.reusesActivePresentation = True
+		return provider
+
+	def test_valid_active_presentation_is_reused_without_detection(self):
+		higher = MockProvider(name="higher", should_yield=False)
+		active = self._makeReusingProvider("active")
+		self.manager.registerProvider(higher)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		with patch.object(active, "canProvide", wraps=active.canProvide) as mockCanProvide:
+			self.manager.update(self.mock_obj)
+
+		mockCanProvide.assert_not_called()
+		self.assertIs(self.manager.activePresentation, active._presentation)
+
+	def test_higher_priority_provider_still_takes_over(self):
+		higher = MockProvider(name="higher", should_yield=False)
+		active = self._makeReusingProvider("active")
+		self.manager.registerProvider(higher)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		higher._should_yield = True
+		self.manager.update(self.mock_obj)
+
+		self.assertIs(self.manager.activePresentation, higher._presentation)
+
+	def test_invalid_active_presentation_falls_through_to_detection(self):
+		active = self._makeReusingProvider("active")
+		fallback = MockProvider(name="fallback", should_yield=True)
+		self.manager.registerProvider(active)
+		self.manager.registerProvider(fallback)
+		self._makeActive(active)
+
+		# The presentation reports it no longer applies, and its provider no
+		# longer claims the object either: the next provider must win.
+		active._presentation._is_valid = False
+		active._should_yield = False
+		self.manager.update(self.mock_obj)
+
+		self.assertIs(self.manager.activePresentation, fallback._presentation)
+
+	def test_presentation_is_not_rebuilt_when_its_provider_still_claims_the_object(self):
+		"""Reuse is not limited to opted-in providers; only skipping canProvide is.
+
+		Rebuilding is not free — LibraryBraillePresentation's constructor makes a
+		blocking library call and re-enables the library's UIA subscription — so a
+		provider that has not opted in must still keep its valid presentation.
+		"""
+		active = MockProvider(name="active", should_yield=True)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+		self.assertEqual(active._call_count, 1)
+
+		self.manager.update(self.mock_obj)
+		self.manager.update(self.mock_obj)
+
+		self.assertEqual(active._call_count, 1)
+		self.assertIs(self.manager.activePresentation, active._presentation)
+
+	def test_provider_that_has_not_opted_in_is_asked_every_time(self):
+		"""Without the opt-in, canProvide stays the authority.
+
+		A provider whose availability is its own state (a mode toggle, say) must
+		still be able to withdraw a presentation that reports itself valid.
+		"""
+		active = MockProvider(name="active", should_yield=True)
+		self.manager.registerProvider(active)
+		self._makeActive(active)
+
+		active._should_yield = False
+		self.manager.update(self.mock_obj)
+
+		self.assertIsNone(self.manager.activePresentation)
+
+
 class TestPresentationManagerForce(unittest.TestCase):
 	"""Tests for forced presentations in PresentationManager."""
 
@@ -1823,6 +1921,103 @@ class TestTableProviderFindTableViaVbuf(unittest.TestCase):
 			self.provider._findTable(obj)
 
 		mock_ancestor.assert_not_called()
+
+
+class TestFindTableWithNonVirtualBufferTreeInterceptor(unittest.TestCase):
+	"""Tests for _findTable() when the TreeInterceptor is not a virtual buffer.
+
+	Excel worksheets (``ExcelBrowseModeTreeInterceptor``) and Word documents
+	(``WordDocumentTreeInterceptor``) attach a TreeInterceptor that is a plain
+	``BrowseModeTreeInterceptor``, not a ``VirtualBuffer``. It cannot resolve a
+	node identifier, so the virtual-buffer fast path can never find a table
+	there and _findTable must fall through to the parent walk.
+	"""
+
+	def setUp(self):
+		self.provider = TableProvider()
+		# ``spec=[]`` matters: a bare MagicMock answers hasattr for every
+		# attribute, including getNVDAObjectFromIdentifier, so it would be
+		# mistaken for a virtual buffer.
+		self.nonVbufTreeInterceptor = MagicMock(spec=[])
+		self.vbufTreeInterceptor = MagicMock()
+
+	def _makeCellInTable(self, treeInterceptor):
+		"""Build a table cell whose parent is a table, as Excel exposes it."""
+		table = MockTableObject(role=controlTypes.Role.TABLE)
+		cell = MockTableObject(role=controlTypes.Role.TABLECELL)
+		cell.parent = table
+		cell.treeInterceptor = treeInterceptor
+		return cell, table
+
+	def test_non_vbuf_tree_interceptor_falls_through_to_parent_walk(self):
+		"""A non-vbuf TreeInterceptor must not stop the parent walk."""
+		cell, table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		result = self.provider._findTable(cell)
+
+		self.assertIs(result, table)
+
+	def test_non_vbuf_tree_interceptor_does_not_use_vbuf_path(self):
+		"""The virtual-buffer lookup must be skipped entirely for a non-vbuf TI."""
+		cell, _table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		with patch.object(self.provider, "_findTableViaVbuf") as mockVbufLookup:
+			self.provider._findTable(cell)
+
+		mockVbufLookup.assert_not_called()
+
+	def test_can_provide_finds_excel_shaped_table(self):
+		"""canProvide must accept an Excel-shaped cell (cell -> worksheet, TI attached)."""
+		cell, _table = self._makeCellInTable(self.nonVbufTreeInterceptor)
+
+		self.assertTrue(self.provider.canProvide(cell))
+
+	def test_vbuf_tree_interceptor_still_skips_parent_walk(self):
+		"""A real virtual buffer keeps the fast path: no IA2 parent walk."""
+		cell, _table = self._makeCellInTable(self.vbufTreeInterceptor)
+
+		with patch("addon.presentations.table.findAncestorWithRole") as mockAncestorWalk:
+			with patch.object(self.provider, "_findTableViaVbuf", return_value=None) as mockVbufLookup:
+				result = self.provider._findTable(cell)
+
+		mockVbufLookup.assert_called_once_with(cell)
+		mockAncestorWalk.assert_not_called()
+		self.assertIsNone(result)
+
+
+class TestFindTableViaVbufDataGrid(unittest.TestCase):
+	"""_findTableViaVbuf must accept every role in TABLE_ROLES, not just TABLE."""
+
+	def setUp(self):
+		self.provider = TableProvider()
+		self.mock_vbuf = MagicMock()
+
+	@patch("addon.presentations.table.api")
+	def test_finds_datagrid_role_in_fields(self, mock_api):
+		"""An ARIA role="grid" surfaces as DATAGRID and must still be detected."""
+		from textInfos import ControlField, FieldCommand
+
+		obj = MockTableObject(role=controlTypes.Role.LINK)
+		obj.treeInterceptor = self.mock_vbuf
+
+		field = ControlField(
+			{
+				"role": controlTypes.Role.DATAGRID,
+				"controlIdentifier_docHandle": "7",
+				"controlIdentifier_ID": "9",
+			},
+		)
+		mock_review_pos = MagicMock()
+		mock_review_pos.getTextWithFields.return_value = [FieldCommand("controlStart", field)]
+		mock_api.getReviewPosition.return_value = mock_review_pos
+
+		expectedTable = MockTableObject(role=controlTypes.Role.DATAGRID)
+		self.mock_vbuf.getNVDAObjectFromIdentifier.return_value = expectedTable
+
+		result = self.provider._findTableViaVbuf(obj)
+
+		self.assertIs(result, expectedTable)
+		self.mock_vbuf.getNVDAObjectFromIdentifier.assert_called_once_with(7, 9)
 
 
 class TestTableProviderCanProvideCache(unittest.TestCase):

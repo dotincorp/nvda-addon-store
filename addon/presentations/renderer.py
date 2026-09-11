@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from . import PresentationManager, ScreenCaptureProvider
+	from ..utils import reviewFields
 	from ..extension_points.review_tracking import (
 		reviewMove,
 		browseModeMove,
@@ -38,6 +39,7 @@ else:
 	DpTactileGraphicsBuffer = addon.loadModule(
 		"brailleDisplayDrivers.dotPad.tactileBuffer",
 	).DpTactileGraphicsBuffer
+	reviewFields = addon.loadModule("utils.reviewFields")
 	review_tracking_extension_points = addon.loadModule("extension_points.review_tracking")
 	reviewMove = review_tracking_extension_points.reviewMove
 	browseModeMove = review_tracking_extension_points.browseModeMove
@@ -112,6 +114,10 @@ class PresentationRenderer(AutoPropertyObject):
 		with self.queuedWriteLock:
 			self.queuedWrite = None
 
+		# The cache holds the last review position's object; the core cycle that
+		# would normally drop it has already been unregistered above.
+		reviewFields.clearCache()
+
 	def initialDisplay(self) -> None:
 		"""Trigger initial display update."""
 		try:
@@ -180,7 +186,6 @@ class PresentationRenderer(AutoPropertyObject):
 			refresh, mode toggle, initial paint). Forwarded to the active
 			presentation's ``isStillValid`` so it can react to specific event types.
 		"""
-		# Guard against calls during termination
 		if self._isTerminating:
 			return
 
@@ -218,9 +223,9 @@ class PresentationRenderer(AutoPropertyObject):
 		"""Handle core cycle event - render once per cycle.
 
 		Calls optional handleCoreCycle() on active presentation, then renders
-		if presentation changed or returned True.
+		if presentation changed or returned True. Finally drops the review-fields
+		cache, whose entries are only valid for the cycle that made them.
 		"""
-		# Guard against calls during termination
 		if self._isTerminating:
 			return
 
@@ -235,6 +240,10 @@ class PresentationRenderer(AutoPropertyObject):
 		if needsRender:
 			self._needsRender = False
 			self.update()
+
+		# Selection and rendering within this cycle share one walk of the review
+		# position's fields; nothing may carry over into the next cycle.
+		reviewFields.clearCache()
 
 	def update(self) -> None:
 		"""Update the display with the current presentation's rendered content.

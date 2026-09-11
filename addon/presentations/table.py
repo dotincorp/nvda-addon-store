@@ -12,10 +12,13 @@ table content to the tactile display.
 
 from __future__ import annotations
 
+import time
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 import api
 from logHandler import log
+from textInfos import FieldCommand
 
 from .base import Presentation, PresentationProvider
 
@@ -27,6 +30,7 @@ if TYPE_CHECKING:
 	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
+	from ..utils import reviewFields
 	from ..utils.table import Table, ExcelTable, TABLE_ROLES, TABLE_CELL_ROLES, findAncestorWithRole
 
 # Runtime imports using NVDA's addon module loading
@@ -37,6 +41,7 @@ if not TYPE_CHECKING:
 	DpTactileGraphicsBuffer = addon.loadModule(
 		"brailleDisplayDrivers.dotPad.tactileBuffer",
 	).DpTactileGraphicsBuffer
+	reviewFields = addon.loadModule("utils.reviewFields")
 	table_module = addon.loadModule("utils.table")
 	Table = table_module.Table
 	ExcelTable = table_module.ExcelTable
@@ -187,7 +192,6 @@ class TablePresentation(Presentation):
 		:returns: Tuple of (rowNumber, columnNumber) 1-based, both None if not found.
 		"""
 		from controlTypes import Role
-		from textInfos import FieldCommand
 
 		try:
 			reviewPos = api.getReviewPosition()
@@ -195,7 +199,7 @@ class TablePresentation(Presentation):
 				log.debug("_getCellPositionViaTextFields: no review position")
 				return None, None
 
-			fields = reviewPos.getTextWithFields()
+			fields = reviewFields.getTextWithFields(reviewPos)
 
 			# Look for a controlStart field with TABLECELL role
 			# Iterate in reverse to find innermost cell first (handles nested tables)
@@ -383,6 +387,25 @@ class TablePresentation(Presentation):
 		return "table"
 
 
+class DetectionPath(StrEnum):
+	"""Which branch of ``_findTable`` answered.
+
+	Detection is the expensive half of arbitration and runs on every navigation
+	event, so the debug line reports which branch paid for it - that is what
+	says where an optimisation belongs.
+	"""
+
+	NOT_FOUND = "not found"
+	SELF = "self"
+	OBJ_TABLE = "obj.table"
+	VBUF = "vbuf"
+	VBUF_MISS = "vbuf (miss)"
+	PARENT_WALK = "parent walk"
+	REVIEW_POSITION = "review position"
+	REVIEW_POSITION_TABLE = "review position .table"
+	REVIEW_POSITION_PARENT_WALK = "review position parent walk"
+
+
 class TableProvider(PresentationProvider):
 	"""Provider that creates table presentations.
 
@@ -393,6 +416,12 @@ class TableProvider(PresentationProvider):
 	@property
 	def name(self) -> str:
 		return "table"
+
+	reusesActivePresentation = True
+	"""Table detection walks parents and document structure, which is far more
+	expensive than ``TablePresentation.isStillValid``. Availability is a property
+	of the object being navigated, not of this provider, so the presentation's
+	own validity check is the complete answer."""
 
 	AUTO_DETECT_PARENT_DEPTH: int = 3
 	"""Maximum number of parent levels to scan during auto-detection."""
@@ -405,6 +434,8 @@ class TableProvider(PresentationProvider):
 		# Avoids expensive _findTable being called twice
 		self._cachedTable: NVDAObject | None = None
 		self._cachedForObj: NVDAObject | None = None
+		self._lastDetectionPath: DetectionPath | None = None
+		"""Which branch of _findTable resolved the last lookup, for the debug line."""
 
 	def canProvide(self, obj: NVDAObject) -> bool:
 		"""Check if this provider can create a presentation for the object.
@@ -419,7 +450,17 @@ class TableProvider(PresentationProvider):
 		# a second expensive lookup.
 		if obj is self._cachedForObj:
 			return self._cachedTable is not None
+		detectionStarted = time.perf_counter()
 		tableObj = self._findTable(obj, maxDepth=self.AUTO_DETECT_PARENT_DEPTH)
+		if log.isEnabledFor(log.DEBUG):
+			log.debug(
+				# %r on the role: Role is an IntEnum, so %s prints the bare number.
+				"Table detection: %s in %.1fms via %s (role %r)",
+				"found" if tableObj is not None else "not found",
+				(time.perf_counter() - detectionStarted) * 1000,
+				self._lastDetectionPath,
+				getattr(obj, "role", None),
+			)
 		# Cache for use in _doCreatePresentation
 		self._cachedTable = tableObj
 		self._cachedForObj = obj
@@ -514,9 +555,10 @@ class TableProvider(PresentationProvider):
 		1. If obj itself is a table, returns it
 		2. If obj has a .table attribute (NVDA-provided), returns that
 		   This works for native table support (Word, etc.)
-		3a. Browse mode (obj.treeInterceptor is set): virtual buffer in-memory lookup
+		3a. Virtual buffer (treeInterceptor exposes getNVDAObjectFromIdentifier): in-memory lookup
 		    via _findTableViaVbuf — zero IA2 COM calls in the not-found case.
-		3b. Non-browse: IA2 parent walk on obj's parent chain
+		3b. Everything else, non-virtual-buffer TreeInterceptors (Excel, Word)
+		    included: IA2 parent walk on obj's parent chain
 		4. Gets underlying object via review position (handles Word UIA)
 		5. If underlying obj is a table or has .table attribute, returns that
 		6. Scans underlying object's parent chain for a table
@@ -524,12 +566,16 @@ class TableProvider(PresentationProvider):
 		:param obj: The starting NVDA object.
 		:param maxDepth: Maximum parent levels to scan (steps 3b/6). None = MAX_PARENT_SCAN_DEPTH.
 		    Ignored for the virtual buffer path (step 3a) which always searches the full ancestor chain.
+		    A non-virtual-buffer TreeInterceptor takes the parent-walk path, not 3a.
 		:returns: The table NVDAObject if found, None otherwise.
 		"""
 		depth = maxDepth if maxDepth is not None else self.MAX_PARENT_SCAN_DEPTH
 
+		self._lastDetectionPath = DetectionPath.NOT_FOUND
+
 		# 1. If obj IS a table, return it
 		if obj.role in TABLE_ROLES:
+			self._lastDetectionPath = DetectionPath.SELF
 			return obj
 
 		# 2. Try obj.table attribute first (works for Word IAccessible, native tables).
@@ -540,19 +586,28 @@ class TableProvider(PresentationProvider):
 		try:
 			table = getattr(obj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
+				self._lastDetectionPath = DetectionPath.OBJ_TABLE
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
 
-		# 3a. Browse mode: use virtual buffer in-memory data — no IA2 COM calls.
+		# 3a. Virtual buffers only: use their in-memory field data — no IA2 COM calls.
 		# The vbuf already has the full parsed ancestor chain; steps 4-6 (review
 		# position parent walk) are unnecessary and skipped for this path.
-		if getattr(obj, "treeInterceptor", None) is not None:
-			return self._findTableViaVbuf(obj)
+		# A TreeInterceptor that is not a virtual buffer cannot resolve a node
+		# identifier - Excel worksheets and Word documents attach one of those -
+		# so treating "has a TreeInterceptor" as "is browse mode" would strand
+		# every Excel cell on the fast path and never find its worksheet.
+		treeInterceptor = getattr(obj, "treeInterceptor", None)
+		if treeInterceptor is not None and hasattr(treeInterceptor, "getNVDAObjectFromIdentifier"):
+			tableObj = self._findTableViaVbuf(obj)
+			self._lastDetectionPath = DetectionPath.VBUF if tableObj is not None else DetectionPath.VBUF_MISS
+			return tableObj
 
 		# 3b. Non-browse: scan obj's IA2 parent chain
 		table = findAncestorWithRole(obj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
 		if table is not None:
+			self._lastDetectionPath = DetectionPath.PARENT_WALK
 			return table
 
 		# 4. Try review position's underlying object (handles Word UIA)
@@ -562,23 +617,30 @@ class TableProvider(PresentationProvider):
 
 		# 5. Check if underlying obj is a table
 		if underlyingObj.role in TABLE_ROLES:
+			self._lastDetectionPath = DetectionPath.REVIEW_POSITION
 			return underlyingObj
 
 		# Try underlying obj.table attribute (same role-validation as step 2).
 		try:
 			table = getattr(underlyingObj, "table", None)
 			if table is not None and table.role in TABLE_ROLES:
+				self._lastDetectionPath = DetectionPath.REVIEW_POSITION_TABLE
 				return table
 		except (NotImplementedError, AttributeError):
 			pass
 
 		# 6. Scan underlying object's parent chain
-		return findAncestorWithRole(underlyingObj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
+		table = findAncestorWithRole(underlyingObj, TABLE_ROLES, maxDepth=depth, includeSelf=False)
+		if table is not None:
+			self._lastDetectionPath = DetectionPath.REVIEW_POSITION_PARENT_WALK
+		return table
 
 	def _findTableViaVbuf(self, obj: NVDAObject) -> NVDAObject | None:
 		"""Find a table ancestor using the virtual buffer's in-memory field data.
 
-		Called when obj.treeInterceptor is set (browse mode). Uses the review
+		Called only when obj.treeInterceptor is a virtual buffer - a plain
+		BrowseModeTreeInterceptor emits neither the controlIdentifier fields nor
+		the getNVDAObjectFromIdentifier method this needs. Uses the review
 		position's getTextWithFields() — the same proven path used by
 		_getCellPositionViaTextFields — so zero IA2 COM calls in the not-found
 		case (most links and paragraphs) and one accChild COM call in the
@@ -587,17 +649,14 @@ class TableProvider(PresentationProvider):
 		Layout tables are not excluded, matching the existing IA2 parent-walk
 		behaviour in steps 3b/6.
 
-		:param obj: The navigator object (treeInterceptor must be set).
+		:param obj: The navigator object (treeInterceptor must be a virtual buffer).
 		:returns: The table NVDAObject if found, None otherwise.
 		"""
-		from controlTypes import Role
-		from textInfos import FieldCommand
-
 		try:
 			reviewPos = api.getReviewPosition()
 			if reviewPos is None:  # type: ignore[reportUnnecessaryComparison]
 				return None
-			fields = reviewPos.getTextWithFields()
+			fields = reviewFields.getTextWithFields(reviewPos)
 		except Exception:
 			log.debugWarning("_findTableViaVbuf: failed to get review position fields", exc_info=True)
 			return None
@@ -606,7 +665,9 @@ class TableProvider(PresentationProvider):
 		if vbuf is None:
 			return None
 
-		# Walk fields in reverse order (innermost ancestor first) to find TABLE role.
+		# Walk fields in reverse order (innermost ancestor first) to find a table
+		# role. DATAGRID counts as well as TABLE: an ARIA role="grid" surfaces as
+		# the former, and TableClass accepts both.
 		for field in reversed(fields):
 			if not isinstance(field, FieldCommand):
 				continue
@@ -615,7 +676,7 @@ class TableProvider(PresentationProvider):
 			fieldData = field.field
 			if fieldData is None:
 				continue
-			if fieldData.get("role") != Role.TABLE:
+			if fieldData.get("role") not in TABLE_ROLES:
 				continue
 
 			# Found a table control field — materialise the NVDAObject.
