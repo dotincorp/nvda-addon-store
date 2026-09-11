@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Changes destined for the next release.
 
 ### Added
+- Table mode shows a table as a tactile grid on the 300-cell display, with the text of the cell you are on in braille on the 20-cell display. It works in Microsoft Excel, in tables on web pages, and in tables in documents.
 - Table mode now has the same buttons as tactile graphics mode. F1 and F4 show the previous and next screenful of columns, F2 and F3 the previous and next screenful of rows, and holding any of the four jumps to that edge of the table. Left Pan+F1, Right Pan+F4, F1+F2 and F3+F4 move a single column or row. See the user guide for the full map.
 - A user guide is now bundled with the add-on and opens from the Help button in NVDA's add-on store. It covers connecting over Bluetooth and USB, the navigation buttons, the relevant NVDA braille settings, tactile graphics mode, Excel and Word integration, and the Dot Pad Display Viewer. It is translatable through NVDA's Crowdin project.
 - Support for NVDA 2026.1 and later (64-bit).
@@ -18,7 +19,6 @@ Changes destined for the next release.
 - Long press gesture support: gestures held for 1.5+ seconds produce `longPress(keys)` format, preventing accidental display refreshes during battery status checks.
 - Table mode: configurable automatic navigator movement after scrolling. Users can choose to move the navigator to the first visible cell, center cell, or leave it unchanged (default).
 - Table mode: force table presentation when on a table cell, with deep parent scanning to find tables that aren't auto-detected. Shows table content with active cell marking.
-- Table mode now supports tables in virtual documents (TreeInterceptors) such as Google Docs by using the review cursor position to access underlying table structures.
 - Chart improvements:
   - Dynamic Y-axis calculation that adapts to data range and display size.
   - Honors Excel's axis step values when they fit, with automatic fallback.
@@ -67,9 +67,6 @@ Changes destined for the next release.
 - Multi-line braille on the tactile area now leaves a single empty dot-row between lines (was two), matching the library's built-in graphic mode so the line spacing stays consistent regardless of which rendering path is active. More braille lines fit on the display as a result. Inter-line spacing is now defined once (the display's vertical cell spacing) and shared by the primary braille, table, and screen-capture renderers.
 
 ### Fixed
-- Table mode is much faster on large web tables, such as a Google Sheets grid. Only the cells that fit on the display are now read from the page; the whole width of every row was being read before, so a wide table cost roughly a second and a half per keypress and could make NVDA briefly unresponsive.
-- Table mode does less work per keypress: the structure of the review position is read once per update instead of three or four times, a cell's text is only fetched when its name does not already carry it, and a table that is already on the display is no longer re-detected on every navigation event.
-- Table mode now works in Microsoft Excel. The 300-cell tactile display showed multi-line braille instead of a table for most cell moves, and only occasionally showed the table. Word documents and other content NVDA reads through a non-browse-mode document interceptor are expected to benefit from the same fix.
 - Bluetooth now works on NVDA 2026.3 beta 1. That build is missing one of the Windows Bluetooth components it needs, so scanning failed as soon as a display was found; the add-on supplies the missing component from its own copy until NVDA ships it.
 - A Bluetooth connection that cannot be established now fails promptly instead of appearing to hang.
 - The display is now reliably cleared when disconnecting over USB. A slow row could previously abort clearing the rest, so a display could be left showing whatever was last written after switching displays or exiting NVDA.
