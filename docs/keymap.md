@@ -44,7 +44,6 @@ Conventions:
 
 | Gesture | Action |
 |---|---|
-| `f3` | Activate the current navigator object |
 | `panLeft` | Scroll the 20-cell text braille display back |
 | `panRight` | Scroll the 20-cell text braille display forward |
 
@@ -142,10 +141,13 @@ rarely.
 ## Removed gestures (rebinding via NVDA's Input Gestures dialog)
 
 Earlier versions of this add-on had seven `kb:` keyboard-emulation gestures in the
-default keymap. Those have been removed to free chord space for the viewport-pan additions.
+default keymap. Those have been removed to free chord space for the viewport-pan
+additions. `f3` was dropped later, for a different reason: as a Tier 0 binding it
+took the key away from every mode, and graphic mode needs it for pan-down.
 
 | Old gesture | Old action | Rebinding path in NVDA's Input Gestures dialog |
 |---|---|---|
+| `f3` | Activate the navigator object (NVDA+enter) | Object navigation → Performs the default action on the current navigator object |
 | `f2` | backspace key | System → keyboard → backspace |
 | `f1+f2` | control+home | System → keyboard → control+home |
 | `f3+f4` | control+end | System → keyboard → control+end |
@@ -158,9 +160,10 @@ NVDA's per-script gesture customization persists across addon updates, so
 once you've rebound them they stay rebound.
 
 A gesture listed here can still be in use inside a single mode — `f2` was
-dropped as a driver-level backspace and is now graphic mode's pan-up, and
-`f1+f2`, `f3+f4`, `f1+panLeft` and `f4+panRight` are now graphic mode's
-small-step pans. What they no longer do is work in every mode.
+dropped as a driver-level backspace and is now graphic mode's pan-up, `f3`
+is graphic mode's pan-down, and `f1+f2`, `f3+f4`, `f1+panLeft` and
+`f4+panRight` are now graphic mode's small-step pans. What they no longer do
+is work in every mode.
 
 <!--
 MAINTAINERS: `tools/generateKeymap.py` fails if a gesture in this table is

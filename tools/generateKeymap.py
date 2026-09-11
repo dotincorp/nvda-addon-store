@@ -65,7 +65,6 @@ KEY_ORDER: tuple[str, ...] = ("f1", "f2", "f3", "f4", "panLeft", "panRight")
 NVDA_SCRIPT_LABELS: dict[str, str] = {
 	"braille_scrollBack": "Scroll the 20-cell text braille display back",
 	"braille_scrollForward": "Scroll the 20-cell text braille display forward",
-	"review_activate": "Activate the current navigator object",
 }
 
 #: Source files scanned for tier 1 bindings, relative to the repository root.
