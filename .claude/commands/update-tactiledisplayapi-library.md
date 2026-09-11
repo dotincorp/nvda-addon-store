@@ -96,6 +96,24 @@ After copying, keep `tests/test_bundle_completeness.py::_REQUIRED_DLLS` in step
 with the drop — the vendor both bumps `DotPadSDK-<version>.dll`'s filename and
 occasionally drops a companion DLL entirely.
 
+**Compare the drop against the tree, not against the previous drop.** It is the
+tree that ships, and the two diverge whenever a copy step was skipped. Hash every
+companion file both ways before concluding "unchanged":
+
+```powershell
+foreach ($f in 'DotPadSDK-3.0.2.dll','MeCab.dll','TTBEngine.dll','libmathcat_c.dll') {
+    $i = (Get-FileHash ".scratch\install\$f" -Algorithm SHA256).Hash
+    $c = (Get-FileHash "addon\tactileDisplayAPI\$f" -Algorithm SHA256).Hash
+    "{0,-24} {1}" -f $f, $(if ($i -eq $c) { 'SAME' } else { 'DIFF' })
+}
+```
+
+`MathCATRules/` is the trap here: the repo tracks the vendor's `.zip` archives,
+while the library extracts `.yaml` beside them at runtime and a
+`.git/info/exclude` entry hides the extraction. Comparing the loose `.yaml`
+reports sweeping drift that does not exist — hash the `.zip` files, or just read
+`git status` after replacing the directory.
+
 ## Step 1: Check vtable sync
 
 ```powershell
@@ -221,9 +239,10 @@ All tests must pass before committing.
 After the automated steps complete, hand off to the maintainer:
 
 > **Hardware verification required (cannot be automated):**
-> - Connect the DotPad display; confirm `SimulateDisplay` connects without AV.
+> - Connect the DotPad display and confirm the library still drives it: `SimulateDisplay`
+>   connects, and focusing a control puts the expected content on the tactile area.
 > - Verify `AddFocusedControl` / `RegisterEvents` work (sensitive to callback vtable alignment).
-> - If any new stub was scaffolded: confirm no AV on the first call downstream of the new slot.
+> - If any new stub was scaffolded: exercise the first call downstream of the new slot.
 > - If `[StateFlags]` / `[ControlTypes]` changed, **or the ini bytes were rewritten at all**
 >   (a vendor drop rewrites all 27): focus a pressed toggle (expect `⢎⣿⡱`), a checked
 >   checkbox (`⣏⣿⣹`), and a menu separator (`⠤⠤⠤⠤⠤`) — these are the values a wrong
@@ -240,4 +259,4 @@ After the automated steps complete, hand off to the maintainer:
 | `--dry-run` exits 1 but `git diff` is empty | Broken idempotency, or line-ending mismatch | Re-run with `--verbose` to see the flagged keys. |
 | A new language's INI is mostly English | That locale's `.po` is largely untranslated | Expected — the generator falls back to English per missing string. |
 | Wrong abbreviation on the display after regenerating | The library read a different locale directory | The library picks its directory from the **Windows** display language (not NVDA's UI language) and needs an exact Microsoft 3-letter LCID match. |
-| Access violation on first library call after a DLL drop | Vtable drift not caught | Re-run `validateComVtable.py --check`; a mid-vtable insertion breaks every downstream slot. |
+| First library call after a DLL drop crashes or returns nonsense | Vtable drift not caught | Re-run `validateComVtable.py --check`; a mid-vtable insertion breaks every downstream slot. |
