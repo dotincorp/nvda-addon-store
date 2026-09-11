@@ -74,6 +74,23 @@ class TestConcreteInitCallsSuper(unittest.TestCase):
 		self.assertTrue(hasattr(presentation, "_gestureMap"))
 		self.assertIsInstance(presentation._gestureMap, dict)
 
+	def test_table_presentation_init_populates_gestureMap(self) -> None:
+		import controlTypes
+
+		from addon.presentations.table import TablePresentation
+
+		tableObj = MagicMock(name="tableObj")
+		tableObj.role = controlTypes.Role.TABLE
+		tableObj.name = "Test Table"
+		# Not an Excel worksheet, so the plain Table model is used.
+		del tableObj.excelWorksheetObject
+		display = MagicMock(name="display")
+		display.horizontalCellSpacing = 1
+		display.verticalCellSpacing = 2
+		presentation = TablePresentation(tableObj, display)
+		self.assertTrue(hasattr(presentation, "_gestureMap"))
+		self.assertIsInstance(presentation._gestureMap, dict)
+
 	def test_screen_capture_presentation_init_populates_gestureMap(self) -> None:
 		from addon.presentations.screenCapture import ScreenCapturePresentation
 

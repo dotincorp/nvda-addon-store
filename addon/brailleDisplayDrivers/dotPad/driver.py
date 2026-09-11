@@ -21,6 +21,7 @@ from typing import (
 from weakref import ref
 
 import addonHandler
+import api
 import bdDetect
 import braille
 import core
@@ -2301,8 +2302,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		gesture="br(dotPad):longPress(f2+f3)",
 	)
 	def script_forceTableMode(self, _gesture: inputCore.InputGesture):
-		import api
-
 		if not self._renderer:
 			return
 
@@ -2350,13 +2349,11 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		the driver's worker. Works for non-Role.GRAPHIC objects too (via
 		``GraphicProvider.forceForObject``).
 		"""
-		import api
-
 		navObj = api.getNavigatorObject()
 		if self._renderer is None:
 			return
 		self._renderer.presentationManager.forcePresentation("graphic", navObj)
-		self._renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+		self._renderer.requestRender()
 
 	@script(
 		description=_(
@@ -2369,22 +2366,23 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		gesture="br(dotPad):f2+f4",
 	)
 	def script_brailleDisplay(self, _gesture: inputCore.InputGesture):
-		"""Force braille rendering of the current navigator object.
+		"""Step back from the presentation on screen, to braille.
 
-		The symmetric mirror of ``script_graphicDisplay``. Asks the renderer's
-		PresentationManager to force the "braille" presentation on the
-		navigator object. ``BrailleProvider._doCreatePresentation`` reads the
-		``[dotPad] brailleSource`` config and selects ``BraillePresentation``
-		(NVDA-cursor-driven) or ``LibraryBraillePresentation`` (library-driven)
-		accordingly — this script doesn't read the config itself.
+		The symmetric mirror of ``script_graphicDisplay``. See
+		``PresentationManager.dismissActivePresentation`` for what a dismissal
+		covers.
+
+		``onReviewMove`` rather than ``requestRender``: a dismissal only records
+		an intent, so the providers have to be re-consulted before anything on
+		the display changes. Requesting a render alone would redraw the
+		presentation just dismissed. ``script_graphicDisplay`` needs no such
+		call because ``forcePresentation`` installs its presentation itself.
 		"""
-		import api
-
 		navObj = api.getNavigatorObject()
 		if self._renderer is None:
 			return
-		self._renderer.presentationManager.forcePresentation("braille", navObj)
-		self._renderer._needsRender = True  # pyright: ignore[reportPrivateUsage]
+		self._renderer.presentationManager.dismissActivePresentation(navObj)
+		self._renderer.onReviewMove()
 
 	gestureMap = inputCore.GlobalGestureMap(
 		{

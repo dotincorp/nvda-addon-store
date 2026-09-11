@@ -26,6 +26,15 @@ if TYPE_CHECKING:
 	from ..extension_points.review_tracking import TriggerReason
 
 
+MAX_UNANSWERABLE_VALIDITY_CHECKS = 3
+"""How long a dismissal holds while its presentation cannot say whether it is valid.
+
+Long enough to ride out an application refusing COM calls for a moment, short
+enough that an object which is really gone gives the display back within a few
+navigation events rather than for the session.
+"""
+
+
 class PresentationManager:
 	"""Manages presentation selection and lifecycle.
 
@@ -45,6 +54,12 @@ class PresentationManager:
 		self.display = display
 		self._activePresentation: Presentation | None = None
 		self._forcedPresentation: Presentation | None = None
+		self._dismissedObject: NVDAObject | None = None
+		"""The object whose presentation the user dismissed, while they stay on it."""
+		self._dismissedPresentation: Presentation | None = None
+		"""The presentation that was dismissed, for providers that scope by validity."""
+		self._unanswerableChecks = 0
+		"""Consecutive times the dismissed presentation could not say whether it is valid."""
 
 		# Ordered list of providers (first = highest priority)
 		self._providers: list[PresentationProvider] = []
@@ -93,7 +108,10 @@ class PresentationManager:
 			``isStillValid`` so presentations can react to specific event types.
 		"""
 		if self._forcedPresentation:
-			if self._forcedPresentation.isStillValid(triggerReason):
+			forcedValid = self._stillValid(self._forcedPresentation, triggerReason)
+			if forcedValid is not False:
+				# None as well as True: an unanswerable check must not drop a
+				# mode the user explicitly forced.
 				self._activePresentation = self._forcedPresentation
 				return
 			else:
@@ -102,18 +120,28 @@ class PresentationManager:
 
 		# Arriving at the active presentation's own provider proves every
 		# higher-priority provider has already declined this object.
+		dismissed = self._isDismissed(obj, triggerReason)
+		if not dismissed:
+			self._dismissedObject = None
+			self._dismissedPresentation = None
+			self._unanswerableChecks = 0
+
 		activePresentation = self._activePresentation
 		activeProvider = activePresentation.provider if activePresentation else None
 		# None until the presentation has been asked, so it is asked once.
 		activeStillValid: bool | None = None
 		matchingProvider: PresentationProvider | None = None
-		for provider in self._providers:
+		candidates = [p for p in self._providers if p.isFallback] if dismissed else self._providers
+		for provider in candidates:
 			if (
 				activePresentation is not None
 				and provider is activeProvider
-				and provider.reusesActivePresentation
+				and provider.validityIsAuthoritative
 			):
-				activeStillValid = activePresentation.isStillValid(triggerReason)
+				# None counts as a no here: re-running detection costs a walk,
+				# where holding a presentation we could not vouch for risks
+				# drawing a table the navigator has already left.
+				activeStillValid = self._stillValid(activePresentation, triggerReason) is True
 				if activeStillValid:
 					return
 			if provider.canProvide(obj):
@@ -130,7 +158,7 @@ class PresentationManager:
 		# work, as ``LibraryBraillePresentation``'s blocking library bootstrap does.
 		if activePresentation is not None and matchingProvider is activeProvider:
 			if activeStillValid is None:
-				activeStillValid = activePresentation.isStillValid(triggerReason)
+				activeStillValid = self._stillValid(activePresentation, triggerReason) is True
 			if activeStillValid:
 				return
 
@@ -148,7 +176,7 @@ class PresentationManager:
 		auto-detection. The forced presentation remains active until:
 		- It becomes invalid (isStillValid returns False)
 		- Another presentation is forced
-		- clearForced is called
+		- clearOverrides is called
 
 		:param providerName: The name of the provider to force.
 		:param obj: The current navigator object.
@@ -166,9 +194,115 @@ class PresentationManager:
 			return True
 		return False
 
-	def clearForced(self) -> None:
-		"""Clear forced presentation, return to auto-detect."""
+	def dismissActivePresentation(self, obj: NVDAObject) -> None:
+		"""Step back from whatever is on the tactile area, towards braille.
+
+		The way out of a visual mode. Forcing braille instead would pin it for
+		the session: a forced presentation short-circuits ``update`` while it
+		stays valid, and both braille presentations always are.
+
+		It steps back from the whole visual stack, not just the presentation
+		named. "Not this" is what the user means by the chord, and which
+		provider would have claimed the object next is not something they can
+		see. ``_isDismissed`` decides how long that holds.
+
+		:param obj: The navigator object the user is on.
+		"""
+		# Captured before the force is dropped, so a dismissal of a forced
+		# presentation is scoped by that presentation rather than by whatever
+		# happened to be active underneath it.
+		self._dismissedPresentation = self._activePresentation
+		self._unanswerableChecks = 0
+		# A force outranks the providers entirely, so it has to go too.
 		self._forcedPresentation = None
+		self._dismissedObject = obj
+
+	def _isDismissed(self, obj: NVDAObject, triggerReason: TriggerReason | None = None) -> bool:
+		"""Whether the dismissal still covers ``obj``.
+
+		Two ways it can, either sufficient:
+
+		1. ``obj`` is the object the user dismissed. Compared with ``==``: NVDA
+		   mints a fresh NVDAObject per event, and ``NVDAObject.__eq__`` routes
+		   to ``_isEqual``, which is what identifies the same element across
+		   events. Identity would forget the dismissal immediately.
+		2. The dismissed presentation is still valid and came from a provider
+		   that opts into ``validityIsAuthoritative`` — the flag that means its
+		   ``isStillValid`` is a complete answer. This is what keeps a dismissed
+		   table dismissed while the user moves from cell to cell; leaving the
+		   table invalidates the presentation and lifts it.
+		"""
+		try:
+			if self._dismissedObject is not None and self._dismissedObject == obj:
+				return True
+		except Exception:
+			# A dead COM object raises from __eq__. Fall through to the
+			# presentation's own answer rather than deciding on the raise.
+			log.debug("Dismissed object comparison raised", exc_info=True)
+
+		presentation = self._dismissedPresentation
+		if presentation is None:
+			return False
+		provider = presentation.provider
+		if provider is None or not provider.validityIsAuthoritative:
+			return False
+
+		valid = self._stillValid(presentation, triggerReason)
+		if valid is not None:
+			self._unanswerableChecks = 0
+			return valid
+
+		# Unanswerable. A transient refusal - Excel rejects COM calls whenever it
+		# is busy, which includes the moment the user types in a cell - must not
+		# undo a dismissal the user asked for and bring the table back mid-read.
+		# But an object that is genuinely gone raises every time, and holding on
+		# that forever would strand the display on braille for the session, which
+		# is the pinning this replaced forcing to avoid. So hold, briefly.
+		self._unanswerableChecks += 1
+		if self._unanswerableChecks <= MAX_UNANSWERABLE_VALIDITY_CHECKS:
+			return True
+		log.debug(
+			"Dismissed presentation could not answer %s times running; lifting the dismissal",
+			self._unanswerableChecks,
+		)
+		return False
+
+	@staticmethod
+	def _stillValid(presentation: Presentation, triggerReason: TriggerReason | None) -> bool | None:
+		"""``presentation.isStillValid``, with a third answer for "could not tell".
+
+		Validity checks read live application state over COM, and Excel refuses
+		calls outright whenever it is busy. Letting that escape aborts the whole
+		update, so no provider is consulted and the stale frame stays on the
+		pins — but reading it as False is wrong too, because False is a
+		decision: it drops a forced presentation and lifts a dismissal, neither
+		of which a momentary refusal should do.
+
+		:returns: True or False as the presentation answered, or None if asking
+			raised.
+		"""
+		try:
+			return presentation.isStillValid(triggerReason)
+		except Exception:
+			log.debug(
+				"Presentation %s raised from isStillValid; keeping state and asking again",
+				getattr(presentation, "name", presentation),
+				exc_info=True,
+			)
+			return None
+
+	def clearOverrides(self) -> None:
+		"""Clear forced presentation, return to auto-detect.
+
+		Also lifts a dismissal. Both pin what is on screen against the
+		providers, and every caller of this means "an explicit mode request
+		should win now" - turning screen capture on while still standing on a
+		dismissed object would otherwise appear to do nothing.
+		"""
+		self._forcedPresentation = None
+		self._dismissedObject = None
+		self._dismissedPresentation = None
+		self._unanswerableChecks = 0
 
 	def render(self) -> DpTactileGraphicsBuffer | None:
 		"""Render the active presentation.

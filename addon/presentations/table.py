@@ -16,27 +16,28 @@ import time
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+import addonHandler
 import api
+import inputCore
+from globalCommands import SCRCAT_BRAILLE
 from logHandler import log
+from scriptHandler import script
 from textInfos import FieldCommand
 
-from .base import Presentation, PresentationProvider
+from .base import Presentation, PresentationProvider, getActiveRenderer
 
 if TYPE_CHECKING:
 	from locationHelper import RectLTRB
-
 	from NVDAObjects import NVDAObject
 
 	from ..brailleDisplayDrivers.dotPad.driver import Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
 	from ..utils import reviewFields
-	from ..utils.table import Table, ExcelTable, TABLE_ROLES, TABLE_CELL_ROLES, findAncestorWithRole
+	from ..utils.table import TABLE_CELL_ROLES, TABLE_ROLES, ExcelTable, Table, findAncestorWithRole
 
 # Runtime imports using NVDA's addon module loading
 if not TYPE_CHECKING:
-	import addonHandler
-
 	addon: addonHandler.Addon = addonHandler.getCodeAddon()
 	DpTactileGraphicsBuffer = addon.loadModule(
 		"brailleDisplayDrivers.dotPad.tactileBuffer",
@@ -48,6 +49,8 @@ if not TYPE_CHECKING:
 	TABLE_ROLES = table_module.TABLE_ROLES
 	TABLE_CELL_ROLES = table_module.TABLE_CELL_ROLES
 	findAncestorWithRole = table_module.findAncestorWithRole
+
+addonHandler.initTranslation()
 
 
 def getUnderlyingObject(obj: NVDAObject) -> tuple[NVDAObject, bool]:
@@ -271,9 +274,14 @@ class TablePresentation(Presentation):
 					firstCol = td.firstVisibleCol or 0
 					rowInView = firstRow <= currentRow < firstRow + td.numVisibleRows
 					colInView = firstCol <= currentCol < firstCol + td.numVisibleCols
-					if not rowInView or not colInView:
-						# Reset scroll position to trigger auto-centering in drawTable
+					# Per axis, not both together. Resetting both meant stepping
+					# down out of view also re-centred the columns, throwing the
+					# view back to the left of the row; following the cursor
+					# down should move straight down, the way panning a graphic
+					# does. None asks drawTable to auto-centre that axis.
+					if not rowInView:
 						td.firstVisibleRow = None
+					if not colInView:
 						td.firstVisibleCol = None
 
 		buffer = DpTactileGraphicsBuffer(display.physicalNumCols, display.physicalNumRows)
@@ -323,28 +331,34 @@ class TablePresentation(Presentation):
 		# Check 2: For Excel, verify same worksheet (detects worksheet switch)
 		tableWorksheet = getattr(self._tableObj, "excelWorksheetObject", None)
 		if tableWorksheet is not None:
-			# This is an Excel table - check worksheet identity
-			try:
-				# Get worksheet from navigator or its parent (cells are direct children of worksheet)
-				navWorksheet = getattr(navObj, "excelWorksheetObject", None)
-				if navWorksheet is None:
-					parent = getattr(navObj, "parent", None)
-					if parent is not None:
-						navWorksheet = getattr(parent, "excelWorksheetObject", None)
+			# This is an Excel table - check worksheet identity.
+			#
+			# A COM failure here is deliberately not caught. Excel refuses calls
+			# whenever it is busy, which includes the moment the user types in a
+			# cell, and answering False would report a worksheet switch that did
+			# not happen — dropping a forced table or lifting a dismissal in the
+			# middle of reading one. ``PresentationManager._stillValid`` is the
+			# only caller of this method; it turns a raise into "could not tell"
+			# and asks again on the next event, which is the truthful answer.
+			# Swallowing it here is what made that third answer unreachable on
+			# the one table type it was written for.
+			#
+			# Get worksheet from navigator or its parent (cells are direct children of worksheet)
+			navWorksheet = getattr(navObj, "excelWorksheetObject", None)
+			if navWorksheet is None:
+				parent = getattr(navObj, "parent", None)
+				if parent is not None:
+					navWorksheet = getattr(parent, "excelWorksheetObject", None)
 
-				if navWorksheet is not None:
-					# Compare worksheet names (more reliable than COM object identity)
-					if tableWorksheet.Name != navWorksheet.Name:
-						log.debug(
-							"Table invalid: worksheet changed (%s != %s)",
-							tableWorksheet.Name,
-							navWorksheet.Name,
-						)
-						return False
-			except Exception:
-				# COM access failed - assume invalid to be safe
-				log.debug("Table invalid: COM access failed during worksheet check")
-				return False
+			if navWorksheet is not None:
+				# Compare worksheet names (more reliable than COM object identity)
+				if tableWorksheet.Name != navWorksheet.Name:
+					log.debug(
+						"Table invalid: worksheet changed (%s != %s)",
+						tableWorksheet.Name,
+						navWorksheet.Name,
+					)
+					return False
 
 		# Check 3: Quick check - does NVDA think we're in the same table?
 		try:
@@ -386,6 +400,141 @@ class TablePresentation(Presentation):
 	def name(self) -> str:
 		return "table"
 
+	def _afterScroll(self, moved: bool) -> None:
+		"""Follow a viewport move with the navigator move and a redraw.
+
+		Nothing happens when the viewport did not move -- at an edge there is
+		neither a new cell to move to nor anything to redraw.
+
+		The navigator move honours the user's ``tableNavigatorAfterScroll``
+		setting, which defaults to leaving the navigator alone; it lived only on
+		``scrollForward`` / ``scrollBack`` before these gestures existed.
+
+		A presentation holds no renderer reference, so the redraw goes through
+		the driver. Silent no-op when there is no renderer to ask.
+		"""
+		if not moved:
+			return
+		self._tableData.moveNavigatorAfterScroll()
+		renderer = getActiveRenderer()
+		if renderer is None:
+			return
+		renderer.requestRender()
+
+	# The layout mirrors GraphicPresentation, so muscle memory carries between
+	# modes and both match the [DotPad320X Keys] map the library ships.
+	#
+	# f2+f4, f1+f3, f2+f3 and the longPress mode switches are deliberately left
+	# unbound, so they keep falling through to the driver.
+
+	@script(
+		# Translators: description of the table command to show the columns to the left.
+		description=_("Show the previous screenful of table columns"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f1",
+	)
+	def script_pageLeft(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollLeft())
+
+	@script(
+		# Translators: description of the table command to show the rows above.
+		description=_("Show the previous screenful of table rows"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f2",
+	)
+	def script_pageUp(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollUp())
+
+	@script(
+		# Translators: description of the table command to show the rows below.
+		description=_("Show the next screenful of table rows"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f3",
+	)
+	def script_pageDown(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollDown())
+
+	@script(
+		# Translators: description of the table command to show the columns to the right.
+		description=_("Show the next screenful of table columns"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f4",
+	)
+	def script_pageRight(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollRight())
+
+	@script(
+		# Translators: description of the table command to move up one row.
+		description=_("Move the table view up one row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f1+f2",
+	)
+	def script_rowUp(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByRows(-1))
+
+	@script(
+		# Translators: description of the table command to move down one row.
+		description=_("Move the table view down one row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f3+f4",
+	)
+	def script_rowDown(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByRows(1))
+
+	@script(
+		# Translators: description of the table command to move one column left.
+		description=_("Move the table view left one column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panLeft+f1",
+	)
+	def script_columnLeft(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByCols(-1))
+
+	@script(
+		# Translators: description of the table command to move one column right.
+		description=_("Move the table view right one column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panRight+f4",
+	)
+	def script_columnRight(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollByCols(1))
+
+	@script(
+		# Translators: description of the table command to jump to the first column.
+		description=_("Jump the table view to the first column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f1)",
+	)
+	def script_jumpToFirstColumn(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToFirstCol())
+
+	@script(
+		# Translators: description of the table command to jump to the first row.
+		description=_("Jump the table view to the first row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f2)",
+	)
+	def script_jumpToFirstRow(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToFirstRow())
+
+	@script(
+		# Translators: description of the table command to jump to the last row.
+		description=_("Jump the table view to the last row"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f3)",
+	)
+	def script_jumpToLastRow(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToLastRow())
+
+	@script(
+		# Translators: description of the table command to jump to the last column.
+		description=_("Jump the table view to the last column"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):longPress(f4)",
+	)
+	def script_jumpToLastColumn(self, _gesture: inputCore.InputGesture) -> None:
+		self._afterScroll(self._tableData.scrollToLastCol())
+
 
 class DetectionPath(StrEnum):
 	"""Which branch of ``_findTable`` answered.
@@ -417,7 +566,7 @@ class TableProvider(PresentationProvider):
 	def name(self) -> str:
 		return "table"
 
-	reusesActivePresentation = True
+	validityIsAuthoritative = True
 	"""Table detection walks parents and document structure, which is far more
 	expensive than ``TablePresentation.isStillValid``. Availability is a property
 	of the object being navigated, not of this provider, so the presentation's

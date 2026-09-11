@@ -230,20 +230,31 @@ class TestDriverGestureMap(unittest.TestCase):
 
 
 class TestScriptBrailleDisplay(unittest.TestCase):
-	"""US2: script_brailleDisplay forces 'braille' presentation via the manager."""
+	"""US2: script_brailleDisplay steps back to braille via the manager."""
 
-	def test_forces_braille_presentation(self):
+	def test_dismisses_the_active_presentation(self):
+		"""It dismisses rather than forcing braille.
+
+		Forcing pinned it: a forced presentation short-circuits
+		``PresentationManager.update`` while it stays valid, and both braille
+		presentations always are, so nothing auto-entered again in any mode.
+		The dismissal is scoped to the object the user is on -- see
+		``tests/test_presentationDismissal.py``.
+		"""
 		driver = MagicMock(spec=BrailleDisplayDriver)
 		driver._renderer = MagicMock()
 		driver._renderer.presentationManager = MagicMock()
 		fakeNavObj = MagicMock()
 		with patch("api.getNavigatorObject", return_value=fakeNavObj):
 			BrailleDisplayDriver.script_brailleDisplay(driver, MagicMock())
-		driver._renderer.presentationManager.forcePresentation.assert_called_once_with(
-			"braille",
+		driver._renderer.presentationManager.dismissActivePresentation.assert_called_once_with(
 			fakeNavObj,
 		)
-		self.assertTrue(driver._renderer._needsRender)
+		driver._renderer.presentationManager.forcePresentation.assert_not_called()
+		# A dismissal only records an intent, so the providers have to run again
+		# before anything on the display changes. Setting ``_needsRender`` alone
+		# would re-render the presentation just dismissed.
+		driver._renderer.onReviewMove.assert_called_once_with()
 
 	def test_no_op_when_renderer_is_none(self):
 		"""Defensive: if the renderer isn't attached yet (early startup), no-op."""

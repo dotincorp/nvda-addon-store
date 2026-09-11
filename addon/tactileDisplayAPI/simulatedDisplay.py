@@ -77,10 +77,60 @@ def _getLibraryBytesConsumerClasses() -> tuple[type, ...]:
 		).LibraryBraillePresentation
 	resolved = (GraphicPresentation, LibraryBraillePresentation)
 	_libraryBytesConsumerClasses = resolved
+	global _graphicPresentationClass
+	_graphicPresentationClass = GraphicPresentation
 	return resolved
 
 
+def _getGraphicPresentationClass() -> type:
+	"""``GraphicPresentation``, resolved through the same cycle-safe path.
+
+	Its frames carry the tactile image rather than braille, which is the one
+	distinction the payload itself does not record.
+	"""
+	if _graphicPresentationClass is None:
+		_getLibraryBytesConsumerClasses()
+	assert _graphicPresentationClass is not None
+	return _graphicPresentationClass
+
+
 _libraryBytesConsumerClasses: tuple[type, ...] | None = None
+_graphicPresentationClass: type | None = None
+
+_lastPayload: bytes | None = None
+"""The most recent braille payload the library sent, gate passed or not.
+
+A presentation that draws the tactile area itself leaves that drawing on the
+pins when it goes away, because the library-braille presentation writes nothing
+of its own and the library will not re-send a frame for a mode it is already in.
+Keeping the frames we discard means the way back has something to show.
+
+Frames arriving under graphic mode are the exception and are not kept: those
+carry the tactile image rather than braille, so replaying one would redraw the
+picture instead of the text.
+"""
+
+
+def forgetLastPayload() -> None:
+	"""Drop the remembered frame. For tests; nothing in the addon needs it."""
+	global _lastPayload
+	_lastPayload = None
+
+
+def replayLastPayload() -> bool:
+	"""Re-draw the most recent library payload.
+
+	Ungated by design: the caller is the presentation that consumes library
+	bytes, asking for the frame it would have received had it been active when
+	the frame arrived.
+
+	:returns: True if a frame was drawn.
+	"""
+	payload = _lastPayload
+	if payload is None:
+		return False
+	_drawPayload(payload)
+	return True
 
 
 def _getBrailleHandler() -> Any:
@@ -138,6 +188,8 @@ def renderTactileBytes(payload: bytes) -> None:
 		``physicalNumRows * physicalNumCols``; mismatched lengths are
 		clamped / zero-padded with a warning.
 	"""
+	global _lastPayload
+
 	# Gate: only library-bytes-consuming presentations may write to the
 	# multi-line area. Other presentations own the area via NVDA-driven
 	# rendering; their content would be clobbered if we passed bytes
@@ -145,6 +197,13 @@ def renderTactileBytes(payload: bytes) -> None:
 	try:
 		activePresentation = _getActivePresentation()
 		allowedClasses = _getLibraryBytesConsumerClasses()
+
+		# Remembered before the gate decides: a frame discarded now is exactly
+		# the frame to show when a library-bytes consumer becomes active again.
+		# Graphic mode is the exception - see the module note on _lastPayload.
+		if not isinstance(activePresentation, _getGraphicPresentationClass()):
+			_lastPayload = payload
+
 		if not isinstance(activePresentation, allowedClasses):
 			activeName = type(activePresentation).__name__ if activePresentation else "None"
 			log.debug(
@@ -158,6 +217,15 @@ def renderTactileBytes(payload: bytes) -> None:
 		log.exception("renderTactileBytes: gate isinstance check raised; discarding")
 		return
 
+	_drawPayload(payload)
+
+
+def _drawPayload(payload: bytes) -> None:
+	"""Turn a library payload into device writes. No gate; callers apply it.
+
+	:param payload: Bytes in standard braille cell notation, row-major over the
+		graphic display.
+	"""
 	graphicDisplay = _getGraphicDisplay()
 	if graphicDisplay is None:
 		# No graphic display attached — nothing to render. The session

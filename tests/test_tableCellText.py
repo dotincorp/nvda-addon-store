@@ -219,15 +219,22 @@ class TestCellWindowFetch(unittest.TestCase):
 
 	def test_a_failing_cell_does_not_lose_the_draw(self):
 		self._installIA2Table()
-		self.mockTableObj.IAccessibleTable2Object.cellAt.side_effect = (
-			lambda rowIndex, colIndex: (_ for _ in ()).throw(RuntimeError("hidden"))
+		self.mockTableObj.IAccessibleTable2Object.cellAt.side_effect = lambda rowIndex, colIndex: (
+			(_ for _ in ()).throw(RuntimeError("hidden"))
 			if (rowIndex, colIndex) == (0, 0)
 			else (rowIndex, colIndex)
 		)
 
 		cells = list(self.tableInstance.getTableCells(0, 0, maxCellsPerRow=3, maxRows=2))
 
-		self.assertEqual(len(cells), 5)
+		# Six: the five the table served, plus a blank standing in for the one
+		# it refused, so the row does not stop short of the others.
+		self.assertEqual(len(cells), 6)
+		self.assertEqual(
+			sorted((c.rowNumber, c.columnNumber) for c in cells),
+			[(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3)],
+			"every visible coordinate should be covered exactly once",
+		)
 
 	def test_a_table_without_the_interface_still_walks_rows(self):
 		# A bare Mock answers every attribute, so the interfaces have to be

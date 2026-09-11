@@ -240,7 +240,10 @@ class Table(AutoPropertyObject):
 		else:
 			raise ValueError(f"table must be an NVDA object with a table role, got {obj.role}")
 
-		self.tableCaption = self.tableObj.name or obj.description
+		# Stripped: a name of " " is truthy, and draw() would reserve five dot
+		# rows for it and then paint nothing there - a blank band above the
+		# table that reads as the view starting a row too low.
+		self.tableCaption = (self.tableObj.name or obj.description or "").strip()
 		self.hCellPadding = hCellPadding
 		self.vCellpadding = vCellPadding
 
@@ -263,19 +266,11 @@ class Table(AutoPropertyObject):
 		"""
 		table2: Any = getattr(self.tableObj, "IAccessibleTable2Object", None)
 		if table2 is not None:
-
-			def cellAt(rowIndex: int, colIndex: int) -> Any:
-				return table2.cellAt(rowIndex, colIndex)
-
-			return cellAt
+			return table2.cellAt
 
 		table1: Any = getattr(self.tableObj, "IAccessibleTableObject", None)
 		if table1 is not None:
-
-			def accessibleAt(rowIndex: int, colIndex: int) -> Any:
-				return table1.accessibleAt(rowIndex, colIndex)
-
-			return accessibleAt
+			return table1.accessibleAt
 
 		return None
 
@@ -319,6 +314,7 @@ class Table(AutoPropertyObject):
 
 		cells: list[NVDAObject] = []
 		seen: set[tuple[Any, Any]] = set()
+		covered: set[tuple[int, int]] = set()
 		for rowIndex in range(startAtRow, endRow):
 			for colIndex in range(startAtCol, endCol):
 				try:
@@ -330,6 +326,12 @@ class Table(AutoPropertyObject):
 					# same cell comes back more than once; drawTable expects each
 					# one only once and handles the span itself.
 					key = (cell.rowNumber, cell.columnNumber)
+					# This coordinate is spoken for, whether or not the cell is
+					# drawn below. The probe is the authority rather than the
+					# cell's span: a merged cell answers at every coordinate it
+					# covers, so recording the coordinate we asked about needs
+					# no span attributes and cannot disagree with them.
+					covered.add((rowIndex, colIndex))
 				except Exception:
 					# Ragged rows, hidden cells and out-of-range coordinates all
 					# raise here. One missing cell must not lose the whole draw.
@@ -347,7 +349,37 @@ class Table(AutoPropertyObject):
 				cells.append(cell)
 		if not cells and endRow > startAtRow and endCol > startAtCol:
 			return None
+		cells.extend(
+			cast("list[NVDAObject]", self._fillEmptyCells(covered, startAtRow, endRow, startAtCol, endCol)),
+		)
 		return cells
+
+	@staticmethod
+	def _fillEmptyCells(
+		covered: set[tuple[int, int]],
+		startAtRow: int,
+		endRow: int,
+		startAtCol: int,
+		endCol: int,
+	) -> list[FakeNVDAObjectCell]:
+		"""Blank cells for coordinates the table served nothing for.
+
+		A ragged table - Google Sheets' screen-reader view has one, where the
+		header row holds fewer cells than the data rows below it - leaves gaps
+		inside the window. Drawing nothing there draws no border either, so the
+		short row visibly stopped partway across while every row under it ran
+		the full width. A reader cannot tell a missing cell from an empty one,
+		and the inconsistent grid is what misleads, so the gaps are filled.
+
+		Narrowing the window to the shortest row instead would hide real data,
+		the same way bounding an Excel sheet by its used range did.
+		"""
+		return [
+			FakeNVDAObjectCell(rowNumber=rowIndex + 1, columnNumber=colIndex + 1, name="")
+			for rowIndex in range(startAtRow, endRow)
+			for colIndex in range(startAtCol, endCol)
+			if (rowIndex, colIndex) not in covered
+		]
 
 	def getTableCells(
 		self,
@@ -448,6 +480,13 @@ class Table(AutoPropertyObject):
 
 		return rowCount
 
+	def invalidateExtentCache(self) -> None:
+		"""Drop any cached row/column count before a draw.
+
+		A no-op here, because the base getters read the object every time.
+		Subclasses that cache a COM round trip override it.
+		"""
+
 	def drawTable(
 		self,
 		buffer: DpTactileGraphicsBuffer,
@@ -460,14 +499,23 @@ class Table(AutoPropertyObject):
 	):
 		drawStarted = time.perf_counter()
 		self.lastDrawStats = TableDrawStats()
+		# The extent can change under us - the user types into a cell past the
+		# end - and the presentation this table belongs to survives the whole
+		# visit, so anything cached on it is cached effectively forever.
+		self.invalidateExtentCache()
 
 		if height is None:
 			height = buffer.height
 		if width is None:
 			width = buffer.width
 
-		self.numVisibleRows = numVisibleRows = height // self.tableCellHeight
-		self.numVisibleCols = numVisibleCols = width // self.tableCellWidth
+		# -1 because adjacent cells share a border: a cell is drawn from its
+		# origin through origin + cellHeight inclusive (drawCell puts the bottom
+		# border at topY + tableCellHeight), so N cells span N * cellHeight + 1
+		# dots, not N * cellHeight. Without it the last row's bottom border fell
+		# one dot outside the buffer and was clipped away. Same on both axes.
+		self.numVisibleRows = numVisibleRows = max(0, (height - 1) // self.tableCellHeight)
+		self.numVisibleCols = numVisibleCols = max(0, (width - 1) // self.tableCellWidth)
 
 		if firstRow is None:
 			firstRow = 0
@@ -485,12 +533,12 @@ class Table(AutoPropertyObject):
 					firstRow,
 				)
 
-				rowCount: int | None = None
-
-				try:
-					rowCount = cast(int, self.tableObj.rowCount)  # type: ignore
-				except (NotImplementedError, AttributeError):
-					pass
+				# self.tableRowCount, not self.tableObj.rowCount: the subclass is
+				# where a truthful extent lives. An Excel worksheet reports
+				# 1,048,576 rows (and NVDA's ExcelWorksheet exposes no rowCount at
+				# all), so reading the raw object skipped this clamp entirely and
+				# disagreed with the one the edge jumps use.
+				rowCount: int | None = self.tableRowCount
 
 				if rowCount is not None and (firstRow + numVisibleRows) > rowCount:
 					firstRow = rowCount - numVisibleRows
@@ -573,7 +621,8 @@ class Table(AutoPropertyObject):
 				tableSize = "unknown"
 			log.debug(
 				"Table draw: %d cells in %.1fms (fetch %.1fms, cell text %.1fms), "
-				"%d cells and %d rows materialised for %sx%s visible, table %s",
+				"%d cells and %d rows materialised for %sx%s visible at r%s c%s, "
+				"cursor r%s c%s, table %s, caption %r, instance %s",
 				stats.cellsDrawn,
 				stats.totalSeconds * 1000,
 				stats.cellFetchSeconds * 1000,
@@ -582,7 +631,15 @@ class Table(AutoPropertyObject):
 				stats.rowsMaterialised,
 				numVisibleRows,
 				numVisibleCols,
+				firstRow,
+				firstCol,
+				self.tableCurrentRow,
+				self.tableCurrentCol,
 				tableSize,
+				self.tableCaption,
+				# A changing id means the presentation was rebuilt and the
+				# viewport was reset rather than scrolled.
+				id(self),
 			)
 
 	def drawCell(
@@ -671,13 +728,13 @@ class Table(AutoPropertyObject):
 			# At end of row, wrap to first column of next row
 			if self.scrollDown():
 				self.firstVisibleCol = 0
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 				return True
 			return False
 		else:
 			result = self.scrollRight()
 			if result:
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 			return result
 
 	def scrollBack(self) -> bool:
@@ -698,13 +755,13 @@ class Table(AutoPropertyObject):
 					# Calculate last page of columns
 					lastPageStart = ((colCount - 1) // self.numVisibleCols) * self.numVisibleCols
 					self.firstVisibleCol = lastPageStart
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 				return True
 			return False
 		else:
 			result = self.scrollLeft()
 			if result:
-				self._moveNavigatorAfterScroll()
+				self.moveNavigatorAfterScroll()
 			return result
 
 	def scrollRight(self) -> bool:
@@ -713,31 +770,22 @@ class Table(AutoPropertyObject):
 		Returns:
 			bool: True if the table was scrolled, False if it was already at the end.
 		"""
-		if self.numVisibleCols is None:
+		if self.numVisibleCols is None or self.tableColumnCount is None:
 			return False
 		firstVisibleCol: int = self.firstVisibleCol or 0
-		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:  # type: ignore
+		if firstVisibleCol + self.numVisibleCols >= self.tableColumnCount:
 			return False
 		self.firstVisibleCol = firstVisibleCol + self.numVisibleCols
 		return True
 
 	def scrollLeft(self) -> bool:
-		"""Scrolls the table presentation to the left by the number of visible columns.
+		"""Move the viewport one screenful of columns to the left.
 
-		Returns:
-			bool: True if the table was scrolled, False if it was already at the beginning.
+		:returns: True if the viewport moved.
 		"""
-		firstVisibleCol: int = self.firstVisibleCol or 0
 		if self.numVisibleCols is None:
 			return False
-		if firstVisibleCol == 0:
-			return False
-		if firstVisibleCol - self.numVisibleCols < 0:
-			# Scroll to the left edge
-			self.firstVisibleCol = 0
-			return True
-		self.firstVisibleCol = firstVisibleCol - self.numVisibleCols
-		return True
+		return self.scrollByCols(-self.numVisibleCols)
 
 	def scrollDown(self) -> bool:
 		"""Scrolls the table presentation down by the number of visible rows.
@@ -745,33 +793,129 @@ class Table(AutoPropertyObject):
 		Returns:
 			bool: True if the table was scrolled, False if it was already at the end.
 		"""
-		if self.numVisibleRows is None:
+		if self.numVisibleRows is None or self.tableRowCount is None:
 			return False
 		firstVisibleRow: int = self.firstVisibleRow or 0
-		if firstVisibleRow + self.numVisibleRows >= self.tableRowCount:  # type: ignore
+		if firstVisibleRow + self.numVisibleRows >= self.tableRowCount:
 			return False
 		self.firstVisibleRow = firstVisibleRow + self.numVisibleRows
 		return True
 
 	def scrollUp(self) -> bool:
-		"""Scrolls the table presentation up by the number of visible rows.
+		"""Move the viewport one screenful of rows up.
 
-		Returns:
-			bool: True if the table was scrolled, False if it was already at the beginning.
+		:returns: True if the viewport moved.
 		"""
 		if self.numVisibleRows is None:
 			return False
-		firstVisibleRow: int = self.firstVisibleRow or 0
-		if firstVisibleRow == 0:
+		return self.scrollByRows(-self.numVisibleRows)
+
+	def _lastFullPageStart(self, count: int | None, pageSize: int | None) -> int | None:
+		"""First index of the last screenful that still fills the display.
+
+		``count - pageSize`` rather than a page-aligned multiple, so a jump to the
+		end shows a full display rather than whatever remainder the table happens
+		to end on. Matches how ``drawTable`` clamps when it auto-centres.
+
+		:returns: The index, or None when the extent or the viewport is unknown.
+		"""
+		if count is None or pageSize is None:
+			return None
+		return max(0, count - pageSize)
+
+	def _setFirstVisible(self, target: int, vertical: bool) -> bool:
+		"""Move one axis of the viewport to ``target``, clamped to the table.
+
+		Clamping rather than refusing means a step that would overshoot still
+		lands on the edge, which is what makes repeated presses feel right.
+
+		:param target: Desired first visible row or column, 0-based.
+		:param vertical: True for rows, False for columns.
+		:returns: True if the viewport moved.
+		"""
+		current: int
+		limit: int | None
+		if vertical:
+			pageSize = self.numVisibleRows
+			current = self.firstVisibleRow or 0
+			limit = self._lastFullPageStart(self.tableRowCount, pageSize)
+		else:
+			pageSize = self.numVisibleCols
+			current = self.firstVisibleCol or 0
+			limit = self._lastFullPageStart(self.tableColumnCount, pageSize)
+
+		if pageSize is None:
+			# Not drawn yet, so there is no viewport to move.
 			return False
-		if firstVisibleRow - self.numVisibleRows < 0:
-			# Scroll to the top
-			self.firstVisibleRow = 0
-			return True
-		self.firstVisibleRow = firstVisibleRow - self.numVisibleRows
+		if limit is None:
+			# The table does not report its extent, so the far edge cannot be
+			# clamped. Moving back is still safe; moving forward is not.
+			if target > current:
+				return False
+			limit = current
+
+		# max(limit, current) rather than limit alone: a page step can leave the
+		# view past the last full page (scrollRight lands on a partial trailing
+		# page), and clamping to limit there would send a *forward* single step
+		# backwards.
+		newFirst = max(0, min(target, max(limit, current)))
+		if newFirst == current:
+			return False
+		if vertical:
+			self.firstVisibleRow = newFirst
+		else:
+			self.firstVisibleCol = newFirst
 		return True
 
-	def _moveNavigatorAfterScroll(self) -> None:
+	def scrollByRows(self, rows: int) -> bool:
+		"""Move the viewport ``rows`` rows down (negative for up).
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible((self.firstVisibleRow or 0) + rows, vertical=True)
+
+	def scrollByCols(self, cols: int) -> bool:
+		"""Move the viewport ``cols`` columns right (negative for left).
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible((self.firstVisibleCol or 0) + cols, vertical=False)
+
+	def scrollToFirstRow(self) -> bool:
+		"""Jump the viewport to the top of the table.
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible(0, vertical=True)
+
+	def scrollToLastRow(self) -> bool:
+		"""Jump the viewport to the last full screenful of rows.
+
+		:returns: True if the viewport moved.
+		"""
+		limit = self._lastFullPageStart(self.tableRowCount, self.numVisibleRows)
+		if limit is None:
+			return False
+		return self._setFirstVisible(limit, vertical=True)
+
+	def scrollToFirstCol(self) -> bool:
+		"""Jump the viewport to the left edge of the table.
+
+		:returns: True if the viewport moved.
+		"""
+		return self._setFirstVisible(0, vertical=False)
+
+	def scrollToLastCol(self) -> bool:
+		"""Jump the viewport to the last full screenful of columns.
+
+		:returns: True if the viewport moved.
+		"""
+		limit = self._lastFullPageStart(self.tableColumnCount, self.numVisibleCols)
+		if limit is None:
+			return False
+		return self._setFirstVisible(limit, vertical=False)
+
+	def moveNavigatorAfterScroll(self) -> None:
 		"""Move navigator object after scroll based on user setting.
 
 		Reads the tableNavigatorAfterScroll configuration and moves the
@@ -806,22 +950,58 @@ class Table(AutoPropertyObject):
 			targetRow = firstRow + (actualVisibleRows // 2)
 			targetCol = firstCol + (actualVisibleCols // 2)
 
-		# Find target cell
-		for cell in self.getTableCells(
+		if self._selectCellAt(targetRow, targetCol):
+			return
+
+		log.debug("Could not find cell at row %s, col %s", targetRow, targetCol)
+
+	def _selectCellAt(self, targetRow: int, targetCol: int) -> bool:
+		"""Move to the cell at a 0-based coordinate.
+
+		Split from the scan it replaces because every scroll gesture runs this,
+		and fetching the whole visible window to find one cell in it cost a
+		second pass over cells the redraw is about to fetch again - on a table
+		served out of process, tens of cross-process calls per keypress.
+
+		:returns: True if the navigator or focus moved.
+		"""
+		cell = self._getCellAt(targetRow, targetCol)
+		if cell is not None:
+			return self._selectCell(cell, targetRow, targetCol)
+
+		# No lookup by coordinate on this table, so the window is the only way
+		# to reach a cell object.
+		if self.numVisibleCols is None or self.numVisibleRows is None:
+			return False
+		for candidate in self.getTableCells(
 			self.firstVisibleCol or 0,
 			self.firstVisibleRow or 0,
 			self.numVisibleCols,
 			self.numVisibleRows,
 		):
 			# getTableCells uses 1-based, we calculated 0-based
-			if cell.rowNumber - 1 == targetRow and cell.columnNumber - 1 == targetCol:
-				# Try to move navigator/focus to the target cell
-				if self._selectCell(cell, targetRow, targetCol):
-					return
+			if candidate.rowNumber - 1 == targetRow and candidate.columnNumber - 1 == targetCol:
+				return self._selectCell(candidate, targetRow, targetCol)
+		return False
 
-		log.debug("Could not find cell at row %s, col %s", targetRow, targetCol)
+	def _getCellAt(self, row: int, col: int) -> Any:
+		"""One cell by 0-based coordinate, or None if this table cannot serve one.
 
-	def _selectCell(self, cell: FakeNVDAObjectCell, row: int, col: int) -> bool:
+		:returns: A cell object, or None to fall back to scanning the window.
+		"""
+		accessor = self._getIA2CellAccessor()
+		if accessor is None:
+			return None
+		try:
+			rawCell = accessor(row, col)
+		except Exception:
+			log.debug("No cell at row %s, col %s", row, col, exc_info=True)
+			return None
+		if rawCell is None:
+			return None
+		return self._makeCellFromIA2(rawCell)
+
+	def _selectCell(self, cell: FakeNVDAObjectCell | None, row: int, col: int) -> bool:
 		"""Select/navigate to a table cell.
 
 		For virtual buffers in browse mode (web tables, Word browse mode),
@@ -920,17 +1100,59 @@ class Table(AutoPropertyObject):
 
 
 class ExcelTable(Table):
-	def _get_tableColumnCount(self) -> int | None:
+	_usedRangeBounds: tuple[int | None, int | None] | None = None
+	"""Cached ``(lastRow, lastColumn)`` from the worksheet's used range."""
+
+	def _getUsedRangeBounds(self) -> tuple[int | None, int | None]:
+		"""Return the worksheet's last used row and column, 1-based.
+
+		A worksheet reports itself as 1,048,576 x 16,384 whatever it contains, so
+		the sheet's own counts would send a jump to the last row a million rows
+		into empty space and make paging walk through all of it. The used range is
+		the extent a reader cares about.
+
+		It does not have to start at A1 — data in C5:H20 gives a used range whose
+		Row is 5 and Rows.Count is 16 — so the last row is the first plus the
+		count, less one.
+
+		Cached: this is a COM round trip and ``drawTable`` plus every scroll step
+		asks for it. ``Table`` does not enable NVDA's property cache, so nothing
+		else would.
+
+		Only a successful read is cached. Excel refuses COM calls freely while it
+		is busy, and caching that refusal would leave the extent unknown for the
+		life of the presentation - which the reuse shortcut keeps alive for the
+		whole worksheet visit - permanently disabling every forward scroll.
+		"""
+		if self._usedRangeBounds is not None:
+			return self._usedRangeBounds
 		try:
-			return cast(int, self.tableObj.excelWorksheetObject.columns.count)  # type: ignore
-		except AttributeError:
-			return None
+			usedRange = self.tableObj.excelWorksheetObject.UsedRange  # type: ignore
+			lastRow = int(usedRange.Row) + int(usedRange.Rows.Count) - 1
+			lastCol = int(usedRange.Column) + int(usedRange.Columns.Count) - 1
+		except Exception:
+			# A worksheet may also not expose a used range at all. An unknown
+			# extent is handled everywhere it is read; the next call retries.
+			log.debug("ExcelTable: could not read the worksheet used range", exc_info=True)
+			return (None, None)
+		# Never report an extent that excludes where the user is. UsedRange
+		# lags: it does not grow until Excel notices the edit, so navigating to
+		# or typing in a cell past the end would otherwise clamp the viewport
+		# behind the cursor and the view would stop following.
+		lastRow = max(lastRow, (self.tableCurrentRow or 0) + 1)
+		lastCol = max(lastCol, (self.tableCurrentCol or 0) + 1)
+		bounds: tuple[int | None, int | None] = (lastRow, lastCol)
+		self._usedRangeBounds = bounds
+		return bounds
+
+	def _get_tableColumnCount(self) -> int | None:
+		return self._getUsedRangeBounds()[1]
 
 	def _get_tableRowCount(self) -> int | None:
-		try:
-			return cast(int, self.tableObj.excelWorksheetObject.rows.count)  # type: ignore
-		except AttributeError:
-			return None
+		return self._getUsedRangeBounds()[0]
+
+	def invalidateExtentCache(self) -> None:
+		self._usedRangeBounds = None
 
 	def getTableCells(
 		self,
@@ -992,7 +1214,17 @@ class ExcelTable(Table):
 			sourceObject=excelCell,  # Store for later resolution to NVDA object
 		)
 
-	def _selectCell(self, cell: FakeNVDAObjectCell, row: int, col: int) -> bool:
+	def _selectCellAt(self, targetRow: int, targetCol: int) -> bool:
+		"""Go straight to the COM selection, with no cell object at all.
+
+		``_selectCell`` below re-fetches the cell from these coordinates in its
+		deferred callback and never reads the object it is handed, so finding
+		one first was pure cost - and on Excel the only way to find one is to
+		build the whole visible window out of COM round trips.
+		"""
+		return self._selectCell(None, targetRow, targetCol)
+
+	def _selectCell(self, cell: FakeNVDAObjectCell | None, row: int, col: int) -> bool:
 		"""Select an Excel cell via COM.
 
 		Excel fake cells aren't real NVDA objects. Instead, we use Excel's COM
