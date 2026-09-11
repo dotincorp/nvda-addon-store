@@ -152,5 +152,31 @@ class TestLibraryBrailleReplaysOnce(unittest.TestCase):
 			self.assertIsNone(presentation.render(MagicMock()))
 
 
+class TestTheNvdaDrivenFallbackNeedsNoReplay(unittest.TestCase):
+	"""Only the library-driven presentation depends on the replay.
+
+	The replay exists because ``LibraryBraillePresentation`` writes nothing of
+	its own, so leaving a table would leave the table on the pins. The
+	NVDA-driven presentation - what the provider builds when the braille source
+	is NVDA, when the library is still starting, and when it is unavailable -
+	paints the tactile area itself, so the outgoing drawing is overwritten by
+	its first render. Should that ever start returning None to match its
+	sibling, f2+f4 would quietly stop working for everyone not using the
+	library.
+	"""
+
+	def test_it_renders_a_buffer_rather_than_nothing(self):
+		from addon.brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
+		from addon.presentations.braille import BraillePresentation
+
+		display = MagicMock()
+		display.physicalNumCols = 30
+		display.physicalNumRows = 10
+		presentation = BraillePresentation.__new__(BraillePresentation)
+		presentation._buffer = MagicMock(windowBrailleCells=[0] * 30, cursorWindowPos=None)
+
+		self.assertIsInstance(presentation.render(display), DpTactileGraphicsBuffer)
+
+
 if __name__ == "__main__":
 	unittest.main()
