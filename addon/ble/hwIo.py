@@ -5,9 +5,11 @@
 
 import time
 from collections.abc import Callable, Iterator
+from concurrent.futures import Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from itertools import count, takewhile
 from queue import Empty, Queue
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from typing import cast
 
 from hwIo.base import _isDebug  # type: ignore
@@ -44,20 +46,77 @@ CLOSE_TIMEOUT_SECONDS: float = 1
 #: How long to wait for services to be discovered once connected.
 SERVICE_DISCOVERY_TIMEOUT_SECONDS: int = 2
 WINRT_CLIENT_PARAMS = WinRTClientArgs(use_cached_services=True)
+#: Budget for a disconnect still in flight from a closed instance before connecting to the
+#: same device again. NVDA constructs the next driver straight after terminating the last
+#: one, on its main thread, so this is paid there -- but only when a disconnect really is
+#: unfinished, and it is far shorter than a connect attempt that fails.
+PREVIOUS_DISCONNECT_TIMEOUT_SECONDS: float = 1
+
+#: Disconnects scheduled by close() and not yet finished, by device address.
+_pendingDisconnects: dict[str, Future[None]] = {}
+_pendingDisconnectsLock = Lock()
 
 
-def queueReader(queue: Queue[bytes], onReceive: Callable[[bytes], None], stopEvent: Event) -> None:
+def _rememberDisconnect(address: str, future: Future[None]) -> None:
+	with _pendingDisconnectsLock:
+		_pendingDisconnects[address] = future
+
+	def forget(done: Future[None]) -> None:
+		with _pendingDisconnectsLock:
+			if _pendingDisconnects.get(address) is done:
+				del _pendingDisconnects[address]
+
+	future.add_done_callback(forget)
+
+
+def _awaitPreviousDisconnect(address: str) -> None:
+	"""Let a disconnect from a closed instance finish before connecting to that device.
+
+	Unverified on hardware: this guards the suspected cause of connects that time out after
+	a lock or unlock, and the logging says whether the race occurs at all.
+	"""
+	with _pendingDisconnectsLock:
+		future = _pendingDisconnects.get(address)
+	if future is None or future.done():
+		return
+	start = time.monotonic()
+	try:
+		future.result(PREVIOUS_DISCONNECT_TIMEOUT_SECONDS)
+	except FutureTimeoutError:
+		log.debugWarning(
+			"Previous disconnect from %s still running after %ss; connecting anyway",
+			address,
+			PREVIOUS_DISCONNECT_TIMEOUT_SECONDS,
+		)
+		return
+	except Exception:
+		# The link is gone either way, which is all connecting needs.
+		log.debugWarning("Previous disconnect from %s failed", address, exc_info=True)
+		return
+	log.debug("Waited %.2fs for the previous disconnect from %s", time.monotonic() - start, address)
+
+
+def queueReader(
+	queue: Queue[bytes | bytearray | None],
+	onReceive: Callable[[bytes], None],
+	stopEvent: Event,
+) -> None:
 	while True:
 		try:
 			if stopEvent.is_set():
 				log.debug("Reader thread got stop event")
 				break
 			try:
-				data: bytes = queue.get(timeout=0.5)
+				data = queue.get(timeout=0.5)
 			except Empty:
 				continue
+			if data is None:
+				# close() wakes the reader with this rather than leaving it to notice the
+				# stop event on its next poll, which it would join on NVDA's main thread.
+				queue.task_done()
+				break
 
-			onReceive(data)
+			onReceive(bytes(data))
 			queue.task_done()
 		except Exception:
 			log.exception("Reader thread got exception")
@@ -98,7 +157,7 @@ class Ble:
     this should accept BLE notifications"""
 	_onReceive: Callable[[bytes], None] | None
 	"The callback to call when data is received"
-	_queuedData: Queue[bytes | bytearray]
+	_queuedData: Queue[bytes | bytearray | None]
 	"A queue of received data, this is processsed by the onReceive handler"
 	_readEvent: Event
 	"An event that is set when data is received"
@@ -106,6 +165,9 @@ class Ble:
 	"Thread that processes the queue of rad data"
 	_stopReaderEvent: Event
 	"Event that is set to stop the reader thread"
+	# Class-level defaults because __del__ also runs on instances whose constructor raised.
+	_address: str | None = None
+	_closed: bool = False
 
 	def __init__(
 		self,
@@ -117,6 +179,7 @@ class Ble:
 		onReceive: Callable[[bytes], None],
 	) -> None:
 		log.info("Connecting to %s (%s)", device.name, device.address)
+		self._address = device.address
 		self._client = bleak.BleakClient(device, winrt=WINRT_CLIENT_PARAMS)
 		self._writeServiceUuid = writeServiceUuid
 		self._writeCharacteristicUuid = writeCharacteristicUuid
@@ -132,6 +195,7 @@ class Ble:
 			daemon=True,
 		)
 		self._readerThread.start()
+		_awaitPreviousDisconnect(device.address)
 		try:
 			runCoroutineSync(self._initAndConnect(), timeout=CONNECT_TIMEOUT_SECONDS)
 		except TimeoutError:
@@ -218,6 +282,10 @@ class Ble:
 		It is typically called when the BLE connection is no longer needed,
 		such as when the application is shutting down or the connection is lost.
 		"""
+		# terminate() closes, and __del__ closes again whenever the instance is collected.
+		if self._closed:
+			return
+		self._closed = True
 		if _isDebug():
 			log.debug("Closing BLE connection")
 		if self._client.is_connected:
@@ -229,15 +297,17 @@ class Ble:
 			# coroutine holds the only reference it needs. close() is called from
 			# terminate(), which runs on NVDA's main thread, so waiting is what we
 			# cannot afford -- not the disconnect itself.
-			runCoroutine(self._client.disconnect())
+			future = runCoroutine(self._client.disconnect())
+			if self._address is not None:
+				_rememberDisconnect(self._address, future)
 		# Inbound data we are about to discard. Bounded because the reader dispatches
 		# it through the driver, which can be holding _ackLock while a sender that
 		# terminate() has stopped waiting for still owns it.
 		if not self._drainReceivedData(CLOSE_TIMEOUT_SECONDS):
 			log.debugWarning("Received data not dispatched within %ss; closing anyway", CLOSE_TIMEOUT_SECONDS)
 		self._stopReaderEvent.set()
-		# The reader polls with its own timeout and is a daemon, so at worst it
-		# outlives this call briefly and dies with the process.
+		self._queuedData.put(None)
+		# The reader is a daemon, so if it is stuck dispatching it dies with the process.
 		self._readerThread.join(CLOSE_TIMEOUT_SECONDS)
 		if self._readerThread.is_alive():
 			log.debugWarning("Reader thread did not exit within %ss; closing anyway", CLOSE_TIMEOUT_SECONDS)
