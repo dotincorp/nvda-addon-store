@@ -1779,9 +1779,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def _awaitBoardInformation(self, timeout: float) -> bool:
 		"""Wait until the board information response has been parsed, or ``timeout`` passes.
 
-		Timed rather than counted in reads: serial delivers a frame one byte per read, so a
-		few reads are a few bytes, and closing the port while the rest is still arriving
-		makes NVDA's I/O thread call a receive callback ``close()`` has already cleared.
+		:returns: ``True`` if the response arrived in time.
 		"""
 		deadline = time.monotonic() + timeout
 		while not self._boardInformation:

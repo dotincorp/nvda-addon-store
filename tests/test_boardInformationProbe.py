@@ -3,10 +3,7 @@
 # See the file COPYING.txt for more details.
 # Copyright (C) 2026 Dot Incorporated
 
-"""Unit tests for waiting on the board information response while probing a port.
-
-Serial delivers a frame one byte per read, so the wait must be timed, not counted in reads.
-"""
+"""Unit tests for waiting on the board information response while probing a port."""
 
 from __future__ import annotations
 
