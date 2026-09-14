@@ -134,6 +134,11 @@ DP_SYNC = b"\xaa\x55"
 #: Frame size bounds, header included. A length outside them means a false sync word.
 DP_MIN_PACKET_SIZE: int = 4 + 5
 DP_MAX_PACKET_SIZE: int = 512
+#: How long a port gets to answer the board information request.
+BOARD_INFORMATION_TIMEOUT_SECONDS: float = 1.0
+#: Longest single wait inside that budget. BLE signals a read before the data is parsed, so a
+#: response that arrives during one wait is only seen when the next one ends.
+BOARD_INFORMATION_POLL_SECONDS: float = 0.05
 
 
 def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
@@ -1209,15 +1214,11 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 					log.debugWarning("dotPad: could not open serial port %s", portName, exc_info=True)
 					continue
 			self._sendPacket(Packet.makePacket(PacketType.REQ_BOARD_INFORMATION))
-			for _i in range(3):
-				self._dev.waitForRead(self.timeout)
-				if self._boardInformation:
-					break
-				else:
-					self._readyToSend.set()
-			if self._boardInformation:
+			if self._awaitBoardInformation(BOARD_INFORMATION_TIMEOUT_SECONDS):
 				log.info("Found device connected via %s (%s)", portType, portName)
 				break
+			# The request was never answered; reopen the gate so the next port's probe is sent.
+			self._readyToSend.set()
 			self._dev.close()
 		else:
 			raise RuntimeError("No DotPad display found")
@@ -1774,6 +1775,19 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 	def _resetReceiveBuffer(self) -> None:
 		self._receiveBuffer = bytearray()
+
+	def _awaitBoardInformation(self, timeout: float) -> bool:
+		"""Wait until the board information response has been parsed, or ``timeout`` passes.
+
+		:returns: ``True`` if the response arrived in time.
+		"""
+		deadline = time.monotonic() + timeout
+		while not self._boardInformation:
+			remaining = deadline - time.monotonic()
+			if remaining <= 0:
+				return False
+			self._dev.waitForRead(min(remaining, BOARD_INFORMATION_POLL_SECONDS))
+		return True
 
 	def _onReceive(self, data: bytes):
 		"""Split received bytes into frames, keeping a partial frame for the next call.
