@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nvdaaddons\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2026-09-07 00:05+0000\n"
-"PO-Revision-Date: 2026-09-07 00:09\n"
+"POT-Creation-Date: 2026-09-14 00:06+0000\n"
+"PO-Revision-Date: 2026-09-14 00:10\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "Language: tr_TR\n"
@@ -93,11 +93,11 @@ msgstr "Dot Pad hücreleri yavaş yenilenir, bu nedenle yanıp sönen braille im
 msgid "Dot Pad: blinking cursor"
 msgstr "Dot Pad: yanıp sönen imleç"
 
-#: addon\brailleDisplayDrivers\dotPad\driver.py:1058
+#: addon\brailleDisplayDrivers\dotPad\driver.py:1059
 msgid "DotPad"
 msgstr "DotPad"
 
-#: addon\brailleDisplayDrivers\dotPad\driver.py:1139
+#: addon\brailleDisplayDrivers\dotPad\driver.py:1140
 #, python-format
 msgid "Bluetooth: %s"
 msgstr "Bluetooth: %s"
@@ -106,64 +106,64 @@ msgstr "Bluetooth: %s"
 #. command for the multiline/graphical display.
 #. No default gesture — the user can assign one via NVDA's Input
 #. Gestures dialog.
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2235
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2236
 msgid "Refreshes the Dot Pad display"
 msgstr "Dot Pad ekranını yeniler"
 
 #. Translators: description of the scroll backwards
 #. command for the multiline/graphical display
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2249
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2250
 msgid "Scrolls the multiline display backwards"
 msgstr "Çok satırlı ekranı geriye doğru kaydırır"
 
 #. Translators: description of the scroll forward command
 #. for the multiline/graphical display
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2264
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2265
 msgid "Scrolls the multiline display forward"
 msgstr "Çok satırlı ekranı ileri doğru kaydırır"
 
 #. Translators: description of the toggle screen capture mode command
 #. for the DotPad braille display
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2279
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2280
 msgid "Toggles between normal braille output and screen capture mode"
 msgstr "Normal braille çıktısı ile ekran yakalama modu arasında geçiş yapar"
 
 #. Translators: Message announced when screen capture mode is enabled
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2289
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2290
 msgid "Screen capture mode"
 msgstr "Ekran yakalama modu"
 
 #. Translators: Message announced when screen capture mode is disabled
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2292
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2293
 msgid "Normal mode"
 msgstr "Normal kip"
 
 #. Translators: description of the force table mode command
 #. for the DotPad braille display
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2298
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2299
 msgid "Forces table mode by scanning parent objects for a table"
 msgstr "Tablo kipini, üst nesneleri tarayarak bir tablo aramak suretiyle zorlar"
 
 #. Translators: Message announced when table mode is activated
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2323
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2322
 msgid "Table mode"
 msgstr "Tablo kipi"
 
 #. Translators: Message announced when no table is found in parent objects
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2326
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2325
 msgid "No table found"
 msgstr "Tablo bulunamadı."
 
 #. Translators: description of the graphic display command
 #. for the DotPad braille display
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2332
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2331
 msgid "Displays the review object as tactile graphics via TactileDisplayAPI"
 msgstr "İnceleme nesnesini TactileDisplayAPI aracılığıyla dokunsal grafik olarak görüntüler"
 
 #. Translators: description of the braille display command
 #. for the DotPad braille display — symmetric to the tactile-graphic
 #. force chord; "show as braille" on the navigator object.
-#: addon\brailleDisplayDrivers\dotPad\driver.py:2366
+#: addon\brailleDisplayDrivers\dotPad\driver.py:2363
 msgid "Displays the review object as braille via the active braille presentation"
 msgstr "İnceleme nesnesini, etkin olan braille görüntüleme yöntemi aracılığıyla braille olarak görüntüler"
 
@@ -317,89 +317,149 @@ msgstr "&Dot Pad ekran görüntüleyici"
 
 #. Translators: announced once when the user selects library-driven
 #. braille but the library isn't available for the current device.
-#: addon\presentations\braille.py:653
+#: addon\presentations\braille.py:681
 msgid "DotPad library-driven braille unavailable; falling back to NVDA review mode"
 msgstr "DotPad kütüphane tabanlı braille özelliği kullanılamıyor; NVDA inceleme kipine geçiliyor"
 
 #. Translators: description of the pan-left command on the tactile graphic.
-#: addon\presentations\graphic.py:259
+#: addon\presentations\graphic.py:260
 msgid "Pan the tactile graphic viewport left by one page-step"
 msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar sola kaydır"
 
 #. Translators: description of the pan-up command on the tactile graphic.
-#: addon\presentations\graphic.py:268
+#: addon\presentations\graphic.py:269
 msgid "Pan the tactile graphic viewport up by one page-step"
 msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar yukarı kaydır"
 
 #. Translators: description of the pan-down command on the tactile graphic.
-#: addon\presentations\graphic.py:277
+#: addon\presentations\graphic.py:278
 msgid "Pan the tactile graphic viewport down by one page-step"
 msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı aşağı kaydır"
 
 #. Translators: description of the pan-right command on the tactile graphic.
-#: addon\presentations\graphic.py:286
+#: addon\presentations\graphic.py:287
 msgid "Pan the tactile graphic viewport right by one page-step"
 msgstr "Dokunsal grafik görüntü alanını bir sayfa adımı kadar sağa kaydır"
 
 #. Translators: description of the small pan-left command on the tactile graphic.
-#: addon\presentations\graphic.py:295
+#: addon\presentations\graphic.py:296
 msgid "Pan the tactile graphic viewport left by a few dots"
-msgstr ""
+msgstr "Dokunsal grafik görüntüleme penceresini birkaç nokta sola kaydır"
 
 #. Translators: description of the small pan-up command on the tactile graphic.
-#: addon\presentations\graphic.py:304
+#: addon\presentations\graphic.py:305
 msgid "Pan the tactile graphic viewport up by a few dots"
-msgstr ""
+msgstr "Dokunsal grafik görüntüleme penceresini birkaç nokta yukarı kaydır"
 
 #. Translators: description of the small pan-down command on the tactile graphic.
-#: addon\presentations\graphic.py:313
+#: addon\presentations\graphic.py:314
 msgid "Pan the tactile graphic viewport down by a few dots"
-msgstr ""
+msgstr "Dokunsal grafik görüntüleme penceresini birkaç nokta aşağı kaydır"
 
 #. Translators: description of the small pan-right command on the tactile graphic.
-#: addon\presentations\graphic.py:322
+#: addon\presentations\graphic.py:323
 msgid "Pan the tactile graphic viewport right by a few dots"
-msgstr ""
+msgstr "Dokunsal grafik görüntüleme penceresini birkaç nokta sağa kaydır"
 
 #. Translators: description of the jump-to-left-edge command on the tactile graphic.
-#: addon\presentations\graphic.py:331
+#: addon\presentations\graphic.py:332
 msgid "Jump the tactile graphic viewport to the left edge"
 msgstr "Dokunsal grafik görüntüleme alanını sol kenara kaydır"
 
 #. Translators: description of the jump-to-top-edge command on the tactile graphic.
-#: addon\presentations\graphic.py:340
+#: addon\presentations\graphic.py:341
 msgid "Jump the tactile graphic viewport to the top edge"
 msgstr "Dokunsal grafik görüntüleme alanını üst kenara kaydır"
 
 #. Translators: description of the jump-to-bottom-edge command on the tactile graphic.
-#: addon\presentations\graphic.py:349
+#: addon\presentations\graphic.py:350
 msgid "Jump the tactile graphic viewport to the bottom edge"
 msgstr "Dokunsal grafik görüntü alanını alt kenara kaydır"
 
 #. Translators: description of the jump-to-right-edge command on the tactile graphic.
-#: addon\presentations\graphic.py:358
+#: addon\presentations\graphic.py:359
 msgid "Jump the tactile graphic viewport to the right edge"
 msgstr "Dokunsal grafik görüntüleme alanını sağ kenara kaydır"
 
 #. Translators: description of the recenter command on the tactile graphic.
-#: addon\presentations\graphic.py:367
+#: addon\presentations\graphic.py:368
 msgid "Recenter the tactile graphic viewport"
 msgstr "Dokunsal grafik görüntü alanını yeniden ortala"
 
 #. Translators: description of the zoom-in command on the tactile graphic.
-#: addon\presentations\graphic.py:376
+#: addon\presentations\graphic.py:377
 msgid "Zoom the tactile graphic in"
 msgstr "Dokunsal grafiği yakınlaştır"
 
 #. Translators: description of the zoom-out command on the tactile graphic.
-#: addon\presentations\graphic.py:385
+#: addon\presentations\graphic.py:386
 msgid "Zoom the tactile graphic out"
 msgstr "Dokunsal grafiği uzaklaştır"
 
 #. Translators: description of the invert command on the tactile graphic.
-#: addon\presentations\graphic.py:394
+#: addon\presentations\graphic.py:395
 msgid "Invert the tactile graphic image (swap raised and blank dots)"
 msgstr "Dokunsal grafik görüntüyü ters çevirir (yükseltilmiş ve düz noktaları değiştirir)"
+
+#. Translators: description of the table command to show the columns to the left.
+#: addon\presentations\table.py:432
+msgid "Show the previous screenful of table columns"
+msgstr ""
+
+#. Translators: description of the table command to show the rows above.
+#: addon\presentations\table.py:441
+msgid "Show the previous screenful of table rows"
+msgstr ""
+
+#. Translators: description of the table command to show the rows below.
+#: addon\presentations\table.py:450
+msgid "Show the next screenful of table rows"
+msgstr ""
+
+#. Translators: description of the table command to show the columns to the right.
+#: addon\presentations\table.py:459
+msgid "Show the next screenful of table columns"
+msgstr ""
+
+#. Translators: description of the table command to move up one row.
+#: addon\presentations\table.py:468
+msgid "Move the table view up one row"
+msgstr ""
+
+#. Translators: description of the table command to move down one row.
+#: addon\presentations\table.py:477
+msgid "Move the table view down one row"
+msgstr ""
+
+#. Translators: description of the table command to move one column left.
+#: addon\presentations\table.py:486
+msgid "Move the table view left one column"
+msgstr ""
+
+#. Translators: description of the table command to move one column right.
+#: addon\presentations\table.py:495
+msgid "Move the table view right one column"
+msgstr ""
+
+#. Translators: description of the table command to jump to the first column.
+#: addon\presentations\table.py:504
+msgid "Jump the table view to the first column"
+msgstr ""
+
+#. Translators: description of the table command to jump to the first row.
+#: addon\presentations\table.py:513
+msgid "Jump the table view to the first row"
+msgstr ""
+
+#. Translators: description of the table command to jump to the last row.
+#: addon\presentations\table.py:522
+msgid "Jump the table view to the last row"
+msgstr ""
+
+#. Translators: description of the table command to jump to the last column.
+#: addon\presentations\table.py:531
+msgid "Jump the table view to the last column"
+msgstr ""
 
 #. Brief changelog for this version
 #. Translators: what's new content for the add-on version to be shown in the add-on store
