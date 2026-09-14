@@ -106,6 +106,7 @@ A long press means pressing and holding the mentioned buttons for 1.5 seconds or
 - F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
 - F1+F4: When showing a tactile image, zoom out (shrink the image).
 - F1+F2+F3+F4: When showing a tactile image, invert it: show dots where there was whitespace, and whitespace where there were dots.
+- Left Pan + Right Pan: Refresh the display, to restore dots that did not raise or lower correctly. When showing a tactile image, this also recenters the image. The Dot Pad X refreshes by itself, so there this does nothing outside tactile graphics mode.
 
 ## NVDA Braille Settings
 
@@ -215,7 +216,7 @@ Button map reference, tactile graphics mode. When the review mode is explicitly 
 - Right Pan + F4 Key: Pan the tactile graphic view right by a few dots.
 - F1+F2: Pan the tactile graphic view up by a few dots.
 - F3+F4: Pan the tactile graphic view down by a few dots.
-- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation.
+- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation. On the Dot Pad 320A this also refreshes the display.
 
 Button map reference, table mode. When a table is shown on the 300-cell display, the buttons move the view over the table. The keys match tactile graphics mode, so the same movements apply in both:
 

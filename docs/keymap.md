@@ -60,6 +60,7 @@ Conventions:
 | `f1+f3` | Displays the review object as tactile graphics via TactileDisplayAPI |
 | `f2+f3` | Displays the review object as tactile graphics via TactileDisplayAPI |
 | `f2+f4` | Displays the review object as braille via the active braille presentation |
+| `panLeft+panRight` | Refreshes the Dot Pad display |
 | `longPress(f1+f3)` | Toggles between normal braille output and screen capture mode |
 | `longPress(f2+f3)` | Forces table mode by scanning parent objects for a table |
 
@@ -76,6 +77,11 @@ This pairing, and every non-long-press binding below, matches the
 JAWS and NVDA agree on one set of chords. The library's own map is not
 consulted at runtime — the addon reads its keys itself and calls
 `ExecuteOperation` — so the two are kept in step by hand.
+
+`panLeft+panRight` rewrites every row with its current content, for pins
+that did not settle. It does nothing on D3 hardware (Dot Pad X), which
+refreshes in hardware. In graphic mode the presentation claims the chord to
+recenter the viewport, and refreshes as well.
 
 ## Tier 2 — Presentation scripts
 
@@ -103,7 +109,7 @@ in that direction. The four small-step pans (`panLeft+f1`, `panRight+f4`,
 | `f2+f3` | Zoom the tactile graphic in |
 | `f3+f4` | Pan the tactile graphic viewport down by a few dots |
 | `panLeft+f1` | Pan the tactile graphic viewport left by a few dots |
-| `panLeft+panRight` | Recenter the tactile graphic viewport |
+| `panLeft+panRight` | Recenter the tactile graphic viewport and refresh the display |
 | `panRight+f4` | Pan the tactile graphic viewport right by a few dots |
 | `f1+f2+f3+f4` | Invert the tactile graphic image (swap raised and blank dots) |
 | `longPress(f1)` | Jump the tactile graphic viewport to the left edge |
@@ -136,26 +142,24 @@ in that direction. The four small-step pans (`panLeft+f1`, `panRight+f4`,
 
 | Gesture | Reason |
 |---|---|
-| `longPress(panLeft+panRight)` | Device firmware announces battery status. If a function is mapped to this gesture, it will be executed but the firmware will keep reporting battery level as well. |
+| `longPress(panLeft+panRight)` | Device firmware announces battery status. If a function is mapped to this gesture, it will be executed but the firmware will keep reporting battery level as well. The short press is not reserved: it refreshes the display, or recenters in graphic mode. |
 
 
 ## Scripts without a default binding (user-assignable)
 
-The following scripts are registered with NVDA but have no default
-gesture. Open NVDA's Input Gestures dialog (NVDA+N → Preferences → Input
-gestures) → Dot Pad category and assign any gesture you prefer.
+Scripts registered with NVDA without a default gesture are listed here. Open
+NVDA's Input Gestures dialog (NVDA+N → Preferences → Input gestures) → Dot
+Pad category to assign any gesture you prefer.
 
 <!-- BEGIN GENERATED: unbound -->
 
-| Script | Description |
-|---|---|
-| `script_refresh` | Refreshes the Dot Pad display |
+None -- every script has a default gesture.
 
 <!-- END GENERATED: unbound -->
 
-Auto-refresh handles the common refresh case on both D3 hardware-based
-displays and the 320A's software-based path; manual refresh is needed
-rarely.
+Manual refresh is on `panLeft+panRight` (see Tier 1). Auto-refresh handles
+the common case on both D3 hardware and the 320A's software path, so it is
+needed rarely.
 
 ## Removed gestures (rebinding via NVDA's Input Gestures dialog)
 

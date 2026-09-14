@@ -263,10 +263,10 @@ class TestRealRepository(unittest.TestCase):
 		self.assertIn("longPress(f2+f3)", bound)
 		self.assertIn("f1+f2+f3+f4", bound)
 
-	def test_refresh_is_reported_as_unbound(self) -> None:
+	def test_refresh_is_a_tier_one_binding_on_both_pan_keys(self) -> None:
 		bindings = gk.collectBindings(REPO_ROOT)
-		unbound = {b.scriptName for b in bindings if b.gesture is None}
-		self.assertIn("script_refresh", unbound)
+		refresh = [b for b in bindings if b.scriptName == "script_refresh"]
+		self.assertEqual([(b.gesture, b.tier) for b in refresh], [("panLeft+panRight", 1)])
 
 	def test_graphic_bindings_are_tier_two(self) -> None:
 		bindings = gk.collectBindings(REPO_ROOT)

@@ -131,7 +131,7 @@ class TestGraphicPresentationGestures(unittest.TestCase):
 
 class TestDriverScriptGestures(unittest.TestCase):
 	"""Driver @script gesture-string changes (US3 mode-switch moves, US2 new script,
-	US4 refresh decorator strip)."""
+	refresh on both pan keys)."""
 
 	def test_toggleScreenCapture_moved_to_longPress(self):
 		gestures = _gestureIdentifiersFor(BrailleDisplayDriver.script_toggleScreenCapture)
@@ -158,14 +158,9 @@ class TestDriverScriptGestures(unittest.TestCase):
 		self.assertIn("br(dotPad):f2+f4", gestures)
 		self.assertNotIn("br(dotPad):f1+f3", gestures)
 
-	def test_refresh_has_no_default_binding(self):
-		"""script_refresh keeps its @script registration but loses its default gesture."""
+	def test_refresh_bound_to_both_pan_keys(self):
 		gestures = _gestureIdentifiersFor(BrailleDisplayDriver.script_refresh)
-		self.assertEqual(
-			gestures,
-			[],
-			f"script_refresh should have no default gestures but has {gestures!r}",
-		)
+		self.assertEqual(gestures, ["br(dotPad):panLeft+panRight"])
 
 
 def _flattenedGlobalCommandsMap() -> dict[str, str]:
@@ -263,6 +258,40 @@ class TestScriptBrailleDisplay(unittest.TestCase):
 		with patch("api.getNavigatorObject", return_value=MagicMock()):
 			# Should not raise; should not touch presentationManager.
 			BrailleDisplayDriver.script_brailleDisplay(driver, MagicMock())
+
+
+class TestRefreshDisplays(unittest.TestCase):
+	"""Manual refresh rewrites both displays, except on D3 hardware."""
+
+	def _makeDriver(self, isD3: bool) -> MagicMock:
+		driver = MagicMock(spec=BrailleDisplayDriver)
+		driver.supportsHardwareBasedAutoRefresh = isD3
+		driver.textDisplay = MagicMock()
+		driver.graphicDisplay = MagicMock()
+		return driver
+
+	def test_refreshes_both_displays(self):
+		driver = self._makeDriver(isD3=False)
+		BrailleDisplayDriver.refreshDisplays(driver)
+		driver.textDisplay.refresh.assert_called_once_with()
+		driver.graphicDisplay.refresh.assert_called_once_with()
+
+	def test_no_op_on_d3_hardware(self):
+		driver = self._makeDriver(isD3=True)
+		BrailleDisplayDriver.refreshDisplays(driver)
+		driver.textDisplay.refresh.assert_not_called()
+		driver.graphicDisplay.refresh.assert_not_called()
+
+	def test_missing_displays(self):
+		driver = self._makeDriver(isD3=False)
+		driver.textDisplay = None
+		driver.graphicDisplay = None
+		BrailleDisplayDriver.refreshDisplays(driver)
+
+	def test_script_delegates(self):
+		driver = self._makeDriver(isD3=False)
+		BrailleDisplayDriver.script_refresh(driver, MagicMock())
+		driver.refreshDisplays.assert_called_once_with()
 
 
 class _MockGesture:
