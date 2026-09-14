@@ -167,6 +167,66 @@ class TestWaitForSendSlot(unittest.TestCase):
 		)
 		core.callLater.assert_called_once()
 
+
+class TestRetryReachesTheDisplay(unittest.TestCase):
+	"""The retry runs on the sender thread, inside the very wait it is meant to end.
+
+	Queueing it put the packet behind that wait, so it was never written: in both Dot QA
+	logs for #10 "Resending last packet" is followed by no write at all, and the display
+	was released a render budget later.
+	"""
+
+	#: The packet the QA logs show being "resent" -- the last one __init__ queues.
+	FIRMWARE_REQUEST = b"\xaaU\x00\x05\x00\x00\x00\x00\xa5"
+
+	def _driverAwaitingFirmware(self) -> dotpad_driver.BrailleDisplayDriver:
+		driver = _makeDriver(connected=True)
+		driver._queuedPackets = PriorityQueue()
+		driver._blockNewWrites = threading.Event()
+		driver._maxRefreshes = {}
+		driver._lastSentPacket = dotpad_driver.Packet.makePacket(
+			dotpad_driver.PacketType.REQ_FIRMWARE_VERSION,
+		)
+		return driver
+
+	def _wait(self, driver: dotpad_driver.BrailleDisplayDriver) -> tuple[bool, MagicMock]:
+		with (
+			patch.object(type(driver), "_getRenderTimeout", lambda _self: 0.02),
+			patch(f"{_DRIVER_MODULE}.CONNECTION_POLL_SECONDS", 0.01),
+			patch(f"{_DRIVER_MODULE}.core") as core,
+		):
+			return driver._waitForSendSlot(), core
+
+	def test_the_fixture_is_the_logged_packet(self) -> None:
+		self.assertEqual(self.FIRMWARE_REQUEST, self._driverAwaitingFirmware()._lastSentPacket)
+
+	def test_the_retry_is_written_not_queued(self) -> None:
+		driver = self._driverAwaitingFirmware()
+
+		self._wait(driver)
+
+		driver._dev.write.assert_called_with(self.FIRMWARE_REQUEST)
+		self.assertTrue(driver._queuedPackets.empty())
+
+	def test_an_answer_to_the_retry_keeps_the_display(self) -> None:
+		driver = self._driverAwaitingFirmware()
+		driver._dev.write.side_effect = lambda _packet: driver._readyToSend.set()
+
+		ready, core = self._wait(driver)
+
+		self.assertTrue(ready)
+		core.callLater.assert_not_called()
+
+	def test_a_failed_retry_releases_the_display_at_once(self) -> None:
+		driver = self._driverAwaitingFirmware()
+		driver._dev.write.side_effect = RuntimeError("Not connected to peripheral")
+
+		ready, core = self._wait(driver)
+
+		self.assertFalse(ready)
+		core.callLater.assert_called_once()
+		driver._dev.write.assert_called_once()
+
 	def test_gives_up_on_a_powered_off_but_still_enumerated_device(self) -> None:
 		"""Issue #21: the port stays open, writes succeed, and nothing ever raises.
 
