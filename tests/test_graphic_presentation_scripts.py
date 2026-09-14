@@ -8,9 +8,9 @@
 After feature 016, ``GraphicPresentation`` declares ``@script``-decorated
 handler methods for the F-key pan/zoom grid and the ``panLeft+panRight``
 chord. Each handler submits ``ExecuteOperation(operation, VARIANT())`` on
-the driver's library worker. ``panLeft`` / ``panRight`` are NOT bound
-individually — they remain reserved for the always-on 20-cell text
-braille scroll.
+the driver's library worker; the recenter chord also refreshes the display.
+``panLeft`` / ``panRight`` are NOT bound individually — they remain reserved
+for the always-on 20-cell text braille scroll.
 
 The binding map below is the authoritative gesture → operation table.
 """
@@ -41,7 +41,7 @@ _EXPECTED_BINDINGS: tuple[tuple[str, str], ...] = (
 	("br(dotpad):longpress(f2)", "PAN_VIEWPORT_TOP"),
 	("br(dotpad):longpress(f3)", "PAN_VIEWPORT_BOTTOM"),
 	("br(dotpad):longpress(f4)", "PAN_VIEWPORT_END"),
-	# Chords: recenter, zoom in / out (unchanged from feature 016).
+	# Chords: recenter (plus a display refresh), zoom in / out.
 	("br(dotpad):panleft+panright", "PAN_VIEWPORT_CENTER"),
 	("br(dotpad):f2+f3", "ZOOM_VIEWPORT_IN"),
 	("br(dotpad):f1+f4", "ZOOM_VIEWPORT_OUT"),
@@ -223,6 +223,28 @@ class TestSubmitNoopWhenLibraryNotReady(unittest.TestCase):
 		args, _kwargs = worker.submitAndReport.call_args
 		self.assertIs(args[0], tda.executeOperation)
 		self.assertEqual(args[1], BrailleInputOperation.INVERT_LAST_TACTILE_IMAGE)
+
+	def test_recenter_also_refreshes(self) -> None:
+		from unittest.mock import patch
+
+		from addon.tactileDisplayAPI.comInterface import BrailleInputOperation
+
+		presentation = _makePresentation()
+		driver = MagicMock(name="driver")
+		driver._libraryReady = True
+		with patch.object(presentation, "_getActiveDriver", return_value=driver):
+			self._callScript(presentation, "script_panViewportCenter")
+
+		args, _kwargs = driver._libraryWorker.submitAndReport.call_args
+		self.assertEqual(args[1], BrailleInputOperation.PAN_VIEWPORT_CENTER)
+		driver.refreshDisplays.assert_called_once_with()
+
+	def test_recenter_without_driver(self) -> None:
+		from unittest.mock import patch
+
+		presentation = _makePresentation()
+		with patch.object(presentation, "_getActiveDriver", return_value=None):
+			self._callScript(presentation, "script_panViewportCenter")
 
 
 if __name__ == "__main__":

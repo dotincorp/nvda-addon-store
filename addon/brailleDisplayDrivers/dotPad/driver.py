@@ -2268,13 +2268,19 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		description=_(
 			# Translators: description of the refresh
 			# command for the multiline/graphical display.
-			# No default gesture — the user can assign one via NVDA's Input
-			# Gestures dialog.
 			"Refreshes the Dot Pad display",
 		),
 		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):panLeft+panRight",
 	)
 	def script_refresh(self, _gesture: inputCore.InputGesture):
+		self.refreshDisplays()
+
+	def refreshDisplays(self) -> None:
+		"""Rewrite the current content of every row, to restore pins that did not settle."""
+		# D3 hardware refreshes its pins itself.
+		if self.supportsHardwareBasedAutoRefresh:
+			return
 		if self.textDisplay:
 			self.textDisplay.refresh()
 		if self.graphicDisplay:

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Changes destined for the next release.
 
 ### Added
+- Pressing Left Pan and Right Pan together refreshes the display on the Dot Pad 320A, restoring dots that did not raise or lower correctly. In tactile graphics mode the same keys still recenter the image, and now refresh it as well. The Dot Pad X refreshes by itself and is unaffected.
 - Table mode shows a table as a tactile grid on the 300-cell display, with the text of the cell you are on in braille on the 20-cell display. It works in Microsoft Excel, in tables on web pages, and in tables in documents.
 - Table mode now has the same buttons as tactile graphics mode. F1 and F4 show the previous and next screenful of columns, F2 and F3 the previous and next screenful of rows, and holding any of the four jumps to that edge of the table. Left Pan+F1, Right Pan+F4, F1+F2 and F3+F4 move a single column or row. See the user guide for the full map.
 - A user guide is now bundled with the add-on and opens from the Help button in NVDA's add-on store. It covers connecting over Bluetooth and USB, the navigation buttons, the relevant NVDA braille settings, tactile graphics mode, Excel and Word integration, and the Dot Pad Display Viewer. It is translatable through NVDA's Crowdin project.

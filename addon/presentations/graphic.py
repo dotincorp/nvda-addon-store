@@ -251,7 +251,8 @@ class GraphicPresentation(Presentation):
 	# panLeft+f1 / panRight+f4 (left/right) and f1+f2 / f3+f4 (up/down).
 	# longPress of a single key = jump to the corresponding edge
 	# (HOME/TOP/BOTTOM/END). Zoom on f1+f4 (out) / f2+f3 (in). Recenter
-	# on panLeft+panRight. Everything but the long presses matches the
+	# on panLeft+panRight, which also takes over the driver's refresh on that
+	# chord. Everything but the long presses matches the
 	# [DotPad320X Keys] map the library ships, so TactileDisplayAPI, JAWS
 	# and NVDA agree on one set of chords.
 
@@ -365,12 +366,19 @@ class GraphicPresentation(Presentation):
 
 	@script(
 		# Translators: description of the recenter command on the tactile graphic.
-		description=_("Recenter the tactile graphic viewport"),
+		description=_("Recenter the tactile graphic viewport and refresh the display"),
 		category=SCRCAT_BRAILLE,
 		gesture="br(dotPad):panLeft+panRight",
 	)
 	def script_panViewportCenter(self, _gesture: inputCore.InputGesture) -> None:
 		self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_CENTER)
+		# The library exposes no viewport state, so we cannot tell whether the view was
+		# already centered; refresh unconditionally. Not waiting for the recenter is safe:
+		# a refresh leaves row.lastWritten alone, so the sender drops any queued refresh
+		# packet for a row the recentered frame rewrites.
+		driver = self._getActiveDriver()
+		if driver is not None:
+			driver.refreshDisplays()
 
 	@script(
 		# Translators: description of the zoom-in command on the tactile graphic.
