@@ -131,8 +131,7 @@ AUTO_REFRESH_PRIORITY: int = 999
 LONG_PRESS_THRESHOLD: float = 1.5
 
 DP_SYNC = b"\xaa\x55"
-#: Bounds on a whole frame (sync, length field and body). A declared length outside them
-#: means the parser locked onto a false sync word.
+#: Frame size bounds, header included. A length outside them means a false sync word.
 DP_MIN_PACKET_SIZE: int = 4 + 5
 DP_MAX_PACKET_SIZE: int = 512
 
@@ -1180,7 +1179,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# suppress the probe packet for the ones after it.
 			self._displayGone = False
 			self._consecutiveRenderTimeouts = 0
-			# Nor may a partial frame from a port that stopped mid-response.
+			# Nor a partial frame left by the previous port.
 			self._resetReceiveBuffer()
 			log.debug("Trying port %s, %s", portType, portId)
 			# NVDA types DeviceMatch.type as Literal["hid", "serial", "custom"], which
@@ -1777,14 +1776,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._receiveBuffer = bytearray()
 
 	def _onReceive(self, data: bytes):
-		"""Split received bytes into frames, keeping any partial frame for the next call.
+		"""Split received bytes into frames, keeping a partial frame for the next call.
 
-		Neither transport delivers whole frames: serial hands over a byte at a time, and a
-		BLE notification can carry several frames or part of one. Treating each call as
-		one packet dropped a render notification that arrived together with another frame,
-		leaving the sender waiting for an acknowledgement it had already been sent.
-
-		Ported from NVDA core's Dot Pad driver (nvaccess/nvda#19942).
+		Serial delivers a byte at a time and a BLE notification can hold several frames or
+		part of one, so a call is not a packet. Ported from NVDA core's Dot Pad driver.
 		"""
 		buffer = self._receiveBuffer
 		buffer.extend(data)
@@ -2096,11 +2091,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def _resendLastPacket(self) -> bool:
 		"""Write the unanswered packet again.
 
-		Written directly rather than queued: this runs on the sender thread, inside the
-		wait for that packet's answer, so a queued copy would only be sent once the wait it
-		is meant to end had already given up.
+		Not queued: this runs on the sender thread inside the wait for that packet's answer,
+		so a queued copy would not be sent until the wait gave up.
 
-		:returns: ``False`` if the write failed and the display has been released.
+		:returns: ``False`` if the write failed and the display was released.
 		"""
 		packet = self._lastSentPacket
 		if packet:

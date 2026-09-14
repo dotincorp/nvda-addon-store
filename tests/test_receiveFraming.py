@@ -5,10 +5,7 @@
 
 """Unit tests for splitting received bytes into frames.
 
-A BLE notification has no message boundaries: it can carry several frames, or part of
-one. Dot QA issue #10 is the first case -- a render notification and a firmware version
-response delivered together were dropped as one "incomplete" packet, the send gate never
-opened, and NVDA released the display.
+A BLE notification has no message boundaries: it can carry several frames, or part of one.
 """
 
 from __future__ import annotations
@@ -19,8 +16,7 @@ from unittest.mock import MagicMock
 from addon.brailleDisplayDrivers.dotPad import driver as dotpad_driver
 from addon.brailleDisplayDrivers.dotPad.driver import Packet, PacketType
 
-#: NTF_DISPLAY_LINE for row 1, then RSP_FIRMWARE_VERSION, as read in one notification in
-#: both QA logs.
+#: NTF_DISPLAY_LINE for row 1 and RSP_FIRMWARE_VERSION, as the display sends them in one notification.
 MERGED_NOTIFICATION = b"\xaaU\x00\x06\x01\x02\x02\x00\x00\xa4\xaaU\x00\r\x00\x00\x01\x00vA.0.2.6\x89"
 RENDERED = b"\xaaU\x00\x06\x01\x02\x02\x00\x00\xa4"
 FIRMWARE = b"\xaaU\x00\r\x00\x00\x01\x00vA.0.2.6\x89"
@@ -48,8 +44,8 @@ class FramingTestCase(unittest.TestCase):
 
 
 class TestFrameBoundaries(FramingTestCase):
-	def test_the_log_fixtures_are_valid_frames(self) -> None:
-		"""Guards the fixtures: a typo here would make every test below meaningless."""
+	def test_the_fixtures_are_valid_frames(self) -> None:
+		"""A typo here would make the tests below meaningless."""
 		self.assertEqual(RENDERED + FIRMWARE, MERGED_NOTIFICATION)
 		for frame in (RENDERED, FIRMWARE):
 			with self.subTest(frame=frame):
@@ -120,7 +116,7 @@ class TestResynchronisation(FramingTestCase):
 
 
 class TestMergedNotificationOpensTheSendGate(unittest.TestCase):
-	"""The consequence in issue #10, through the real response handler."""
+	"""Through the real response handler: the render notification opens the send gate."""
 
 	def test_the_render_notification_is_not_lost(self) -> None:
 		driver = _makeDriver()
