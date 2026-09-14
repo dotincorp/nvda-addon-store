@@ -3,7 +3,7 @@
 # See the file COPYING.txt for more details.
 # Copyright (C) 2023-2026 Dot Incorporated
 
-"""comtypes interface declaration for ITactileDisplayAPI (v1.40).
+"""comtypes interface declaration for ITactileDisplayAPI (v1.41).
 
 This file is the single source of truth for the library's vtable layout.
 The interface was renamed ``ITactileDisplayImpl`` in the v1.22 typelib but
@@ -15,12 +15,17 @@ It inherits IUnknown (slots 0-2) and IDispatch (slots 3-6) from comtypes,
 so the ``_methods_`` list starts at vtable slot 7 (the first library-
 specific method, ``Connect``).
 
-v1.23 → v1.40 vtable change
+v1.23 → v1.41 vtable change
 -----------------------------
 None. ``validateComVtable.py --check`` reports both interfaces IN SYNC
-against the v1.0.40 typelib: ``ITactileDisplayAPI`` still has 33 methods
-(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The seventeen
+against the v1.0.41 typelib: ``ITactileDisplayAPI`` still has 33 methods
+(slots 7-39) and ``ITactileDisplayCallbacks`` still has 3. The eighteen
 intervening vendor releases were behaviour and rendering fixes only.
+
+v1.41 captures partially obscured graphics with a different bitmap method
+(falling back to the old one), makes hybrid mode more reliable on its first
+use after the library connects, and limits JAWS Bluetooth reconnects to the
+device JAWS used. No vtable slots changed.
 
 v1.40 fixes graph panning (full display width on the single-key steps, one
 tick mark on the small steps) and graph label placement outside grade 2;
