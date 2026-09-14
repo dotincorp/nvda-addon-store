@@ -131,6 +131,9 @@ AUTO_REFRESH_PRIORITY: int = 999
 LONG_PRESS_THRESHOLD: float = 1.5
 
 DP_SYNC = b"\xaa\x55"
+#: Frame size bounds, header included. A length outside them means a false sync word.
+DP_MIN_PACKET_SIZE: int = 4 + 5
+DP_MAX_PACKET_SIZE: int = 512
 
 
 def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
@@ -1154,6 +1157,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		# unavailable", and only the latter is worth telling the user about.
 		self._librarySetupPending = True
 		self._initSendState()
+		self._resetReceiveBuffer()
 		self._queuedPackets = PriorityQueue()
 		self._ackLock = threading.Lock()
 		self._renderer = None
@@ -1175,6 +1179,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# suppress the probe packet for the ones after it.
 			self._displayGone = False
 			self._consecutiveRenderTimeouts = 0
+			# Nor a partial frame left by the previous port.
+			self._resetReceiveBuffer()
 			log.debug("Trying port %s, %s", portType, portId)
 			# NVDA types DeviceMatch.type as Literal["hid", "serial", "custom"], which
 			# does not know about the "BLE" type our own detector registers, so pyright
@@ -1713,7 +1719,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				self._reportDisplayUnavailable()
 				return False
 			log.debugWarning("dotPad: line did not render within %.1fs, retrying last packet", renderTimeout)
-			self._resendLastPacket()
+			if not self._resendLastPacket():
+				return False
 			deadline = time.monotonic() + renderTimeout
 		return False
 
@@ -1765,17 +1772,34 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 		core.callLater(0, releaseIfStillCurrent)
 
+	def _resetReceiveBuffer(self) -> None:
+		self._receiveBuffer = bytearray()
+
 	def _onReceive(self, data: bytes):
-		packet: Packet = Packet(data)
-		while packet.bytesExpected > 0:
-			packet = Packet(packet + self._dev.read(packet.bytesExpected))
-		if not packet.isComplete:
-			log.debugWarning("Incomplete packet received: %r, ignoring", packet)
-			return
-		if not packet.isValid:
-			log.debugWarning("Invalid packet received: %r, ignoring", packet)
-			return
-		self._handleResponse(packet)
+		"""Split received bytes into frames, keeping a partial frame for the next call.
+
+		Serial delivers a byte at a time and a BLE notification can hold several frames or
+		part of one, so a call is not a packet. Ported from NVDA core's Dot Pad driver.
+		"""
+		buffer = self._receiveBuffer
+		buffer.extend(data)
+		while len(buffer) >= 4:
+			if not buffer.startswith(DP_SYNC):
+				del buffer[0]
+				continue
+			frameLength = 4 + int.from_bytes(buffer[2:4], "big")
+			if not DP_MIN_PACKET_SIZE <= frameLength <= DP_MAX_PACKET_SIZE:
+				log.debugWarning("Implausible frame length %s, resynchronising", frameLength)
+				del buffer[0]
+				continue
+			if len(buffer) < frameLength:
+				break
+			packet = Packet(bytes(buffer[:frameLength]))
+			del buffer[:frameLength]
+			if not packet.isValid:
+				log.debugWarning("Invalid packet received: %r, ignoring", packet)
+				continue
+			self._handleResponse(packet)
 
 	def _handleResponse(self, packet: Packet):
 		# Anything arriving from the display means it is still responding.
@@ -2064,7 +2088,14 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				return row
 		raise ValueError(f"No external row found for destination: {destination}")
 
-	def _resendLastPacket(self):
+	def _resendLastPacket(self) -> bool:
+		"""Write the unanswered packet again.
+
+		Not queued: this runs on the sender thread inside the wait for that packet's answer,
+		so a queued copy would not be sent until the wait gave up.
+
+		:returns: ``False`` if the write failed and the display was released.
+		"""
 		packet = self._lastSentPacket
 		if packet:
 			if not self._lastSentPacketNumTries < 3:
@@ -2077,10 +2108,16 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				self._lastSentPacket = None
 				self._lastSentPacketNumTries = 0
 				self._readyToSend.set()
-				return
+				return True
 			log.debug("Resending last packet: %s", packet)
-			self._queuePacket(packet)
 			self._lastSentPacketNumTries += 1
+			try:
+				self._dev.write(packet)
+			except Exception:
+				log.exception("dotPad: resending to the display failed; releasing it")
+				self._reportDisplayUnavailable()
+				return False
+		return True
 
 	def _checkIdleRefresh(self):
 		"""Check for idle destinations and trigger refresh if needed."""

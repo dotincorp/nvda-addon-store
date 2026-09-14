@@ -198,6 +198,62 @@ class TestWaitForSendSlot(unittest.TestCase):
 			self.assertFalse(driver._waitForSendSlot())
 
 
+class TestRetryReachesTheDisplay(unittest.TestCase):
+	"""The retry runs on the sender thread inside the wait it is meant to end, so it must be
+	written rather than queued."""
+
+	#: REQ_FIRMWARE_VERSION, the last packet __init__ queues.
+	FIRMWARE_REQUEST = b"\xaaU\x00\x05\x00\x00\x00\x00\xa5"
+
+	def _driverAwaitingFirmware(self) -> dotpad_driver.BrailleDisplayDriver:
+		driver = _makeDriver(connected=True)
+		driver._queuedPackets = PriorityQueue()
+		driver._blockNewWrites = threading.Event()
+		driver._maxRefreshes = {}
+		driver._lastSentPacket = dotpad_driver.Packet.makePacket(
+			dotpad_driver.PacketType.REQ_FIRMWARE_VERSION,
+		)
+		return driver
+
+	def _wait(self, driver: dotpad_driver.BrailleDisplayDriver) -> tuple[bool, MagicMock]:
+		with (
+			patch.object(type(driver), "_getRenderTimeout", lambda _self: 0.02),
+			patch(f"{_DRIVER_MODULE}.CONNECTION_POLL_SECONDS", 0.01),
+			patch(f"{_DRIVER_MODULE}.core") as core,
+		):
+			return driver._waitForSendSlot(), core
+
+	def test_the_fixture_is_a_firmware_request(self) -> None:
+		self.assertEqual(self.FIRMWARE_REQUEST, self._driverAwaitingFirmware()._lastSentPacket)
+
+	def test_the_retry_is_written_not_queued(self) -> None:
+		driver = self._driverAwaitingFirmware()
+
+		self._wait(driver)
+
+		driver._dev.write.assert_called_with(self.FIRMWARE_REQUEST)
+		self.assertTrue(driver._queuedPackets.empty())
+
+	def test_an_answer_to_the_retry_keeps_the_display(self) -> None:
+		driver = self._driverAwaitingFirmware()
+		driver._dev.write.side_effect = lambda _packet: driver._readyToSend.set()
+
+		ready, core = self._wait(driver)
+
+		self.assertTrue(ready)
+		core.callLater.assert_not_called()
+
+	def test_a_failed_retry_releases_the_display_at_once(self) -> None:
+		driver = self._driverAwaitingFirmware()
+		driver._dev.write.side_effect = RuntimeError("Not connected to peripheral")
+
+		ready, core = self._wait(driver)
+
+		self.assertFalse(ready)
+		core.callLater.assert_called_once()
+		driver._dev.write.assert_called_once()
+
+
 class TestEscalationCounterReset(unittest.TestCase):
 	def test_any_packet_from_the_display_clears_the_counter(self) -> None:
 		"""Liveness is proven by the device talking, not by the gate opening.
