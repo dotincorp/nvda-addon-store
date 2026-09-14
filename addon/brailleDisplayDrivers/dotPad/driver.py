@@ -131,6 +131,10 @@ AUTO_REFRESH_PRIORITY: int = 999
 LONG_PRESS_THRESHOLD: float = 1.5
 
 DP_SYNC = b"\xaa\x55"
+#: Bounds on a whole frame (sync, length field and body). A declared length outside them
+#: means the parser locked onto a false sync word.
+DP_MIN_PACKET_SIZE: int = 4 + 5
+DP_MAX_PACKET_SIZE: int = 512
 
 
 def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
@@ -1154,6 +1158,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		# unavailable", and only the latter is worth telling the user about.
 		self._librarySetupPending = True
 		self._initSendState()
+		self._resetReceiveBuffer()
 		self._queuedPackets = PriorityQueue()
 		self._ackLock = threading.Lock()
 		self._renderer = None
@@ -1175,6 +1180,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# suppress the probe packet for the ones after it.
 			self._displayGone = False
 			self._consecutiveRenderTimeouts = 0
+			# Nor may a partial frame from a port that stopped mid-response.
+			self._resetReceiveBuffer()
 			log.debug("Trying port %s, %s", portType, portId)
 			# NVDA types DeviceMatch.type as Literal["hid", "serial", "custom"], which
 			# does not know about the "BLE" type our own detector registers, so pyright
@@ -1765,17 +1772,38 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 		core.callLater(0, releaseIfStillCurrent)
 
+	def _resetReceiveBuffer(self) -> None:
+		self._receiveBuffer = bytearray()
+
 	def _onReceive(self, data: bytes):
-		packet: Packet = Packet(data)
-		while packet.bytesExpected > 0:
-			packet = Packet(packet + self._dev.read(packet.bytesExpected))
-		if not packet.isComplete:
-			log.debugWarning("Incomplete packet received: %r, ignoring", packet)
-			return
-		if not packet.isValid:
-			log.debugWarning("Invalid packet received: %r, ignoring", packet)
-			return
-		self._handleResponse(packet)
+		"""Split received bytes into frames, keeping any partial frame for the next call.
+
+		Neither transport delivers whole frames: serial hands over a byte at a time, and a
+		BLE notification can carry several frames or part of one. Treating each call as
+		one packet dropped a render notification that arrived together with another frame,
+		leaving the sender waiting for an acknowledgement it had already been sent.
+
+		Ported from NVDA core's Dot Pad driver (nvaccess/nvda#19942).
+		"""
+		buffer = self._receiveBuffer
+		buffer.extend(data)
+		while len(buffer) >= 4:
+			if not buffer.startswith(DP_SYNC):
+				del buffer[0]
+				continue
+			frameLength = 4 + int.from_bytes(buffer[2:4], "big")
+			if not DP_MIN_PACKET_SIZE <= frameLength <= DP_MAX_PACKET_SIZE:
+				log.debugWarning("Implausible frame length %s, resynchronising", frameLength)
+				del buffer[0]
+				continue
+			if len(buffer) < frameLength:
+				break
+			packet = Packet(bytes(buffer[:frameLength]))
+			del buffer[:frameLength]
+			if not packet.isValid:
+				log.debugWarning("Invalid packet received: %r, ignoring", packet)
+				continue
+			self._handleResponse(packet)
 
 	def _handleResponse(self, packet: Packet):
 		# Anything arriving from the display means it is still responding.
