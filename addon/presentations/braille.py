@@ -195,7 +195,7 @@ class BraillePresentation(Presentation):
 					continue
 				try:
 					region.update()
-				except Exception:
+				except Exception:  # noqa: BLE001
 					log.debugWarning(
 						"Region update failed for %s, object probably died",
 						region,
@@ -334,7 +334,7 @@ def _getActiveDotPadDriver() -> BrailleDisplayDriver | None:
 	"""
 	try:
 		display = braille.handler.display  # type: ignore[union-attr]
-	except Exception:
+	except AttributeError:
 		return None
 	if display is None:
 		return None
@@ -397,20 +397,17 @@ class LibraryBraillePresentation(Presentation):
 		   asking for content. Its name also implies it renders the object
 		   at the cursor, so it may double as the initial-focus kick-start.
 
-		Then ``RegisterEvents(True)`` is enabled (step 2 below).
+		2. ``AddFocusedControl()`` renders the control that already has focus.
+		   The bootstrap runs before NVDA has reported that control, and a
+		   control focused before the library subscribed never raises a UIA
+		   focus event, so without it the pins stay down until focus moves.
 
-		This call blocks, so it MUST run with events OFF — events live during a
+		Then ``RegisterEvents(True)`` is enabled (step 3 below).
+
+		These calls block, so they MUST run with events OFF — events live during a
 		blocking call starve the STA pump and heap-corrupt the library.
 		``submit`` is FIFO, so enabling events afterward guarantees they only go
-		on once it has drained.
-
-		Two earlier bootstrap calls were dropped after hardware testing showed
-		the text-mode switch alone renders the initial focus: a
-		``ShowMultilineText`` "warm-up" (a workaround for zero-content frames in
-		an older library version) and an explicit ``AddFocusedControl()``
-		kick-start. If a future library version leaves the initial focus blank
-		until the user moves focus, an ``AddFocusedControl()`` submit — placed
-		here, BEFORE ``enableLibraryUiaEvents`` so it runs events-off — restores it.
+		on once both have drained.
 		"""
 		driver = self._getActiveDriver()
 		if driver is None or not getattr(driver, "_libraryReady", False):
@@ -434,11 +431,21 @@ class LibraryBraillePresentation(Presentation):
 			onSuccess=onSwitchSuccess,
 			onFailure=onSwitchFailure,
 		)
-		# Step 2: NOW enable the library's autonomous UIA subscription, AFTER the
+
+		def onFocusFailure(exc: BaseException) -> None:
+			log.warning("Rendering the focused control failed: %r", exc)
+
+		worker.submitAndReport(
+			tda.addFocusedControl,
+			timeout=1.0,
+			onSuccess=lambda _result: None,
+			onFailure=onFocusFailure,
+		)
+		# Step 3: NOW enable the library's autonomous UIA subscription, AFTER the
 		# blocking bootstrap above. Enabling it earlier (e.g. at driver init)
 		# meant UIA events were live during the blocking ExecuteOperation, which
 		# starves the STA pump and heap-corrupts the library. submit() is FIFO,
-		# so this runs only once step 1 has drained. From here the library
+		# so this runs only once steps 1 and 2 have drained. From here the library
 		# renders braille autonomously via TactileDisplayUpdated; terminate()
 		# turns events back off.
 		driver.enableLibraryUiaEvents()
