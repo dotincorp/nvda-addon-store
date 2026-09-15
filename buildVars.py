@@ -46,6 +46,7 @@ addon_info = AddonInfo(
 - Braille and graphics on the multi-line tactile area are now rendered by the bundled TactileDisplayAPI library. It follows the focused control itself and gives richer output for controls, math and images; the NVDA review cursor remains available as an alternative
 - Tactile graphic mode for images, with pan, zoom, recentre and image inversion
 - Table mode, including tables in virtual documents such as Google Docs
+- Hybrid mode, which shows print and braille together on the tactile area; print in text fields can be panned and zoomed
 - Connecting, disconnecting and switching between Bluetooth and USB displays is faster, and no longer freezes NVDA when a display is off or out of range
 - Requires NVDA 2026.1 or later"""),
 	# Author(s)
