@@ -67,9 +67,6 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		self.assertIs(calls[1].args[0], driver._tda.addFocusedControl)
 		submittedFns = [c.args[0] for c in calls]
 		self.assertNotIn(driver._tda.showMultilineText, submittedFns)
-		# The library's autonomous UIA subscription is enabled only AFTER the
-		# blocking bootstrap (events-off bootstrap avoids the STA-pump-starve
-		# heap-corruption crash).
 		driver.enableLibraryUiaEvents.assert_called_once_with()
 
 	def test_init_skips_bootstrap_when_library_not_ready(self) -> None:

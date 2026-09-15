@@ -362,15 +362,7 @@ class LibraryBraillePresentation(Presentation):
 	"""
 
 	def __init__(self, display: Display) -> None:
-		"""Initialize a library-driven braille presentation.
-
-		Submits ``AddFocusedControl()`` to the library worker on
-		construction so the library renders the currently-focused control
-		immediately. ``RegisterEvents(True)`` (configured at driver init)
-		only catches FUTURE events — without an initial kick-start the
-		library has no state for the control that was already focused
-		when the presentation was first activated, and emits zero-content
-		frames until the user moves focus to something else.
+		"""Initialize a library-driven braille presentation and bootstrap the library.
 
 		:param display: The display to render to. Stored for future use; the
 			library writes the multi-line area autonomously so we don't need
@@ -385,29 +377,14 @@ class LibraryBraillePresentation(Presentation):
 		self._bootstrapFocusedControl()
 
 	def _bootstrapFocusedControl(self) -> None:
-		"""Force text mode, then enable UIA events.
+		"""Switch the library to text mode, render the focused control, then enable UIA events.
 
-		Bootstrap:
-
-		1. ``ExecuteOperation(SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)`` switches
-		   the library out of graphics mode (the docs document op 18 as
-		   "switch back to text mode from graphics mode"). After
-		   ``SimulateDisplay`` init the library's default mode isn't
-		   documented; this call guarantees we're in text mode before
-		   asking for content. Its name also implies it renders the object
-		   at the cursor, so it may double as the initial-focus kick-start.
-
-		2. ``AddFocusedControl()`` renders the control that already has focus.
-		   The bootstrap runs before NVDA has reported that control, and a
-		   control focused before the library subscribed never raises a UIA
-		   focus event, so without it the pins stay down until focus moves.
-
-		Then ``RegisterEvents(True)`` is enabled (step 3 below).
-
-		These calls block, so they MUST run with events OFF — events live during a
-		blocking call starve the STA pump and heap-corrupt the library.
-		``submit`` is FIFO, so enabling events afterward guarantees they only go
-		on once both have drained.
+		1. ``ExecuteOperation(SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)`` switches the
+		   library to text mode.
+		2. ``AddFocusedControl()`` renders the control that already has focus: it
+		   never raises a UIA focus event, so the library would otherwise show
+		   nothing until focus moves.
+		3. ``RegisterEvents(True)`` lets the library follow focus from then on.
 		"""
 		driver = self._getActiveDriver()
 		if driver is None or not getattr(driver, "_libraryReady", False):
@@ -423,7 +400,6 @@ class LibraryBraillePresentation(Presentation):
 		def onSwitchFailure(exc: BaseException) -> None:
 			log.warning("LibraryBraillePresentation: text-mode switch failed: %r", exc)
 
-		# Step 1: switch the library to text mode. Op 18 per the v1.16 docs.
 		worker.submitAndReport(
 			tda.executeOperation,
 			BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE,
@@ -441,16 +417,9 @@ class LibraryBraillePresentation(Presentation):
 			onSuccess=lambda _result: None,
 			onFailure=onFocusFailure,
 		)
-		# Step 3: NOW enable the library's autonomous UIA subscription, AFTER the
-		# blocking bootstrap above. Enabling it earlier (e.g. at driver init)
-		# meant UIA events were live during the blocking ExecuteOperation, which
-		# starves the STA pump and heap-corrupts the library. submit() is FIFO,
-		# so this runs only once steps 1 and 2 have drained. From here the library
-		# renders braille autonomously via TactileDisplayUpdated; terminate()
-		# turns events back off.
 		driver.enableLibraryUiaEvents()
 		log.debug(
-			"LibraryBraillePresentation: bootstrap submitted (text-mode switch + enable UIA events)",
+			"LibraryBraillePresentation: bootstrap submitted (text-mode switch, focused control, UIA events)",
 		)
 
 	@property
