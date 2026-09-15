@@ -1296,8 +1296,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			worker.start(startTimeoutS=5.0)
 
 			def setupOnWorker():
-				tda = TactileDisplayAPI()
-				tda._ensureInitialized()  # pyright: ignore[reportPrivateUsage]
+				tda = worker.tda
+				assert tda is not None  # start() succeeded
 				callbacks = TactileDisplayCallbacks(
 					renderTactile=_simulatedDisplay.renderTactileBytes,
 					renderBraille=_simulatedDisplay.renderBrailleBytes,

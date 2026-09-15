@@ -73,7 +73,7 @@ class TestDriverLibrarySingleton(unittest.TestCase):
 			workerInstance.submit.side_effect = lambda fn, *a, **k: MagicMock(
 				result=lambda timeout=None: fn(),
 			)
-			tdaInstance = tdaCls.return_value
+			tdaInstance = workerInstance.tda
 			cbInstance = cbCls.return_value
 			simMod.computeSimulateDisplayArgs.return_value = ("DotPad320A", 60, 40, 20, 1)
 			iniPatcherMod.patchTactileDisplayAPIIni.return_value = {}
@@ -82,6 +82,7 @@ class TestDriverLibrarySingleton(unittest.TestCase):
 
 		self.assertIs(driver._libraryWorker, workerInstance)
 		self.assertIs(driver._tda, tdaInstance)
+		tdaCls.assert_not_called()
 		self.assertIs(driver._callbackServer, cbInstance)
 		self.assertTrue(driver._libraryReady)
 		workerInstance.start.assert_called_once()

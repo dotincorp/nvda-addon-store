@@ -32,12 +32,13 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import comtypes
 from logHandler import log
 
 if TYPE_CHECKING:
 	from comtypes.automation import IDispatch
 
-from .comInterface import ITactileDisplayAPI
+from .comInterface import ITactileDisplayAPI, ITactileDisplayImpl2
 
 
 # --- COM GUIDs ---
@@ -273,8 +274,9 @@ def createTactileDisplayApi() -> "ctypes._Pointer[ITactileDisplayAPI]":  # pyrig
 
 	Loads the DLL (cached via module-level singleton), gets the
 	``IClassFactory`` via ``DllGetClassObject``, iterates ``IID_CANDIDATES``
-	via ``IClassFactory::CreateInstance`` until one succeeds, and casts the
-	resulting raw pointer into ``POINTER(ITactileDisplayAPI)``.
+	via ``IClassFactory::CreateInstance`` until one succeeds, casts the
+	resulting raw pointer into ``POINTER(ITactileDisplayAPI)``, and upgrades
+	it to ``ITactileDisplayImpl2`` when the library supports that (v1.0.42+).
 
 	Returns:
 		A comtypes-typed pointer. The caller can call any method declared
@@ -320,7 +322,12 @@ def createTactileDisplayApi() -> "ctypes._Pointer[ITactileDisplayAPI]":  # pyrig
 	# has refcount 1 (CreateInstance gives caller-owned reference);
 	# comtypes' Release-on-GC decrements it on Python wrapper destruction.
 	# Do NOT wrap the same raw pointer twice — that would double-Release.
-	return ctypes.cast(raw_ptr, ctypes.POINTER(ITactileDisplayAPI))
+	api = ctypes.cast(raw_ptr, ctypes.POINTER(ITactileDisplayAPI))
+	try:
+		return api.QueryInterface(ITactileDisplayImpl2)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+	except comtypes.COMError:
+		log.debug("Tactile-display library has no ITactileDisplayImpl2; using the base interface")
+		return api
 
 
 def createSystemTactileDisplayApi() -> "IDispatch":

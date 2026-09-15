@@ -122,20 +122,35 @@ uv run python tools/validateComVtable.py --check
 
 | Exit code | Meaning | Next step |
 |-----------|---------|-----------|
-| 0 | IN SYNC — vtable unchanged | Skip to Step 3 |
+| 0, no `WARNING: typelib interface` line | IN SYNC — every interface unchanged | Skip to Step 3 |
+| 0, with a `WARNING: typelib interface` line | **New interface the tool does not check** | Step 2, "New interface" |
 | 1 | DRIFT DETECTED | Continue to Step 2 |
 | 2 | Environment error | Fix per error message, then retry |
+
+**Exit 0 only covers interfaces listed in `_INTERFACE_NAMES`.** The tool compares
+only what `comInterface.py` declares, so a whole new interface passes silently.
+v1.0.41 shipped `ITactileDisplayImpl2` undeclared and still reported IN SYNC. The
+tool now prints a warning to stderr for any `ITactileDisplay*` interface in the
+typelib that it is not checking, but the exit code stays 0. Read the output; don't
+just branch on the exit code.
 
 Sample output when in sync:
 
 ```
-TactileDisplayAPI.dll  version: v1.0.23
-comInterface.py        version: v1.0.23  (from module docstring)
+TactileDisplayAPI.dll  version: v1.0.42
+comInterface.py        version: v1.42  (from module docstring)
 
-ITactileDisplayAPI      — 33 methods (slots 7-39) — IN SYNC
-ITactileDisplayCallbacks — 3 methods (slots 7-9)  — IN SYNC
+ITactileDisplayAPI               — 33 methods (slots 7-39) — IN SYNC
+ITactileDisplayCallbacks         — 3 methods (slots 3-5) — IN SYNC
+ITactileDisplayImpl2             — 5 methods (slots 40-44) — IN SYNC
 
-Advisory: 2 signature deviation(s) suppressed by known-deviation allowlist.
+Advisory: 1 signature deviation(s) suppressed by known-deviation allowlist.
+```
+
+Sample warning for an interface that is not being checked (exit code still 0):
+
+```
+WARNING: typelib interface ITactileDisplayImpl3 is not validated; add it to _INTERFACE_NAMES.
 ```
 
 Reading a drift report:
@@ -150,7 +165,44 @@ Reading a drift report:
 
 Use `--dll path\to\TactileDisplayAPI.dll` to validate a candidate DLL before replacing the bundled one.
 
-## Step 2: Scaffold and update comInterface.py (only if exit 1)
+## Step 2: Scaffold and update comInterface.py (exit 1, or a new-interface warning)
+
+### New interface
+
+`--scaffold` only covers interfaces the tool already knows, so declare a new one by
+hand first:
+
+1. **Take signatures from comtypes' generated module, not from a raw typelib dump.**
+   `ITypeLib.GetTypeInfo` on a dual interface returns the *dispinterface* view: every
+   method shows a `void` return, and `[out, retval]` getters look like they return
+   `BOOL`. Declaring `GetGraphicsMode` that way access-violated. Print the vtable view
+   instead:
+
+   ```powershell
+   uv run python -c "import sys, comtypes.client as cc; cc.gen_dir=sys.argv[1]; sys.path.insert(0, sys.argv[1]); m=cc.GetModule(sys.argv[2]); I=m.ITactileDisplayImpl2; print([b.__name__ for b in I.__mro__[:3]]); print(*I._methods_, sep='\n')" .scratch\gen addon\tactileDisplayAPI\TactileDisplayAPI.dll
+   ```
+
+   The MRO tells you what it inherits. If it derives from an interface already declared
+   here, subclass that class in `comInterface.py` and list only the new methods, as
+   `ITactileDisplayImpl2(ITactileDisplayAPI)` does.
+2. **Check every `["out"]` pointer to a scalar.** A caller-allocated buffer (like
+   `GetBuffer`'s `buffer`) must be `["in"]`, or comtypes allocates a single element.
+   Record each deviation like this in `KNOWN_DEVIATIONS`.
+3. **Register it with the tool.** Add the name to `_INTERFACE_NAMES` and its first
+   slot to `_SLOT_BASE` in `tools/validateComVtable.py`. The first slot is the base
+   interface's slot base plus its method count; `ITactileDisplayImpl2` starts at 40.
+   Extend the fixture in `tests/test_validateComVtable.py`.
+4. **Acquire it with `QueryInterface`, don't cast.** `comLoader.createTactileDisplayApi`
+   creates through the legacy IID and then QIs, falling back to the base interface.
+   Extend that; never add the new IID to `IID_CANDIDATES`.
+5. **Call the new methods without hardware before wiring them in.** Load the bundled
+   DLL, create the object, QI and call each getter. An access violation means the
+   signature is wrong. An `E_UNEXPECTED` from a method that needs a display is
+   expected.
+6. Document the change in the `comInterface.py` docstring, then re-run `--check`:
+   the new interface should appear IN SYNC with no warning.
+
+### New methods on a known interface
 
 ```powershell
 uv run python tools/validateComVtable.py --scaffold
