@@ -212,8 +212,9 @@ class PresentationRenderer(AutoPropertyObject):
 			self.forceRefresh = True
 			# Auto-exit: when leaving graphic mode, ask the outgoing
 			# presentation to clear the tactile area. Wrapped so any
-			# failure leaves the rendering flow intact.
-			if previousName == "graphic" and previousPresentation is not None:
+			# failure leaves the rendering flow intact. Not towards hybrid
+			# print: the library is drawing that, and a clear would wipe it.
+			if previousName == "graphic" and activeName != "hybridPrint" and previousPresentation is not None:
 				try:
 					previousPresentation.terminate()
 				except Exception:

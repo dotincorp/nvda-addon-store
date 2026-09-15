@@ -127,6 +127,18 @@ class TestLibraryModeRefresh(unittest.TestCase):
 		driver.requestLibraryModeRefresh()
 		self.assertEqual(driver._libraryWorker.queued, [])
 
+	def test_any_other_com_error_is_tried_again_next_time(self) -> None:
+		"""On a library that has the getters, a COM error is a real failure, and may pass."""
+		driver = _makeDriver()
+		driver._tda.getGraphicsMode.side_effect = comtypes.COMError(-2147467259, "Unspecified error", None)
+		self._refresh(driver)
+		self.assertIsNone(driver.libraryModes)
+		self.onLibraryModes.assert_not_called()
+		driver._tda.getGraphicsMode.side_effect = None
+		driver._tda.getGraphicsMode.return_value = True
+		self._refresh(driver)
+		self.assertEqual(driver.libraryModes, LibraryModes(graphics=True, hybrid=False, serial=1))
+
 	def test_a_failed_query_is_tried_again_next_time(self) -> None:
 		driver = _makeDriver()
 		driver._tda.getGraphicsMode.side_effect = RuntimeError("busy")

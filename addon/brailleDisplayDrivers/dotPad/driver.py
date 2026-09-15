@@ -264,6 +264,26 @@ def _setLineSpacingOnWorker(tda: object, paddingDots: int, forceSixDot: bool) ->
 		)
 
 
+_GETTERS_MISSING_HRESULTS = frozenset(
+	{
+		-2147352570,  # DISP_E_UNKNOWNNAME
+		-2147352573,  # DISP_E_MEMBERNOTFOUND
+		-2147467263,  # E_NOTIMPL
+	},
+)
+
+
+def _libraryModeGettersMissing(error: BaseException) -> bool:
+	"""Whether a failed mode query means the library has no getters, rather than a passing failure.
+
+	An older bundled library leaves them off the interface, and the system library's IDispatch
+	cannot resolve them; any other COM error can be transient, a reconnect for instance.
+	"""
+	if isinstance(error, AttributeError):
+		return True
+	return isinstance(error, comtypes.COMError) and error.hresult in _GETTERS_MISSING_HRESULTS
+
+
 def _queryLibraryModesOnWorker(tda: object) -> tuple[bool, bool]:
 	"""Return the library's ``(graphics, hybrid)`` mode. Runs on the library worker thread."""
 	return (
@@ -1483,16 +1503,15 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		"""Record a finished mode query. Runs on the library worker thread."""
 		try:
 			graphics, hybrid = future.result()
-		except (AttributeError, comtypes.COMError):
-			# A library older than v1.0.42, or the system library through IDispatch.
-			log.debugWarning("The library cannot report its mode", exc_info=True)
-			self._libraryModesUnsupported = True
-			with self._libraryModeLock:
-				self._libraryModeQueryPending = False
-				self._libraryModeQueryRerun = False
-			_simulatedDisplay.onLibraryModes(None)
-			return
-		except Exception:
+		except Exception as error:
+			if _libraryModeGettersMissing(error):
+				log.debugWarning("The library cannot report its mode", exc_info=True)
+				self._libraryModesUnsupported = True
+				with self._libraryModeLock:
+					self._libraryModeQueryPending = False
+					self._libraryModeQueryRerun = False
+				_simulatedDisplay.onLibraryModes(None)
+				return
 			log.debugWarning("Library mode query failed", exc_info=True)
 		else:
 			previous = self._libraryModes

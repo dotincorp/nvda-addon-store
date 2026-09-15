@@ -115,8 +115,10 @@ picture instead of the text.
 _candidatePayload: bytes | None = None
 """A frame kept back from ``_lastPayload`` until the library says it was braille.
 
-The first print frame of hybrid mode arrives while library braille is still the active
-presentation: switching needs a mode query, and that query can only follow the frame.
+The active presentation lags the library in both directions, because switching needs a mode
+query and that query can only follow the frame. The first print frame arrives while library
+braille is still active; the first braille frame after print or an image arrives while a
+graphic presentation still is.
 """
 
 _libraryReportsModes: bool = False
@@ -242,11 +244,10 @@ def renderTactileBytes(payload: bytes) -> None:
 		# Remembered before the gate decides: a frame discarded now is exactly
 		# the frame to show when a library-bytes consumer becomes active again.
 		# Graphic mode is the exception - see the module note on _lastPayload.
-		if not isinstance(activePresentation, _getGraphicPresentationClass()):
-			if _libraryReportsModes:
-				_candidatePayload = payload
-			else:
-				_lastPayload = payload
+		if _libraryReportsModes:
+			_candidatePayload = payload
+		elif not isinstance(activePresentation, _getGraphicPresentationClass()):
+			_lastPayload = payload
 
 		if not isinstance(activePresentation, allowedClasses):
 			activeName = type(activePresentation).__name__ if activePresentation else "None"

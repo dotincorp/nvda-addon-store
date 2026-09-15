@@ -134,10 +134,14 @@ class TestFramesWaitForModeReport(unittest.TestCase):
 	def _report(self, graphics: bool = False, hybrid: bool = False) -> None:
 		self.simulatedDisplay.onLibraryModes(LibraryModes(graphics=graphics, hybrid=hybrid, serial=1))
 
-	def _send(self, payload: bytes) -> None:
+	def _send(self, payload: bytes, activePresentation=None) -> None:
 		with (
 			patch.object(self.simulatedDisplay, "_getGraphicDisplay", return_value=self.graphicDisplay),
-			patch.object(self.simulatedDisplay, "_getActivePresentation", return_value=self.braille),
+			patch.object(
+				self.simulatedDisplay,
+				"_getActivePresentation",
+				return_value=activePresentation or self.braille,
+			),
 		):
 			self.simulatedDisplay.renderTactileBytes(payload)
 
@@ -179,6 +183,18 @@ class TestFramesWaitForModeReport(unittest.TestCase):
 		self.assertTrue(self._replay())
 		buffer = self.graphicDisplay.display.call_args.args[0]
 		self.assertTrue(any(buffer.getRowCells(0)), "the braille frame should be the one replayed")
+
+	def test_braille_arriving_while_print_is_still_active_is_kept(self):
+		"""Leaving print, the button's braille arrives before the presentation has switched back."""
+		self._report()
+		self._send(b"\x00" * 300)
+		self._report()
+		hybrid = makePresentation("addon.presentations.graphic.HybridPrintPresentation")
+		self._send(b"\x01" * 300, hybrid)
+		self._report(hybrid=True)
+		self.assertTrue(self._replay())
+		buffer = self.graphicDisplay.display.call_args.args[0]
+		self.assertTrue(any(buffer.getRowCells(0)), "the newer braille frame should be the one replayed")
 
 	def test_a_library_that_cannot_report_keeps_frames_at_once(self):
 		self.simulatedDisplay.onLibraryModes(None)

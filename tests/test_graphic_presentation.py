@@ -329,6 +329,14 @@ class TestFollowsLibraryMode(unittest.TestCase):
 		self.assertEqual(self.presentation._requestedSerial, 3)
 		self.driver.requestLibraryModeRefresh.assert_called_once_with()
 
+	def test_a_failed_operation_does_not_leave_it_waiting(self) -> None:
+		self.presentation._useNvdaDrivenRender = MagicMock(return_value=False)
+		self.presentation.render(MagicMock())
+		self.driver._libraryWorker.submitAndReport.call_args.kwargs["onFailure"](TimeoutError())
+		self.driver.requestLibraryModeRefresh.assert_called_once_with()
+		self._report(graphics=False)
+		self.assertFalse(self._valid())
+
 	def test_a_navigator_change_still_ends_it(self) -> None:
 		self.presentation._noteOperationFinished()
 		self._report(graphics=True)

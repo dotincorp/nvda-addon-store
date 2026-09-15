@@ -71,13 +71,19 @@ addonHandler.initTranslation()
 LIBRARY_DRAW_TIMEOUT_S: float = 1.0
 
 
+def _libraryModesOf(driver: object) -> LibraryModes | None:
+	"""What ``driver`` last heard from the library, if it is a Dot Pad that can say."""
+	modes = getattr(driver, "libraryModes", None)
+	return modes if isinstance(modes, LibraryModes) else None
+
+
 def _getLibraryModes() -> LibraryModes | None:
-	"""What the attached driver last heard from the library, if it is a Dot Pad that can say."""
+	"""What the attached driver last heard from the library."""
 	try:
-		modes = getattr(braille.handler.display, "libraryModes", None)  # type: ignore[union-attr]
+		display = braille.handler.display  # type: ignore[union-attr]
 	except Exception:
 		return None
-	return modes if isinstance(modes, LibraryModes) else None
+	return _libraryModesOf(display)
 
 
 class GraphicPresentation(Presentation):
@@ -115,7 +121,7 @@ class GraphicPresentation(Presentation):
 				return False
 			if nav is not focus:
 				return True
-			modes = self._currentLibraryModes()
+			modes = _libraryModesOf(self._getActiveDriver())
 			if modes is None:
 				return triggerReason != TriggerReason.CARET_MOVE
 			if self._requestedSerial is None or modes.serial <= self._requestedSerial:
@@ -125,13 +131,9 @@ class GraphicPresentation(Presentation):
 		except Exception:
 			return False
 
-	def _currentLibraryModes(self) -> LibraryModes | None:
-		modes = getattr(self._getActiveDriver(), "libraryModes", None)
-		return modes if isinstance(modes, LibraryModes) else None
-
 	def _noteOperationFinished(self) -> None:
 		"""Mark where mode reports start to describe our operation's result, and ask for one."""
-		modes = self._currentLibraryModes()
+		modes = _libraryModesOf(self._getActiveDriver())
 		self._requestedSerial = modes.serial if modes is not None else 0
 		driver = self._getActiveDriver()
 		if driver is not None:
@@ -220,6 +222,8 @@ class GraphicPresentation(Presentation):
 						"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: %r",
 						exception,
 					)
+					# Otherwise the presentation waits for a result that is not coming, and stays.
+					self._noteOperationFinished()
 
 				worker.submitAndReport(
 					tda.executeOperation,
@@ -239,7 +243,7 @@ class GraphicPresentation(Presentation):
 		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
 		if worker is None or tda is None:
 			return
-		modes = self._currentLibraryModes()
+		modes = _libraryModesOf(self._getActiveDriver())
 		if (
 			self._requestedSerial is not None
 			and modes is not None
