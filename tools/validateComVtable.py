@@ -65,12 +65,22 @@ EXIT_ERROR: Final[int] = 2
 
 # ---------------------------------------------------------------------------
 # Slot base offsets (IUnknown+IDispatch=7 for ITactileDisplayAPI;
-# IUnknown only=3 for ITactileDisplayCallbacks)
+# IUnknown only=3 for ITactileDisplayCallbacks; ITactileDisplayImpl2 starts
+# after ITactileDisplayAPI's 33 methods)
 # ---------------------------------------------------------------------------
 
+_INTERFACE_NAMES: Final[tuple[str, ...]] = (
+	"ITactileDisplayAPI",
+	"ITactileDisplayCallbacks",
+	"ITactileDisplayImpl2",
+)
+
+# Hard-coded rather than derived: if ITactileDisplayAPI grows, its own report
+# already flags drift, and every Impl2 slot moves with it.
 _SLOT_BASE: Final[dict[str, int]] = {
 	"ITactileDisplayAPI": 7,
 	"ITactileDisplayCallbacks": 3,
+	"ITactileDisplayImpl2": 40,
 }
 _DEFAULT_SLOT_BASE: Final[int] = 7
 
@@ -199,6 +209,15 @@ KNOWN_DEVIATIONS: dict[tuple[str, str], KnownDeviation] = {
 		),
 		kind="typelib_absent",
 	),
+	("ITactileDisplayImpl2", "GetBuffer"): KnownDeviation(
+		interfaceName="ITactileDisplayImpl2",
+		methodName="GetBuffer",
+		description=(
+			"GetBuffer: buffer is declared [in] POINTER(c_ubyte) though the typelib marks it [out]. "
+			"It is a caller-allocated array of length bytes; as [out] comtypes would allocate one byte."
+		),
+		kind="param_type",
+	),
 }
 
 # ---------------------------------------------------------------------------
@@ -297,7 +316,7 @@ def parse_cominterface(source: str) -> dict[str, tuple[VtableRecord, ...]]:
 		if not isinstance(node, ast.ClassDef):
 			continue
 		className = node.name
-		if className not in ("ITactileDisplayAPI", "ITactileDisplayCallbacks"):
+		if className not in _INTERFACE_NAMES:
 			continue
 		for item in node.body:
 			if not isinstance(item, ast.Assign):
@@ -802,7 +821,7 @@ def extract_typelib(dllPath: Path) -> dict[str, tuple[VtableRecord, ...]]:
 	}
 
 	result: dict[str, tuple[VtableRecord, ...]] = {}
-	for className in ("ITactileDisplayAPI", "ITactileDisplayCallbacks"):
+	for className in _INTERFACE_NAMES:
 		iface = None
 		for alias in _TYPELIB_ALIASES.get(className, (className,)):
 			iface = getattr(tl, alias, None)
@@ -922,7 +941,7 @@ def main() -> int:
 
 	# Compare interfaces
 	interfaceReports: list[InterfaceReport] = []
-	for className in ("ITactileDisplayAPI", "ITactileDisplayCallbacks"):
+	for className in _INTERFACE_NAMES:
 		declared = declaredAll.get(className, ())
 		typelib = typelibAll.get(className, ())
 		report = compare_vtable_interface(className, declared, typelib, KNOWN_DEVIATIONS)
@@ -939,7 +958,7 @@ def main() -> int:
 	# Scaffold mode
 	if args.scaffold or args.scaffold_out:
 		scaffoldBlocks: list[ScaffoldBlock] = []
-		for className in ("ITactileDisplayAPI", "ITactileDisplayCallbacks"):
+		for className in _INTERFACE_NAMES:
 			declared = declaredAll.get(className, ())
 			typelib = typelibAll.get(className, ())
 			declaredNames = {r.name for r in declared}

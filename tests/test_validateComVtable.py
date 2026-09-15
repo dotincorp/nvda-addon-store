@@ -63,6 +63,13 @@ class ITactileDisplayCallbacks:
         COMMETHOD([], HRESULT, "GetTranslation",
             (["in"], POINTER(c_long), "cursorOffset")),
     ]
+
+class ITactileDisplayImpl2(ITactileDisplayAPI):
+    _methods_ = [
+        # Slot 40
+        COMMETHOD([], HRESULT, "GetGraphicsMode",
+            (["out", "retval"], POINTER(c_int), "mode")),
+    ]
 """
 
 
@@ -139,6 +146,12 @@ class ITactileDisplayAPI:
 	def test_slotBaseIsCallbacks(self) -> None:
 		result = parse_cominterface(_MINIMAL_COMINTERFACE)
 		self.assertEqual(result["ITactileDisplayCallbacks"][0].slot, 3)  # index 0 + base 3
+
+	def test_slotBaseIsImpl2(self) -> None:
+		result = parse_cominterface(_MINIMAL_COMINTERFACE)
+		getGraphicsMode = result["ITactileDisplayImpl2"][0]
+		self.assertEqual(getGraphicsMode.name, "GetGraphicsMode")
+		self.assertEqual(getGraphicsMode.slot, 40)  # after ITactileDisplayAPI's 33 methods
 
 	def test_listIndexMatchesPosition(self) -> None:
 		result = parse_cominterface(_MINIMAL_COMINTERFACE)

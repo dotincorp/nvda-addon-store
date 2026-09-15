@@ -3,7 +3,7 @@
 # See the file COPYING.txt for more details.
 # Copyright (C) 2023-2026 Dot Incorporated
 
-"""comtypes interface declaration for ITactileDisplayAPI (v1.41).
+"""comtypes interface declaration for ITactileDisplayAPI (v1.42).
 
 This file is the single source of truth for the library's vtable layout.
 The interface was renamed ``ITactileDisplayImpl`` in the v1.22 typelib but
@@ -14,6 +14,20 @@ The runtime class ``ITactileDisplayAPI`` is a comtypes IDispatch subclass.
 It inherits IUnknown (slots 0-2) and IDispatch (slots 3-6) from comtypes,
 so the ``_methods_`` list starts at vtable slot 7 (the first library-
 specific method, ``Connect``).
+
+v1.41 → v1.42: ITactileDisplayImpl2
+-----------------------------------
+``ITactileDisplayAPI`` is unchanged. The library also exposes
+``ITactileDisplayImpl2``, which inherits it on the same vtable and appends
+slots 40-44. Slots 40-42 (``GetBuffer``, ``SetBuffer``,
+``GetTranslatedText``) already shipped undeclared in v1.41; v1.42 adds
+``GetGraphicsMode`` and ``GetHybridPrintAndBrailleMode`` and makes
+``ITactileDisplayImpl2`` the coclass default. The validator only covers
+interfaces declared here, which is why v1.41 reported IN SYNC.
+
+A dump of the typelib's *dispinterface* view shows the two getters
+returning ``BOOL``; the vtable signature is ``HRESULT`` with an
+``[out, retval] VARIANT_BOOL*``. Declaring the dispatch shape AVs.
 
 v1.23 → v1.41 vtable change
 -----------------------------
@@ -575,5 +589,60 @@ class ITactileDisplayAPI(IDispatch):
 			"ExecuteOperation",
 			(["in"], c_long, "operation"),
 			(["in"], VARIANT, "argument"),
+		),
+	]
+
+
+_IID_IMPL2 = GUID("{0B8E7F2A-0B42-4D31-9C12-4C3D5B7E1A60}")
+
+
+class ITactileDisplayImpl2(ITactileDisplayAPI):
+	"""Extension interface (v1.41 slots 40-42, v1.42 slots 43-44).
+
+	Obtained by ``QueryInterface`` on the object ``comLoader`` creates; slots
+	7-39 are inherited unchanged from ``ITactileDisplayAPI``.
+	"""
+
+	_iid_ = _IID_IMPL2
+	_methods_ = [
+		# Slot 40 — GetBuffer(buffer, length) (v1.41). The typelib marks ``buffer``
+		# ``[out]``, but it is a caller-allocated array of ``length`` bytes;
+		# declaring it ``["out"]`` would make comtypes allocate a single byte.
+		COMMETHOD(
+			[],
+			HRESULT,
+			"GetBuffer",
+			(["in"], POINTER(c_ubyte), "buffer"),
+			(["in"], c_int, "length"),
+		),
+		# Slot 41 — SetBuffer(buffer, length) (v1.41)
+		COMMETHOD(
+			[],
+			HRESULT,
+			"SetBuffer",
+			(["in"], POINTER(c_ubyte), "buffer"),
+			(["in"], c_int, "length"),
+		),
+		# Slot 42 — GetTranslatedText(text) -> translatedText (v1.41)
+		COMMETHOD(
+			[],
+			HRESULT,
+			"GetTranslatedText",
+			(["in"], BSTR, "text"),
+			(["out"], POINTER(BSTR), "translatedText"),
+		),
+		# Slot 43 — GetGraphicsMode() -> mode (v1.42)
+		COMMETHOD(
+			[],
+			HRESULT,
+			"GetGraphicsMode",
+			(["out", "retval"], POINTER(VARIANT_BOOL), "mode"),
+		),
+		# Slot 44 — GetHybridPrintAndBrailleMode() -> mode (v1.42)
+		COMMETHOD(
+			[],
+			HRESULT,
+			"GetHybridPrintAndBrailleMode",
+			(["out", "retval"], POINTER(VARIANT_BOOL), "mode"),
 		),
 	]

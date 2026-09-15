@@ -385,6 +385,14 @@ class TactileDisplayAPI:
 		"""
 		self._iface.SetHybridPrintAndBrailleMode(enable)
 
+	def getHybridPrintAndBrailleMode(self) -> bool:
+		"""Whether hybrid print+braille mode is on (``ITactileDisplayImpl2``, v1.0.42)."""
+		return bool(self._iface.GetHybridPrintAndBrailleMode())
+
+	def getGraphicsMode(self) -> bool:
+		"""Whether the library is in graphics mode (``ITactileDisplayImpl2``, v1.0.42)."""
+		return bool(self._iface.GetGraphicsMode())
+
 	def showBrailleOnScreen(self, enable: bool) -> None:
 		"""Toggle the library's on-screen viewer window (slot 34).
 
