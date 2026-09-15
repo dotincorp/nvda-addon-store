@@ -22,12 +22,7 @@ v1.41 → v1.42: ITactileDisplayImpl2
 slots 40-44. Slots 40-42 (``GetBuffer``, ``SetBuffer``,
 ``GetTranslatedText``) already shipped undeclared in v1.41; v1.42 adds
 ``GetGraphicsMode`` and ``GetHybridPrintAndBrailleMode`` and makes
-``ITactileDisplayImpl2`` the coclass default. The validator only covers
-interfaces declared here, which is why v1.41 reported IN SYNC.
-
-A dump of the typelib's *dispinterface* view shows the two getters
-returning ``BOOL``; the vtable signature is ``HRESULT`` with an
-``[out, retval] VARIANT_BOOL*``. Declaring the dispatch shape AVs.
+``ITactileDisplayImpl2`` the coclass default.
 
 v1.23 → v1.41 vtable change
 -----------------------------

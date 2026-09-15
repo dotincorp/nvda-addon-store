@@ -81,8 +81,6 @@ class TestDriverLibrarySingleton(unittest.TestCase):
 			driver._setupLibrarySingleton()
 
 		self.assertIs(driver._libraryWorker, workerInstance)
-		# The driver drives the worker's own library instance; a second instance
-		# would be torn down off the worker thread.
 		self.assertIs(driver._tda, tdaInstance)
 		tdaCls.assert_not_called()
 		self.assertIs(driver._callbackServer, cbInstance)
