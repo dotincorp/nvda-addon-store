@@ -17,6 +17,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
+from addon.tactileDisplayAPI.libraryModes import LibraryModes
+
 
 def makeGraphicDisplay():
 	display = MagicMock(name="graphicDisplay")
@@ -122,17 +124,15 @@ class TestFramesWaitForModeReport(unittest.TestCase):
 
 	def setUp(self):
 		from addon.tactileDisplayAPI import simulatedDisplay
-		from addon.tactileDisplayAPI.libraryModes import LibraryModes
 
 		self.simulatedDisplay = simulatedDisplay
-		self.LibraryModes = LibraryModes
 		simulatedDisplay.forgetLastPayload()
 		self.addCleanup(simulatedDisplay.forgetLastPayload)
 		self.graphicDisplay = makeGraphicDisplay()
 		self.braille = makePresentation("addon.presentations.braille.LibraryBraillePresentation")
 
 	def _report(self, graphics: bool = False, hybrid: bool = False) -> None:
-		self.simulatedDisplay.onLibraryModes(self.LibraryModes(graphics=graphics, hybrid=hybrid, serial=1))
+		self.simulatedDisplay.onLibraryModes(LibraryModes(graphics=graphics, hybrid=hybrid, serial=1))
 
 	def _send(self, payload: bytes) -> None:
 		with (

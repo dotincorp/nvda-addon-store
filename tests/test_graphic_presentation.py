@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from addon.extension_points.review_tracking import TriggerReason
+from addon.tactileDisplayAPI.libraryModes import LibraryModes
 
 
 def _makeRenderableLocation(left=0, top=0, width=100, height=50):
@@ -284,16 +285,13 @@ class TestFollowsLibraryMode(unittest.TestCase):
 	"""On the library-driven path, the library's own report decides when graphic mode ends."""
 
 	def setUp(self) -> None:
-		from addon.tactileDisplayAPI.libraryModes import LibraryModes
-
-		self.LibraryModes = LibraryModes
 		self.obj = MagicMock(name="navObj")
 		self.driver = _makeDriverMock()
 		self.driver.libraryModes = LibraryModes(graphics=False, hybrid=False, serial=3)
 		self.presentation = _makePresentation(obj=self.obj, driver=self.driver)
 
 	def _report(self, graphics: bool) -> None:
-		self.driver.libraryModes = self.LibraryModes(graphics=graphics, hybrid=False, serial=4)
+		self.driver.libraryModes = LibraryModes(graphics=graphics, hybrid=False, serial=4)
 
 	def _valid(self, triggerReason=None, nav=None, focus=None) -> bool:
 		nav = self.obj if nav is None else nav

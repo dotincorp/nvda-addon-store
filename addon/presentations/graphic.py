@@ -34,6 +34,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import addonHandler
+import api
 import braille
 import controlTypes
 import inputCore
@@ -108,8 +109,6 @@ class GraphicPresentation(Presentation):
 		move.
 		"""
 		try:
-			import api
-
 			nav = api.getNavigatorObject()
 			focus = api.getFocusObject()
 			if self._obj != nav:
@@ -150,8 +149,6 @@ class GraphicPresentation(Presentation):
 		Returns True on any exception (safe fallback to NVDA-driven path).
 		"""
 		try:
-			import api
-
 			nav = api.getNavigatorObject()
 			focus = api.getFocusObject()
 			return nav is not focus

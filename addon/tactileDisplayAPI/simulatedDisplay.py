@@ -208,7 +208,7 @@ def _requestLibraryModeRefresh() -> None:
 		if request is not None:
 			request()
 	except Exception:
-		log.debug("renderTactileBytes: requesting a library mode refresh failed", exc_info=True)
+		log.debug("Requesting a library mode refresh failed", exc_info=True)
 
 
 def renderTactileBytes(payload: bytes) -> None:

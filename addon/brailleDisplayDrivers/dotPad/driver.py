@@ -24,6 +24,7 @@ import addonHandler
 import api
 import bdDetect
 import braille
+import comtypes
 import core
 import hwIo
 import inputCore
@@ -1480,13 +1481,11 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 
 	def _onLibraryModesQueried(self, future: Future[tuple[bool, bool]]) -> None:
 		"""Record a finished mode query. Runs on the library worker thread."""
-		import comtypes
-
 		try:
 			graphics, hybrid = future.result()
 		except (AttributeError, comtypes.COMError):
 			# A library older than v1.0.42, or the system library through IDispatch.
-			log.debugWarning("dotPad: the library cannot report its mode", exc_info=True)
+			log.debugWarning("The library cannot report its mode", exc_info=True)
 			self._libraryModesUnsupported = True
 			with self._libraryModeLock:
 				self._libraryModeQueryPending = False
@@ -1494,7 +1493,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			_simulatedDisplay.onLibraryModes(None)
 			return
 		except Exception:
-			log.debugWarning("dotPad: library mode query failed", exc_info=True)
+			log.debugWarning("Library mode query failed", exc_info=True)
 		else:
 			previous = self._libraryModes
 			before = (previous.graphics, previous.hybrid) if previous is not None else (False, False)
