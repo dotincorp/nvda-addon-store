@@ -820,6 +820,17 @@ def extract_typelib(dllPath: Path) -> dict[str, tuple[VtableRecord, ...]]:
 		"ITactileDisplayAPI": ("ITactileDisplayAPI", "ITactileDisplayImpl"),
 	}
 
+	# An interface missing from _INTERFACE_NAMES is never compared, so a drop
+	# that adds one would still report IN SYNC (v1.0.41 shipped Impl2 that way).
+	knownTypelibNames = {alias for names in _TYPELIB_ALIASES.values() for alias in names}
+	knownTypelibNames.update(_INTERFACE_NAMES)
+	for name in sorted(vars(tl)):
+		if name.startswith("ITactileDisplay") and name not in knownTypelibNames:
+			print(
+				f"WARNING: typelib interface {name} is not validated; add it to _INTERFACE_NAMES.",
+				file=sys.stderr,
+			)
+
 	result: dict[str, tuple[VtableRecord, ...]] = {}
 	for className in _INTERFACE_NAMES:
 		iface = None
