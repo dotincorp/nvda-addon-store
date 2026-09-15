@@ -47,6 +47,7 @@ except ImportError:
 if TYPE_CHECKING or IS_UNDER_UNITTEST:
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..presentations.base import Presentation
+	from .libraryModes import LibraryModes
 else:
 	_addon = addonHandler.getCodeAddon()
 	DpTactileGraphicsBuffer = _addon.loadModule(
@@ -111,10 +112,37 @@ picture instead of the text.
 """
 
 
+_candidatePayload: bytes | None = None
+"""A frame kept back from ``_lastPayload`` until the library says it was braille.
+
+The first print frame of hybrid mode arrives while library braille is still the active
+presentation: switching needs a mode query, and that query can only follow the frame.
+"""
+
+_libraryReportsModes: bool = False
+"""Whether mode reports arrive, and so whether a frame waits for one before it is kept."""
+
+
+def onLibraryModes(modes: LibraryModes | None) -> None:
+	"""Take a mode report: keep the held-back frame if it was braille, drop it if it was not.
+
+	:param modes: The report, or None when the library cannot report its mode; frames are then
+		kept as they arrive.
+	"""
+	global _lastPayload, _candidatePayload, _libraryReportsModes
+	candidate = _candidatePayload
+	_candidatePayload = None
+	_libraryReportsModes = modes is not None
+	if candidate is not None and (modes is None or not modes.graphics):
+		_lastPayload = candidate
+
+
 def forgetLastPayload() -> None:
 	"""Drop the remembered frame. For tests; nothing in the addon needs it."""
-	global _lastPayload
+	global _lastPayload, _candidatePayload, _libraryReportsModes
 	_lastPayload = None
+	_candidatePayload = None
+	_libraryReportsModes = False
 
 
 def replayLastPayload() -> bool:
@@ -172,6 +200,17 @@ def _getActivePresentation() -> Presentation | None:
 		return None
 
 
+def _requestLibraryModeRefresh() -> None:
+	"""Have the driver ask the library what it is drawing; a frame is when that can change."""
+	try:
+		display = getattr(_getBrailleHandler(), "display", None)
+		request = getattr(display, "requestLibraryModeRefresh", None)
+		if request is not None:
+			request()
+	except Exception:
+		log.debug("renderTactileBytes: requesting a library mode refresh failed", exc_info=True)
+
+
 def renderTactileBytes(payload: bytes) -> None:
 	"""Render a tactile-display payload from the library callback to hardware.
 
@@ -188,7 +227,9 @@ def renderTactileBytes(payload: bytes) -> None:
 		``physicalNumRows * physicalNumCols``; mismatched lengths are
 		clamped / zero-padded with a warning.
 	"""
-	global _lastPayload
+	global _lastPayload, _candidatePayload
+
+	_requestLibraryModeRefresh()
 
 	# Gate: only library-bytes-consuming presentations may write to the
 	# multi-line area. Other presentations own the area via NVDA-driven
@@ -202,7 +243,10 @@ def renderTactileBytes(payload: bytes) -> None:
 		# the frame to show when a library-bytes consumer becomes active again.
 		# Graphic mode is the exception - see the module note on _lastPayload.
 		if not isinstance(activePresentation, _getGraphicPresentationClass()):
-			_lastPayload = payload
+			if _libraryReportsModes:
+				_candidatePayload = payload
+			else:
+				_lastPayload = payload
 
 		if not isinstance(activePresentation, allowedClasses):
 			activeName = type(activePresentation).__name__ if activePresentation else "None"

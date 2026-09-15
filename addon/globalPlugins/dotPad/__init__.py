@@ -208,6 +208,7 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		enable = configuration.getHybridPrintAndBraille(fromCache=True)
 		worker.submit(tda.setHybridPrintAndBrailleMode, enable)
+		driver.requestLibraryModeRefresh()
 
 	def onAutoRefreshChange(self):
 		# Update configuration cache when settings are saved

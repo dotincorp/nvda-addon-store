@@ -132,7 +132,9 @@ class PresentationRenderer(AutoPropertyObject):
 		1. ScreenCaptureProvider (highest priority - when toggled, wins)
 		2. ChartProvider
 		3. TableProvider
-		4. BrailleProvider (fallback - always yields)
+		4. GraphicProvider
+		5. HybridPrintProvider
+		6. BrailleProvider (fallback - always yields)
 		"""
 		# Import presentation modules at runtime using addon.loadModule
 		# This works in both real NVDA and unit tests (via FakeAddon)
@@ -149,13 +151,14 @@ class PresentationRenderer(AutoPropertyObject):
 		# Create and store the screen capture provider for toggle access
 		self._screenCaptureProvider = ScreenCaptureProvider()
 
-		GraphicProvider = addon_obj.loadModule("presentations.graphic").GraphicProvider
+		graphicModule = addon_obj.loadModule("presentations.graphic")
 
 		# Register providers in priority order (highest priority first)
 		self._presentationManager.registerProvider(self._screenCaptureProvider, moveToStart=True)
 		self._presentationManager.registerProvider(ChartProvider())
 		self._presentationManager.registerProvider(TableProvider())
-		self._presentationManager.registerProvider(GraphicProvider())
+		self._presentationManager.registerProvider(graphicModule.GraphicProvider())
+		self._presentationManager.registerProvider(graphicModule.HybridPrintProvider())
 		# BrailleProvider creates its own presentation with buffer
 		self._presentationManager.registerProvider(BrailleProvider())
 

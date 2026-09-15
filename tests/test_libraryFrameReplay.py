@@ -114,6 +114,84 @@ class TestPayloadIsRemembered(unittest.TestCase):
 		self.graphicDisplay.display.assert_called_once()
 
 
+class TestFramesWaitForModeReport(unittest.TestCase):
+	"""With mode reports, a frame is only kept once the library says it was braille.
+
+	The first print frame of hybrid mode arrives while library braille is still active.
+	"""
+
+	def setUp(self):
+		from addon.tactileDisplayAPI import simulatedDisplay
+		from addon.tactileDisplayAPI.libraryModes import LibraryModes
+
+		self.simulatedDisplay = simulatedDisplay
+		self.LibraryModes = LibraryModes
+		simulatedDisplay.forgetLastPayload()
+		self.addCleanup(simulatedDisplay.forgetLastPayload)
+		self.graphicDisplay = makeGraphicDisplay()
+		self.braille = makePresentation("addon.presentations.braille.LibraryBraillePresentation")
+
+	def _report(self, graphics: bool = False, hybrid: bool = False) -> None:
+		self.simulatedDisplay.onLibraryModes(self.LibraryModes(graphics=graphics, hybrid=hybrid, serial=1))
+
+	def _send(self, payload: bytes) -> None:
+		with (
+			patch.object(self.simulatedDisplay, "_getGraphicDisplay", return_value=self.graphicDisplay),
+			patch.object(self.simulatedDisplay, "_getActivePresentation", return_value=self.braille),
+		):
+			self.simulatedDisplay.renderTactileBytes(payload)
+
+	def _replay(self) -> bool:
+		self.graphicDisplay.display.reset_mock()
+		with patch.object(self.simulatedDisplay, "_getGraphicDisplay", return_value=self.graphicDisplay):
+			return self.simulatedDisplay.replayLastPayload()
+
+	def test_a_frame_waits_for_a_report(self):
+		self._report()
+		self._send(b"\x01" * 300)
+		self.assertFalse(self._replay())
+
+	def test_a_braille_report_keeps_the_frame(self):
+		self._report()
+		self._send(b"\x01" * 300)
+		self._report()
+		self.assertTrue(self._replay())
+
+	def test_a_print_report_drops_the_frame(self):
+		self._report()
+		self._send(b"\x01" * 300)
+		self._report(graphics=True, hybrid=True)
+		self.assertFalse(self._replay())
+
+	def test_braille_under_hybrid_is_kept(self):
+		"""The hybrid getter follows the setting; only graphics says the frame was not braille."""
+		self._report(hybrid=True)
+		self._send(b"\x01" * 300)
+		self._report(hybrid=True)
+		self.assertTrue(self._replay())
+
+	def test_print_does_not_replace_the_braille_before_it(self):
+		self._report()
+		self._send(b"\x01" * 300)
+		self._report()
+		self._send(b"\x00" * 300)
+		self._report(graphics=True, hybrid=True)
+		self.assertTrue(self._replay())
+		buffer = self.graphicDisplay.display.call_args.args[0]
+		self.assertTrue(any(buffer.getRowCells(0)), "the braille frame should be the one replayed")
+
+	def test_a_library_that_cannot_report_keeps_frames_at_once(self):
+		self.simulatedDisplay.onLibraryModes(None)
+		self._send(b"\x01" * 300)
+		self.assertTrue(self._replay())
+
+	def test_a_frame_asks_the_driver_for_a_report(self):
+		handler = MagicMock(name="handler")
+		with patch.object(self.simulatedDisplay, "_getBrailleHandler", return_value=handler):
+			self._send(b"\x01" * 300)
+		handler.display.requestLibraryModeRefresh.assert_called_once_with()
+
+
 class TestLibraryBrailleReplaysOnce(unittest.TestCase):
 	"""The presentation asks for the replay on its first render, then stops."""
 

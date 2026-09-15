@@ -42,8 +42,13 @@ except ImportError:
 	IS_UNDER_UNITTEST = False  # type: ignore
 
 if TYPE_CHECKING or IS_UNDER_UNITTEST:
+	from concurrent.futures import Future
+
 	from ... import configuration
 	from ...ble.detection import KEY_BLE, detector
+	from ...extension_points.review_tracking import TriggerReason
+	from ...tactileDisplayAPI import libraryWorker as _libraryWorkerModule
+	from ...tactileDisplayAPI.libraryModes import LibraryModes
 	from ...ble.hwIo import Ble, createBle
 	from ...tactileDisplayAPI import iniPatcher
 	from ...tactileDisplayAPI import simulatedDisplay as _simulatedDisplay
@@ -75,6 +80,9 @@ else:
 	TactileDisplayCallbacks = addon.loadModule("tactileDisplayAPI.callbackServer").TactileDisplayCallbacks
 	_simulatedDisplay = addon.loadModule("tactileDisplayAPI.simulatedDisplay")
 	iniPatcher = addon.loadModule("tactileDisplayAPI.iniPatcher")
+	_libraryWorkerModule = addon.loadModule("tactileDisplayAPI.libraryWorker")
+	LibraryModes = addon.loadModule("tactileDisplayAPI.libraryModes").LibraryModes
+	TriggerReason = addon.loadModule("extension_points.review_tracking").TriggerReason
 
 #: USB vendor and product ID
 USB_ID = "VID_0403&PID_6010"
@@ -253,6 +261,14 @@ def _setLineSpacingOnWorker(tda: object, paddingDots: int, forceSixDot: bool) ->
 			forceSixDot,
 			exc_info=True,
 		)
+
+
+def _queryLibraryModesOnWorker(tda: object) -> tuple[bool, bool]:
+	"""Return the library's ``(graphics, hybrid)`` mode. Runs on the library worker thread."""
+	return (
+		bool(tda.getGraphicsMode()),  # type: ignore[attr-defined]
+		bool(tda.getHybridPrintAndBrailleMode()),  # type: ignore[attr-defined]
+	)
 
 
 def _setHybridModeOnWorker(tda: object, enable: bool) -> None:
@@ -1364,6 +1380,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				tda,
 				configuration.getViewerOnScreen(fromCache=True),
 			)
+			# Finds out whether the library can report its mode before the first frame asks.
+			self.requestLibraryModeRefresh()
 			log.debug("dotPad: library singleton ready (SimulateDisplay registered)")
 			log.info("dotPad: TactileDisplayAPI library %s", tda.libraryDescription)
 		except Exception:
@@ -1400,6 +1418,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._tda = None
 		self._callbackServer = None
 		self._libraryReady = False
+		self._libraryModes = None
+		self._libraryModesUnsupported = False
 
 	def enableLibraryUiaEvents(self) -> None:
 		"""Turn the library's autonomous UIA subscription ON (RegisterEvents(True)).
@@ -1427,6 +1447,77 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if worker is None or tda is None or not self._libraryReady:
 			return
 		worker.submit(_disableRegisterEventsOnWorker, tda, worker)
+
+	_libraryModes: LibraryModes | None = None
+	_libraryModesUnsupported: bool = False
+	_libraryModeQueryPending: bool = False
+	_libraryModeQueryRerun: bool = False
+	_libraryModeLock = threading.Lock()
+
+	@property
+	def libraryModes(self) -> LibraryModes | None:
+		"""What the library last reported drawing, or None when that is unknown or cannot be asked."""
+		if not self._libraryReady or self._libraryModesUnsupported:
+			return None
+		return self._libraryModes
+
+	def requestLibraryModeRefresh(self) -> None:
+		"""Ask the library which mode it is in, and pick the presentation again if that changed.
+
+		Callable from any thread. A request made while a query is outstanding becomes one more
+		query after it, so a change landing mid-query is not missed.
+		"""
+		worker = self._libraryWorker
+		tda = self._tda
+		if worker is None or tda is None or not self._libraryReady or self._libraryModesUnsupported:
+			return
+		with self._libraryModeLock:
+			if self._libraryModeQueryPending:
+				self._libraryModeQueryRerun = True
+				return
+			self._libraryModeQueryPending = True
+		worker.submit(_queryLibraryModesOnWorker, tda).add_done_callback(self._onLibraryModesQueried)
+
+	def _onLibraryModesQueried(self, future: Future[tuple[bool, bool]]) -> None:
+		"""Record a finished mode query. Runs on the library worker thread."""
+		import comtypes
+
+		try:
+			graphics, hybrid = future.result()
+		except (AttributeError, comtypes.COMError):
+			# A library older than v1.0.42, or the system library through IDispatch.
+			log.debugWarning("dotPad: the library cannot report its mode", exc_info=True)
+			self._libraryModesUnsupported = True
+			with self._libraryModeLock:
+				self._libraryModeQueryPending = False
+				self._libraryModeQueryRerun = False
+			_simulatedDisplay.onLibraryModes(None)
+			return
+		except Exception:
+			log.debugWarning("dotPad: library mode query failed", exc_info=True)
+		else:
+			previous = self._libraryModes
+			before = (previous.graphics, previous.hybrid) if previous is not None else (False, False)
+			modes = LibraryModes(
+				graphics=graphics,
+				hybrid=hybrid,
+				serial=previous.serial + 1 if previous is not None else 1,
+			)
+			self._libraryModes = modes
+			_simulatedDisplay.onLibraryModes(modes)
+			if before != (graphics, hybrid):
+				_libraryWorkerModule._dispatchToMain(self._onLibraryModesChanged)  # pyright: ignore[reportPrivateUsage]
+		with self._libraryModeLock:
+			self._libraryModeQueryPending = False
+			rerun = self._libraryModeQueryRerun
+			self._libraryModeQueryRerun = False
+		if rerun:
+			self.requestLibraryModeRefresh()
+
+	def _onLibraryModesChanged(self) -> None:
+		renderer = self._renderer
+		if renderer is not None:
+			renderer.onReviewMove(TriggerReason.LIBRARY_MODE_CHANGE)
 
 	def terminate(self):
 		# Signalled before anything else so the packet sender stops waiting out full
