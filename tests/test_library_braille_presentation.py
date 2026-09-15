@@ -44,17 +44,8 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		self.assertTrue(hasattr(presentation, "_gestureMap"))
 		self.assertIsInstance(presentation._gestureMap, dict)
 
-	def test_init_bootstraps_text_mode_then_enables_events(self) -> None:
-		"""``__init__`` submits just the text-mode switch, then enables events:
-
-		1. ``ExecuteOperation(SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)`` — switch
-		   to text mode (defensive; defaults to graphics on some libraries),
-		   which may also render the object at the cursor.
-
-		The explicit ``AddFocusedControl`` kick-start and the older
-		``ShowMultilineText`` warm-up are both currently disabled — we're
-		testing whether the text-mode switch alone is sufficient.
-		"""
+	def test_init_bootstraps_text_mode_then_focus_then_enables_events(self) -> None:
+		"""``__init__`` submits the text-mode switch and ``AddFocusedControl``, then enables events."""
 		from addon.presentations.braille import LibraryBraillePresentation
 		from addon.tactileDisplayAPI.comInterface import BrailleInputOperation
 
@@ -66,21 +57,16 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		):
 			LibraryBraillePresentation(display)
 
-		# One submission: the text-mode switch.
-		self.assertEqual(driver._libraryWorker.submitAndReport.call_count, 1)
+		self.assertEqual(driver._libraryWorker.submitAndReport.call_count, 2)
 		calls = driver._libraryWorker.submitAndReport.call_args_list
 		self.assertIs(calls[0].args[0], driver._tda.executeOperation)
 		self.assertEqual(
 			calls[0].args[1],
 			BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE,
 		)
-		# addFocusedControl and the ShowMultilineText warm-up are disabled.
+		self.assertIs(calls[1].args[0], driver._tda.addFocusedControl)
 		submittedFns = [c.args[0] for c in calls]
-		self.assertNotIn(driver._tda.addFocusedControl, submittedFns)
 		self.assertNotIn(driver._tda.showMultilineText, submittedFns)
-		# The library's autonomous UIA subscription is enabled only AFTER the
-		# blocking bootstrap (events-off bootstrap avoids the STA-pump-starve
-		# heap-corruption crash).
 		driver.enableLibraryUiaEvents.assert_called_once_with()
 
 	def test_init_skips_bootstrap_when_library_not_ready(self) -> None:
