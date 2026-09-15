@@ -34,6 +34,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import addonHandler
+import api
 import braille
 import controlTypes
 import inputCore
@@ -46,10 +47,12 @@ from ..utils.logOnce import warnFailureOnce
 from .base import Presentation, PresentationProvider
 
 if TYPE_CHECKING:
+	from .. import configuration
 	from ..brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver, Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
 	from ..tactileDisplayAPI.comInterface import BrailleInputOperation
+	from ..tactileDisplayAPI.libraryModes import LibraryModes
 
 # Runtime import: cross-package addon module via NVDA's addon loader.
 # Sibling-relative would need a parent-relative ``..`` which the addon
@@ -59,11 +62,28 @@ if not TYPE_CHECKING:
 	_addon = addonHandler.getCodeAddon()
 	BrailleInputOperation = _addon.loadModule("tactileDisplayAPI.comInterface").BrailleInputOperation
 	TriggerReason = _addon.loadModule("extension_points.review_tracking").TriggerReason
+	LibraryModes = _addon.loadModule("tactileDisplayAPI.libraryModes").LibraryModes
+	configuration = _addon.loadModule("configuration")
 
 addonHandler.initTranslation()
 
 
 LIBRARY_DRAW_TIMEOUT_S: float = 1.0
+
+
+def _libraryModesOf(driver: object) -> LibraryModes | None:
+	"""What ``driver`` last heard from the library, if it is a Dot Pad that can say."""
+	modes = getattr(driver, "libraryModes", None)
+	return modes if isinstance(modes, LibraryModes) else None
+
+
+def _getLibraryModes() -> LibraryModes | None:
+	"""What the attached driver last heard from the library."""
+	try:
+		display = braille.handler.display  # type: ignore[union-attr]
+	except Exception:
+		return None
+	return _libraryModesOf(display)
 
 
 class GraphicPresentation(Presentation):
@@ -83,26 +103,41 @@ class GraphicPresentation(Presentation):
 		self._obj = obj
 		self._display = display
 		self._libraryModeActivated: bool = False
+		self._requestedSerial: int | None = None
+		"""The mode report serial current when our library operation finished, once it has."""
 
 	def isStillValid(self, triggerReason: TriggerReason | None = None) -> bool:
-		"""True iff the held NVDAObject is still the active navigator.
+		"""Whether graphic mode still applies to the navigator object.
 
-		On ``TriggerReason.CARET_MOVE`` when the library-driven path is active
-		(navigator is the system focus), the library autonomously reverts to
-		braille. Returning False here keeps our presentation state in sync with
-		that reversion so the braille presentation takes over and pan/zoom scripts
-		are unbound.
+		On the library-driven path (navigator is focus) the library decides when graphic
+		mode ends, so once it has reported after our operation, that report is the answer.
+		A library that cannot report keeps the old guess: it reverts to braille on a caret
+		move.
 		"""
 		try:
-			import api
-
 			nav = api.getNavigatorObject()
 			focus = api.getFocusObject()
-			if triggerReason == TriggerReason.CARET_MOVE and nav is focus:
+			if self._obj != nav:
 				return False
-			return self._obj == nav
+			if nav is not focus:
+				return True
+			modes = _libraryModesOf(self._getActiveDriver())
+			if modes is None:
+				return triggerReason != TriggerReason.CARET_MOVE
+			if self._requestedSerial is None or modes.serial <= self._requestedSerial:
+				# Nothing reported since the operation finished; the image may be about to appear.
+				return True
+			return modes.graphics
 		except Exception:
 			return False
+
+	def _noteOperationFinished(self) -> None:
+		"""Mark where mode reports start to describe our operation's result, and ask for one."""
+		modes = _libraryModesOf(self._getActiveDriver())
+		self._requestedSerial = modes.serial if modes is not None else 0
+		driver = self._getActiveDriver()
+		if driver is not None:
+			driver.requestLibraryModeRefresh()
 
 	def _useNvdaDrivenRender(self) -> bool:
 		"""True when the NVDA-driven bounding-box path should be used for this render.
@@ -116,8 +151,6 @@ class GraphicPresentation(Presentation):
 		Returns True on any exception (safe fallback to NVDA-driven path).
 		"""
 		try:
-			import api
-
 			nav = api.getNavigatorObject()
 			focus = api.getFocusObject()
 			return nav is not focus
@@ -160,7 +193,7 @@ class GraphicPresentation(Presentation):
 				worker.submitAndReport(
 					tda.show,
 					timeout=LIBRARY_DRAW_TIMEOUT_S,
-					onSuccess=lambda _r: None,
+					onSuccess=lambda _r: driver.requestLibraryModeRefresh(),
 					onFailure=onShowFailure,
 				)
 
@@ -189,12 +222,14 @@ class GraphicPresentation(Presentation):
 						"GraphicPresentation: SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE failed: %r",
 						exception,
 					)
+					# Otherwise the presentation waits for a result that is not coming, and stays.
+					self._noteOperationFinished()
 
 				worker.submitAndReport(
 					tda.executeOperation,
 					BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_TACTILE_IMAGE,
 					timeout=LIBRARY_DRAW_TIMEOUT_S,
-					onSuccess=lambda _r: None,
+					onSuccess=lambda _r: self._noteOperationFinished(),
 					onFailure=onLibraryFailure,
 				)
 		return None
@@ -207,6 +242,15 @@ class GraphicPresentation(Presentation):
 		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
 		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
 		if worker is None or tda is None:
+			return
+		modes = _libraryModesOf(self._getActiveDriver())
+		if (
+			self._requestedSerial is not None
+			and modes is not None
+			and modes.serial > self._requestedSerial
+			and not modes.graphics
+		):
+			# The library left graphic mode by itself; clearing now would wipe what it drew next.
 			return
 		try:
 			worker.submit(tda.clear)
@@ -452,3 +496,60 @@ class GraphicProvider(PresentationProvider):
 		if location is not None and location.width > 0 and location.height > 0:
 			return GraphicPresentation(obj, display)
 		return None
+
+
+class HybridPrintPresentation(GraphicPresentation):
+	"""The tactile area while the library draws hybrid print for the focused control.
+
+	The library draws it unasked, so this draws nothing. What it takes from
+	``GraphicPresentation`` is the rest: the pan and zoom bindings, library frames
+	passing the byte gate, and those frames staying out of the braille replay.
+	"""
+
+	@property
+	def name(self) -> str:
+		# Not "graphic": leaving that clears the tactile area, and here the library keeps drawing.
+		return "hybridPrint"
+
+	def isStillValid(self, triggerReason: TriggerReason | None = None) -> bool:
+		"""Always; whether the library still draws print is the provider's call, asked on every update."""
+		return True
+
+	def render(self, display: Display) -> DpTactileGraphicsBuffer | None:
+		return None
+
+	def terminate(self) -> None:
+		"""Nothing to clear: the library draws whatever comes next."""
+
+	@script(
+		# Translators: description of the braille chord that does nothing in hybrid print mode.
+		description=_("Does nothing: print stays in text fields while hybrid mode is on"),
+		category=SCRCAT_BRAILLE,
+		gesture="br(dotPad):f2+f4",
+	)
+	def script_suppressDismissal(self, _gesture: inputCore.InputGesture) -> None:
+		# Unbound, the chord reaches the driver's dismissal, which switches the bindings to
+		# braille while the library keeps drawing print.
+		pass
+
+
+class HybridPrintProvider(PresentationProvider):
+	"""Claims the tactile area while the library reports drawing hybrid print.
+
+	The library decides which controls get print, so nothing here looks at the object.
+	Library-driven braille only: that is the one mode in which the library draws by itself.
+	"""
+
+	@property
+	def name(self) -> str:
+		return "hybridPrint"
+
+	def canProvide(self, obj: NVDAObject) -> bool:
+		if configuration.getBrailleSource(fromCache=True) != configuration.BrailleSource.LIBRARY:
+			return False
+		modes = _getLibraryModes()
+		# The hybrid getter only reflects the setting; graphics mode is what says print is on the pins.
+		return modes is not None and modes.hybrid and modes.graphics
+
+	def _doCreatePresentation(self, obj: NVDAObject, display: Display) -> HybridPrintPresentation:
+		return HybridPrintPresentation(obj, display)

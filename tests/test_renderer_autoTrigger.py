@@ -125,6 +125,22 @@ class TestAutoTransitionHook(unittest.TestCase):
 		assert previous is not None
 		previous.terminate.assert_not_called()
 
+	def test_transitionToHybridPrintDoesNotCallTerminate(self) -> None:
+		"""``"graphic" → "hybridPrint"`` leaves the area alone: the library is drawing print."""
+		renderer = _makeRenderer()
+		previous, _active = _setPresentationTransition(
+			renderer,
+			previousName="graphic",
+			activeName="hybridPrint",
+		)
+		navObj = MagicMock(name="navObj")
+
+		with patch("api.getNavigatorObject", return_value=navObj, create=True):
+			renderer.onReviewMove()
+
+		assert previous is not None
+		previous.terminate.assert_not_called()
+
 	def test_sameNameTransitionDoesNothing(self) -> None:
 		"""``previousName == activeName`` is a no-op for the transition hook."""
 		renderer = _makeRenderer()

@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from addon.extension_points.review_tracking import TriggerReason
+from addon.tactileDisplayAPI.libraryModes import LibraryModes
 
 
 def _makeRenderableLocation(left=0, top=0, width=100, height=50):
@@ -278,6 +279,85 @@ class TestTerminate(unittest.TestCase):
 		presentation = _makePresentation(driver=driver)
 
 		presentation.terminate()
+
+
+class TestFollowsLibraryMode(unittest.TestCase):
+	"""On the library-driven path, the library's own report decides when graphic mode ends."""
+
+	def setUp(self) -> None:
+		self.obj = MagicMock(name="navObj")
+		self.driver = _makeDriverMock()
+		self.driver.libraryModes = LibraryModes(graphics=False, hybrid=False, serial=3)
+		self.presentation = _makePresentation(obj=self.obj, driver=self.driver)
+
+	def _report(self, graphics: bool) -> None:
+		self.driver.libraryModes = LibraryModes(graphics=graphics, hybrid=False, serial=4)
+
+	def _valid(self, triggerReason=None, nav=None, focus=None) -> bool:
+		nav = self.obj if nav is None else nav
+		with (
+			patch("api.getNavigatorObject", return_value=nav, create=True),
+			patch("api.getFocusObject", return_value=nav if focus is None else focus, create=True),
+		):
+			return self.presentation.isStillValid(triggerReason)
+
+	def test_valid_until_the_operation_finishes(self) -> None:
+		self.assertTrue(self._valid(TriggerReason.CARET_MOVE))
+
+	def test_valid_until_a_report_after_the_operation(self) -> None:
+		self.presentation._noteOperationFinished()
+		self.assertTrue(self._valid())
+
+	def test_ends_when_the_library_reports_leaving(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=False)
+		self.assertFalse(self._valid())
+
+	def test_a_caret_move_does_not_end_it_while_the_library_shows_graphics(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=True)
+		self.assertTrue(self._valid(TriggerReason.CARET_MOVE))
+
+	def test_finishing_the_operation_asks_for_a_report(self) -> None:
+		self.presentation._noteOperationFinished()
+		self.driver.requestLibraryModeRefresh.assert_called_once_with()
+
+	def test_render_success_finishes_the_operation(self) -> None:
+		self.presentation._useNvdaDrivenRender = MagicMock(return_value=False)
+		self.presentation.render(MagicMock())
+		self.driver._libraryWorker.submitAndReport.call_args.kwargs["onSuccess"](None)
+		self.assertEqual(self.presentation._requestedSerial, 3)
+		self.driver.requestLibraryModeRefresh.assert_called_once_with()
+
+	def test_a_failed_operation_does_not_leave_it_waiting(self) -> None:
+		self.presentation._useNvdaDrivenRender = MagicMock(return_value=False)
+		self.presentation.render(MagicMock())
+		self.driver._libraryWorker.submitAndReport.call_args.kwargs["onFailure"](TimeoutError())
+		self.driver.requestLibraryModeRefresh.assert_called_once_with()
+		self._report(graphics=False)
+		self.assertFalse(self._valid())
+
+	def test_a_navigator_change_still_ends_it(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=True)
+		self.assertFalse(self._valid(nav=MagicMock(name="elsewhere")))
+
+	def test_the_nvda_driven_path_ignores_reports(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=False)
+		self.assertTrue(self._valid(focus=MagicMock(name="focus")))
+
+	def test_terminate_does_not_clear_after_the_library_left(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=False)
+		self.presentation.terminate()
+		self.driver._libraryWorker.submit.assert_not_called()
+
+	def test_terminate_clears_while_the_library_shows_graphics(self) -> None:
+		self.presentation._noteOperationFinished()
+		self._report(graphics=True)
+		self.presentation.terminate()
+		self.driver._libraryWorker.submit.assert_called_once_with(self.driver._tda.clear)
 
 
 if __name__ == "__main__":

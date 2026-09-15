@@ -117,6 +117,14 @@ in that direction. The four small-step pans (`panLeft+f1`, `panRight+f4`,
 | `longPress(f3)` | Jump the tactile graphic viewport to the bottom edge |
 | `longPress(f4)` | Jump the tactile graphic viewport to the right edge |
 
+### Hybrid print mode
+
+<!-- HybridPrintPresentation in addon/presentations/graphic.py -->
+
+| Gesture | Action |
+|---|---|
+| `f2+f4` | Does nothing: print stays in text fields while hybrid mode is on |
+
 ### Table mode
 
 <!-- TablePresentation in addon/presentations/table.py -->

@@ -23,6 +23,8 @@ class TriggerReason(Enum):
 
 	CARET_MOVE = "caretMove"
 	REVIEW_MOVE = "reviewMove"
+	LIBRARY_MODE_CHANGE = "libraryModeChange"
+	"""The tactile-display library reported a different drawing mode."""
 
 
 reviewMove = Action()
