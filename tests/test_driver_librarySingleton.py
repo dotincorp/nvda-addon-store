@@ -255,7 +255,17 @@ class TestDriverLibrarySession(unittest.TestCase):
 		submitted = [c.args[0] for c in worker.submit.call_args_list]
 		self.assertNotIn(driverMod._addFocusedControlOnWorker, submitted)
 
-	def test_teardown_disables_events_then_stops_and_waits(self) -> None:
+	def test_setup_waits_for_the_released_worker_first(self) -> None:
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		released = MagicMock(name="releasedWorker")
+		released.join.return_value = True
+		with patch.object(driverMod, "_releasedLibraryWorker", released):
+			self._setUp()
+			self.assertIsNone(driverMod._releasedLibraryWorker)
+		released.join.assert_called_once_with(driverMod.LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS)
+
+	def test_teardown_disables_events_then_stops_without_waiting(self) -> None:
 		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
 		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
 
@@ -267,11 +277,13 @@ class TestDriverLibrarySession(unittest.TestCase):
 		driver._callbackServer = MagicMock(name="callbacks")
 		driver._libraryReady = True
 
-		driver._teardownLibrarySingleton()
+		with patch.object(driverMod, "_releasedLibraryWorker", None):
+			driver._teardownLibrarySingleton()
+			self.assertIs(driverMod._releasedLibraryWorker, worker)
 
 		self.assertEqual(
 			[name for name, _args, _kwargs in worker.method_calls],
-			["submit", "stop", "join"],
+			["submit", "stop"],
 		)
 		worker.submit.assert_called_once_with(driverMod._disableRegisterEventsOnWorker, tda, worker)
 

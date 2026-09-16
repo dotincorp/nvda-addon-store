@@ -134,7 +134,7 @@ TERMINATE_DRAIN_TIMEOUT_SECONDS: float = 3.0
 #: CONNECTION_POLL_SECONDS, so this only expires if it is stuck in a write that will not
 #: return -- which must not hold the main thread.
 TERMINATE_JOIN_TIMEOUT_SECONDS: float = 2.0
-#: Budget for the library worker to finish its queue and release the library on termination.
+#: Budget for a released library worker to finish its queue before the next library is set up.
 LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS: float = 2.0
 
 # Auto refresh
@@ -153,6 +153,22 @@ BOARD_INFORMATION_TIMEOUT_SECONDS: float = 1.0
 #: Longest single wait inside that budget. BLE signals a read before the data is parsed, so a
 #: response that arrives during one wait is only seen when the next one ends.
 BOARD_INFORMATION_POLL_SECONDS: float = 0.05
+
+
+_releasedLibraryWorker: LibraryWorker | None = None
+"""The worker the last driver stopped, until the next library setup has waited for it."""
+
+
+def _awaitReleasedLibraryWorker() -> None:
+	"""Wait, bounded, for the previous driver's library worker to exit."""
+	global _releasedLibraryWorker
+	worker = _releasedLibraryWorker
+	_releasedLibraryWorker = None
+	if worker is not None and not worker.join(LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS):
+		log.debugWarning(
+			"Previous library worker did not exit within %ss; setting up anyway",
+			LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS,
+		)
 
 
 def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
@@ -1369,6 +1385,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# logging is internal.
 			iniPatcher.patchTactileDisplayAPIIni()
 
+			_awaitReleasedLibraryWorker()
 			worker = LibraryWorker()
 			worker.start(startTimeoutS=5.0)
 
@@ -1449,10 +1466,12 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def _teardownLibrarySingleton(self) -> None:
 		"""Release the TactileDisplayAPI library singleton.
 
-		Drains in-flight callbacks, turns the library's events off, stops the worker and
-		waits a bounded time for it to exit, then drops references. Waiting means the next
-		driver's instance never overlaps this one. Idempotent.
+		Drains in-flight callbacks, turns the library's events off, drops references and stops
+		the worker without waiting: this runs on NVDA's main thread, where the worker's last
+		library calls tripped the freeze watchdog. The next library setup waits for it instead,
+		so two instances still never overlap. Idempotent.
 		"""
+		global _releasedLibraryWorker
 		if self._callbackServer is not None:
 			try:
 				self._callbackServer.setShuttingDown()
@@ -1460,8 +1479,8 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				log.exception("dotPad: callbackServer.setShuttingDown raised; continuing")
 		worker = self._libraryWorker
 		tda = self._tda
-		# Cleared before the worker drains, so a mode query finishing during the wait is
-		# recognised as stale and records nothing.
+		# Cleared before the worker drains, so a mode query finishing meanwhile is recognised
+		# as stale and records nothing.
 		self._libraryWorker = None
 		self._tda = None
 		self._callbackServer = None
@@ -1473,11 +1492,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				if tda is not None:
 					worker.submit(_disableRegisterEventsOnWorker, tda, worker)
 				worker.stop()
-				if not worker.join(LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS):
-					log.debugWarning(
-						"Library worker did not exit within %ss; terminating anyway",
-						LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS,
-					)
+				_releasedLibraryWorker = worker
 			except Exception:
 				log.exception("dotPad: stopping the library worker raised; continuing")
 
