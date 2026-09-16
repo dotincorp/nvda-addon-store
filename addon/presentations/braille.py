@@ -20,13 +20,6 @@ import config
 from logHandler import log
 from tactile.braille import drawBrailleCells
 
-from ..compat.nvdaBraille import (
-	BrailleBuffer,
-	DisplayDimensions,
-	Region,
-	TextInfoRegion,
-	getFocusRegions,
-)
 from .base import Presentation, PresentationProvider
 
 if TYPE_CHECKING:
@@ -34,6 +27,13 @@ if TYPE_CHECKING:
 
 	from ..brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver, Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
+	from ..compat.nvdaBraille import (
+		BrailleBuffer,
+		DisplayDimensions,
+		Region,
+		TextInfoRegion,
+		getFocusRegions,
+	)
 	from ..configuration import BrailleSource
 	from ..extension_points.review_tracking import TriggerReason
 	from ..tactileDisplayAPI.comInterface import BrailleInputOperation
@@ -58,6 +58,12 @@ if not TYPE_CHECKING:
 	BrailleInputOperation = addon.loadModule(
 		"tactileDisplayAPI.comInterface",
 	).BrailleInputOperation
+	_nvdaBraille = addon.loadModule("compat.nvdaBraille")
+	BrailleBuffer = _nvdaBraille.BrailleBuffer
+	DisplayDimensions = _nvdaBraille.DisplayDimensions
+	Region = _nvdaBraille.Region
+	TextInfoRegion = _nvdaBraille.TextInfoRegion
+	getFocusRegions = _nvdaBraille.getFocusRegions
 
 # Used for the library-not-ready fallback notification. Lazily imported so unit
 # tests can patch ``addon.presentations.braille.ui``.
