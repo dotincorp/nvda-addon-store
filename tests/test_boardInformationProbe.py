@@ -144,25 +144,22 @@ class TestBoardInformationPublishedLast(unittest.TestCase):
 		self.assertIsNotNone(driver._boardInformation)
 		self.assertIsNotNone(driver.graphicDisplay)
 
-	def test_the_renderer_is_built_after_it_is_published(self) -> None:
-		"""Building the renderer is slow enough to outlive the probe's deadline, so the
-		probe has to be released before it starts."""
+	def test_the_handler_does_not_build_the_renderer(self) -> None:
+		"""It is built at the end of ``__init__`` instead: it loads the presentations
+		package and picks a first presentation, which is slower than the probe's deadline
+		and would run on the I/O thread with the send gate shut."""
 		driver = _makeHandlerDriver()
 		driver._createDisplay = MagicMock()
-		publishedWhenRendererBuilt: bool | None = None
-
-		def fakeRenderer(_graphicDisplay):
-			nonlocal publishedWhenRendererBuilt
-			publishedWhenRendererBuilt = driver._boardInformation is not None
-			return MagicMock(name="renderer")
 
 		with (
-			patch("addon.presentations.PresentationRenderer", side_effect=fakeRenderer),
+			patch("addon.presentations.PresentationRenderer") as renderer,
 			patch.object(dotpad_driver.configuration, "getAutoRefresh", return_value=0),
 		):
 			driver._handleResponse(_boardInformationPacket())
 
-		self.assertIs(True, publishedWhenRendererBuilt)
+		renderer.assert_not_called()
+		self.assertIsNone(driver._renderer)
+		self.assertIsNotNone(driver._boardInformation)
 
 	def test_it_is_published_even_when_a_display_cannot_be_built(self) -> None:
 		"""A probe that waited out its deadline here would report no display found at all."""

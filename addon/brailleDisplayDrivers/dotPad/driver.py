@@ -1281,6 +1281,13 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# announced.
 			self._librarySetupPending = False
 
+		# Last, and on this thread rather than the one that parsed the board information:
+		# building the renderer loads the presentations package and picks a first
+		# presentation, which is slow enough to outlive the connect probe's deadline and
+		# would hold the send gate shut while ``__init__`` queued the requests above. The
+		# library is up by now, so the presentation it picks is the one the user asked for.
+		self._createRenderer()
+
 	def _setupLibrarySingleton(self) -> None:
 		"""Construct the TactileDisplayAPI library singleton for this driver.
 
@@ -1964,7 +1971,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				self._buildDisplays(info)
 			finally:
 				self._boardInformation = info
-			self._createRenderer()
 		elif packet.packetType == PacketType.RSP_FIRMWARE_VERSION:
 			self._firmwareVersion = packet.args.decode("ascii")
 			log.debug("Firmware version: %s", self._firmwareVersion)
@@ -2103,9 +2109,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def _createRenderer(self) -> None:
 		"""Build the presentation renderer for the graphic display, if there is one.
 
-		Called after ``_boardInformation`` is published, never before: this loads the
-		presentations package and builds an initial presentation, and the connect probe
-		waiting on that attribute has a one-second deadline. It only needs the displays.
+		Called at the end of ``__init__``, not from the board information handler: it
+		loads the presentations package and picks a first presentation, which is slower
+		than the connect probe's deadline and would run on NVDA's I/O thread with the
+		send gate shut.
 		"""
 		if self.graphicDisplay is None:
 			return
