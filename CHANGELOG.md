@@ -69,6 +69,7 @@ Changes destined for the next release.
 - Multi-line braille on the tactile area now leaves a single empty dot-row between lines (was two), matching the library's built-in graphic mode so the line spacing stays consistent regardless of which rendering path is active. More braille lines fit on the display as a result. Inter-line spacing is now defined once (the display's vertical cell spacing) and shared by the primary braille, table, and screen-capture renderers.
 
 ### Fixed
+- The multi-line display now works from the moment NVDA starts. Over USB it could come up without the TactileDisplayAPI library, so the 300-cell area was driven by NVDA instead and F1 and F4 lost your place again on the next key press. Reconnecting the display was the only way out.
 - A display connected over Bluetooth no longer disconnects by itself. When the Dot Pad sent two messages at once, the add-on discarded both and could wait for a confirmation it had already received until it gave up on the display.
 - Bluetooth now works on NVDA 2026.3 beta 1. That build is missing one of the Windows Bluetooth components it needs, so scanning failed as soon as a display was found; the add-on supplies the missing component from its own copy until NVDA ships it.
 - A Bluetooth connection that cannot be established now fails promptly instead of appearing to hang.

@@ -19,7 +19,6 @@ The board-info → display-creation path is exercised with ``_createDisplay`` an
 
 from __future__ import annotations
 
-import threading
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -32,12 +31,13 @@ class TestGraphicDisplayVerticalSpacing(unittest.TestCase):
 	def test_graphicDisplay_createdWith1DotVerticalSpacing(self) -> None:
 		"""On board info, ``_createDisplay`` for the graphic area gets ``verticalCellSpacing=1``."""
 		driver = dotpad_driver.BrailleDisplayDriver.__new__(dotpad_driver.BrailleDisplayDriver)
-		# __init__ is skipped, so supply the send gate _handleResponse signals.
-		driver._readyToSend = threading.Event()
+		# __init__ is skipped, so supply the send state _handleResponse signals.
+		driver._initSendState()
+		driver._boardInformation = None
 
 		createdKwargs: list[dict] = []
 
-		def fakeCreate(descriptor, **kwargs):
+		def fakeCreate(descriptor, dotsPerCell, **kwargs):
 			disp = MagicMock(name="display")
 			disp.numCols = descriptor.columnCount
 			disp.numRows = descriptor.rowCount

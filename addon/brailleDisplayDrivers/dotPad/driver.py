@@ -1105,7 +1105,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	supportsAutomaticDetection = True
 	isThreadSafe = True
 	receivesAckPackets = True
-	_boardInformation: BoardInformation | None
+	_boardInformation: BoardInformation | None = None
 	_firmwareVersion: str
 	_deviceName: str
 	_keysPressed: set[tuple[KeyGroup, int]]
@@ -1221,8 +1221,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# suppress the probe packet for the ones after it.
 			self._displayGone = False
 			self._consecutiveRenderTimeouts = 0
-			# Nor a partial frame left by the previous port.
+			# Nor a partial frame left by the previous port, nor a late answer from one
+			# already given up on, which would satisfy this port's wait.
 			self._resetReceiveBuffer()
+			self._boardInformation = None
 			log.debug("Trying port %s, %s", portType, portId)
 			# NVDA types DeviceMatch.type as Literal["hid", "serial", "custom"], which
 			# does not know about the "BLE" type our own detector registers, so pyright
@@ -1297,7 +1299,17 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		if self._libraryReady:
 			return
 		if self.graphicDisplay is None:
-			log.debug("dotPad: no graphic display attached; skipping library construction")
+			info = self._boardInformation
+			if info is not None and info.graphic.columnCount > 0:
+				# The board reports a tactile area and we have no display for it, so this
+				# is a fault rather than a text-only device: everything the library drives
+				# stays unavailable for the life of this driver.
+				log.warning(
+					"The board reports a tactile area but no graphic display is "
+					"attached; skipping library construction",
+				)
+			else:
+				log.debug("dotPad: no graphic display attached; skipping library construction")
 			return
 		worker = None
 		try:
@@ -1886,7 +1898,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._receiveBuffer = bytearray()
 
 	def _awaitBoardInformation(self, timeout: float) -> bool:
-		"""Wait until the board information response has been parsed, or ``timeout`` passes.
+		"""Wait until the board information response has been handled, or ``timeout`` passes.
 
 		:returns: ``True`` if the response arrived in time.
 		"""
@@ -1936,7 +1948,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				graphicDisplayDescriptor = DisplayDescriptor.fromBytes(*packet.args[8:12])
 			except IndexError:
 				graphicDisplayDescriptor = DisplayDescriptor(0, 0, False, 0)
-			self._boardInformation = info = BoardInformation(
+			info = BoardInformation(
 				features=packet.args[0],
 				dotsPerCell=packet.args[1],
 				distanceBetweenPins=packet.args[2],
@@ -1945,44 +1957,14 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				graphic=graphicDisplayDescriptor,
 			)
 			log.debug("Board information: %s", info)
-			self._boardInformation = info
-			if textDisplayDescriptor.columnCount > 0:
-				if self.supportsHardwareBasedAutoRefresh:
-					textAutoRefresh = False
-				else:
-					textAutoRefresh = bool(configuration.getAutoRefresh() & configuration.AutoRefresh.TEXT)
-				self.textDisplay = self._createDisplay(
-					textDisplayDescriptor,
-					autoRefresh=textAutoRefresh,
-				)
-				self.primaryDisplay = self.textDisplay
-				self.numCols = self.textDisplay.numCols
-				self.numRows = self.textDisplay.numRows
-			if graphicDisplayDescriptor.columnCount > 0:
-				if self.supportsHardwareBasedAutoRefresh:
-					graphicAutoRefresh = False
-				else:
-					graphicAutoRefresh = bool(
-						configuration.getAutoRefresh() & configuration.AutoRefresh.GRAPHIC,
-					)
-				_lineSpacingOption = configuration.getMultilineBrailleSpacing(fromCache=True)
-				_paddingDots, _ = configuration.LINE_SPACING_PAYLOADS[_lineSpacingOption]
-				self.graphicDisplay = self._createDisplay(
-					graphicDisplayDescriptor,
-					supportsGraphic=True,
-					startDestination=1,
-					horizontalCellSpacing=1,
-					verticalCellSpacing=_paddingDots,
-					autoRefresh=graphicAutoRefresh,
-				)
-
-				# Late import to avoid circular dependency
-				if TYPE_CHECKING or IS_UNDER_UNITTEST:
-					from ...presentations import PresentationRenderer
-				else:
-					PresentationRenderer = addon.loadModule("presentations.renderer").PresentationRenderer
-
-				self._renderer = PresentationRenderer(self.graphicDisplay)
+			# Published last, and whatever the outcome: the connect probe waits on this
+			# attribute, and setting it before the displays exist handed callers a driver
+			# whose graphicDisplay was still None. A display that failed to build is still
+			# better than a port the probe gives up on.
+			try:
+				self._buildDisplays(info)
+			finally:
+				self._boardInformation = info
 		elif packet.packetType == PacketType.RSP_FIRMWARE_VERSION:
 			self._firmwareVersion = packet.args.decode("ascii")
 			log.debug("Firmware version: %s", self._firmwareVersion)
@@ -2081,11 +2063,61 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# Notify NVDA core that we are ready for new braille cells
 			super()._handleAck()
 
-	def _createDisplay(self, descriptor: DisplayDescriptor, **kwargs: int | str | bool) -> Display:
+	def _buildDisplays(self, info: BoardInformation) -> None:
+		"""Create the text and graphic displays, and the renderer, the board reports.
+
+		Takes the board information as an argument rather than reading
+		``self._boardInformation``, which is only published once this has returned.
+		"""
+		if info.text.columnCount > 0:
+			if self.supportsHardwareBasedAutoRefresh:
+				textAutoRefresh = False
+			else:
+				textAutoRefresh = bool(configuration.getAutoRefresh() & configuration.AutoRefresh.TEXT)
+			self.textDisplay = self._createDisplay(
+				info.text,
+				info.dotsPerCell,
+				autoRefresh=textAutoRefresh,
+			)
+			self.primaryDisplay = self.textDisplay
+			self.numCols = self.textDisplay.numCols
+			self.numRows = self.textDisplay.numRows
+		if info.graphic.columnCount == 0:
+			return
+		if self.supportsHardwareBasedAutoRefresh:
+			graphicAutoRefresh = False
+		else:
+			graphicAutoRefresh = bool(configuration.getAutoRefresh() & configuration.AutoRefresh.GRAPHIC)
+		spacingOption = configuration.getMultilineBrailleSpacing(fromCache=True)
+		paddingDots, _ = configuration.LINE_SPACING_PAYLOADS[spacingOption]
+		self.graphicDisplay = self._createDisplay(
+			info.graphic,
+			info.dotsPerCell,
+			supportsGraphic=True,
+			startDestination=1,
+			horizontalCellSpacing=1,
+			verticalCellSpacing=paddingDots,
+			autoRefresh=graphicAutoRefresh,
+		)
+
+		# Late import to avoid circular dependency
+		if TYPE_CHECKING or IS_UNDER_UNITTEST:
+			from ...presentations import PresentationRenderer
+		else:
+			PresentationRenderer = addon.loadModule("presentations.renderer").PresentationRenderer
+
+		self._renderer = PresentationRenderer(self.graphicDisplay)
+
+	def _createDisplay(
+		self,
+		descriptor: DisplayDescriptor,
+		dotsPerCell: int,
+		**kwargs: int | str | bool,
+	) -> Display:
 		"""Create a display from a display descriptor"""
 		cellHeight: int = 4
 		cellWidth: int = 2
-		if self._boardInformation and self._boardInformation.dotsPerCell == DP_DPC_6:
+		if dotsPerCell == DP_DPC_6:
 			cellHeight = 3
 
 		return Display(

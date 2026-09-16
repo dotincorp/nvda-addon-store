@@ -266,7 +266,13 @@ class TestPresentationIsStillValidConfigAware(unittest.TestCase):
 
 		display = _makeDisplay()
 		presentation = BraillePresentation(display)
-		with patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.LIBRARY):
+		with (
+			patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.LIBRARY),
+			patch(
+				"addon.presentations.braille._getActiveDotPadDriver",
+				return_value=_makeReadyDriver(),
+			),
+		):
 			self.assertFalse(presentation.isStillValid())
 
 	def test_library_braille_presentation_valid_when_library_ready(self) -> None:
@@ -290,6 +296,48 @@ class TestPresentationIsStillValidConfigAware(unittest.TestCase):
 		presentation = LibraryBraillePresentation(display)
 		with patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.NVDA):
 			self.assertFalse(presentation.isStillValid())
+
+	def test_what_the_provider_builds_reports_itself_still_valid(self) -> None:
+		"""The provider's choice and ``isStillValid`` read the same decision, so a freshly
+		built presentation is never immediately replaced."""
+		from addon.configuration import BrailleSource
+
+		for libraryReady in (True, False):
+			with self.subTest(libraryReady=libraryReady):
+				driver = _makeReadyDriver()
+				driver._libraryReady = libraryReady
+				driver._libraryFallbackAnnounced = True
+				with (
+					patch(
+						"addon.presentations.braille.getBrailleSource",
+						return_value=BrailleSource.LIBRARY,
+					),
+					patch(
+						"addon.presentations.braille._getActiveDotPadDriver",
+						return_value=driver,
+					),
+				):
+					presentation = _makeProvider()._doCreatePresentation(
+						MagicMock(name="obj"),
+						_makeDisplay(),
+					)
+					self.assertTrue(presentation.isStillValid())
+
+	def test_the_fallback_presentation_stays_valid_while_the_library_is_unavailable(self) -> None:
+		"""Invalidating it would rebuild the buffer on every navigation event, and with it
+		the window the user just scrolled with F1/F4."""
+		from addon.configuration import BrailleSource
+		from addon.presentations.braille import BraillePresentation
+
+		driver = _makeReadyDriver()
+		driver._libraryReady = False
+		presentation = BraillePresentation(_makeDisplay())
+		with (
+			patch("addon.presentations.braille.getBrailleSource", return_value=BrailleSource.LIBRARY),
+			patch("addon.presentations.braille._getActiveDotPadDriver", return_value=driver),
+		):
+			self.assertTrue(presentation.isStillValid())
+			self.assertTrue(presentation.isStillValid())
 
 	def test_library_braille_presentation_invalid_when_library_becomes_unhealthy(self) -> None:
 		"""When ``_libraryReady`` flips False mid-session, the presentation
