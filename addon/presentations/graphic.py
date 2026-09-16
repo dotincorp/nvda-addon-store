@@ -43,11 +43,11 @@ from logHandler import log
 from NVDAObjects import NVDAObject
 from scriptHandler import script
 
-from ..utils.logOnce import warnFailureOnce
 from .base import Presentation, PresentationProvider
 
 if TYPE_CHECKING:
 	from .. import configuration
+	from ..utils.logOnce import warnFailureOnce
 	from ..brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver, Display
 	from ..brailleDisplayDrivers.dotPad.tactileBuffer import DpTactileGraphicsBuffer
 	from ..extension_points.review_tracking import TriggerReason
@@ -64,6 +64,7 @@ if not TYPE_CHECKING:
 	TriggerReason = _addon.loadModule("extension_points.review_tracking").TriggerReason
 	LibraryModes = _addon.loadModule("tactileDisplayAPI.libraryModes").LibraryModes
 	configuration = _addon.loadModule("configuration")
+	warnFailureOnce = _addon.loadModule("utils.logOnce").warnFailureOnce
 
 addonHandler.initTranslation()
 

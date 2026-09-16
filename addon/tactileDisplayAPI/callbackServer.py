@@ -55,13 +55,19 @@ from __future__ import annotations
 
 import ctypes
 import threading
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from comtypes import COMObject  # pyright: ignore[reportUnknownVariableType]
 from logHandler import log
 
-from ..utils.logOnce import warnFailureOnce
 from .comInterface import ITactileDisplayCallbacks
+
+if TYPE_CHECKING:
+	from ..utils.logOnce import warnFailureOnce
+else:
+	import addonHandler
+
+	warnFailureOnce = addonHandler.getCodeAddon().loadModule("utils.logOnce").warnFailureOnce
 
 
 # S_OK is 0; comtypes uses HRESULT internally. Render callbacks always

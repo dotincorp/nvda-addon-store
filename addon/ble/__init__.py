@@ -24,11 +24,18 @@ objects to the local classes -- the APIs are identical.
 """
 
 import importlib
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from logHandler import log
 
-from ..utils.vendor import ensureVendorPath, ensureWinrtCollections
+if TYPE_CHECKING:
+	from ..utils.vendor import ensureVendorPath, ensureWinrtCollections
+else:
+	import addonHandler
+
+	_vendorModule = addonHandler.getCodeAddon().loadModule("utils.vendor")
+	ensureVendorPath = _vendorModule.ensureVendorPath
+	ensureWinrtCollections = _vendorModule.ensureWinrtCollections
 
 
 def _setUpBle() -> tuple[Any | None, bool]:
