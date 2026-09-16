@@ -1957,14 +1957,15 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				graphic=graphicDisplayDescriptor,
 			)
 			log.debug("Board information: %s", info)
-			# Published last, and whatever the outcome: the connect probe waits on this
-			# attribute, and setting it before the displays exist handed callers a driver
-			# whose graphicDisplay was still None. A display that failed to build is still
-			# better than a port the probe gives up on.
+			# Published after the displays and whatever the outcome: the connect probe waits
+			# on this attribute, and setting it before the displays exist handed callers a
+			# driver whose graphicDisplay was still None. A display that failed to build is
+			# still better than a port the probe gives up on.
 			try:
 				self._buildDisplays(info)
 			finally:
 				self._boardInformation = info
+			self._createRenderer()
 		elif packet.packetType == PacketType.RSP_FIRMWARE_VERSION:
 			self._firmwareVersion = packet.args.decode("ascii")
 			log.debug("Firmware version: %s", self._firmwareVersion)
@@ -2099,6 +2100,17 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			verticalCellSpacing=paddingDots,
 			autoRefresh=graphicAutoRefresh,
 		)
+
+	def _createRenderer(self) -> None:
+		"""Build the presentation renderer for the graphic display, if there is one.
+
+		Deliberately after ``_boardInformation`` is published, not before: this loads the
+		presentations package and builds an initial presentation, which took over a second
+		on first use and so outlived the connect probe's deadline when the probe waited for
+		it. The probe only needs the displays.
+		"""
+		if self.graphicDisplay is None:
+			return
 
 		# Late import to avoid circular dependency
 		if TYPE_CHECKING or IS_UNDER_UNITTEST:
