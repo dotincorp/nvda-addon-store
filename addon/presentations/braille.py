@@ -17,10 +17,16 @@ from typing import TYPE_CHECKING, Any, cast
 
 import braille
 import config
-from braille import Region
 from logHandler import log
 from tactile.braille import drawBrailleCells
 
+from ..compat.nvdaBraille import (
+	BrailleBuffer,
+	DisplayDimensions,
+	Region,
+	TextInfoRegion,
+	getFocusRegions,
+)
 from .base import Presentation, PresentationProvider
 
 if TYPE_CHECKING:
@@ -71,9 +77,6 @@ class BraillePresentation(Presentation):
 		:param display: The display to render to.
 		"""
 		super().__init__()
-		# Imported at runtime so unit tests can patch it.
-		from braille import BrailleBuffer
-
 		self._buffer = BrailleBuffer(self)
 		self._display = display
 		self._regionsPendingUpdate: set[Region] = set()
@@ -100,8 +103,6 @@ class BraillePresentation(Presentation):
 
 	@property
 	def displayDimensions(self):
-		from braille import DisplayDimensions
-
 		return DisplayDimensions(
 			numRows=self._display.numRows,
 			numCols=self._display.numCols,
@@ -124,7 +125,6 @@ class BraillePresentation(Presentation):
 		:returns: True if buffer changed, False otherwise.
 		"""
 		import api
-		from braille import getFocusRegions
 
 		# Get current navigator state
 		navObj = api.getNavigatorObject()
@@ -143,13 +143,10 @@ class BraillePresentation(Presentation):
 		region: Region | None = regions[-1] if regions else None
 		regionObj = getattr(region, "obj", None)
 
-		if region and regionObj == reviewPos.obj:
-			# Mark region for update
-			from braille import TextInfoRegion
-
-			if isinstance(region, TextInfoRegion):
-				region.pendingCaretUpdate = True
-				self._regionsPendingUpdate.add(region)
+		# Mark the region for update when the review position is still inside it.
+		if region and regionObj == reviewPos.obj and isinstance(region, TextInfoRegion):
+			region.pendingCaretUpdate = True
+			self._regionsPendingUpdate.add(region)
 
 		# Process pending updates
 		if self._regionsPendingUpdate:
@@ -180,7 +177,6 @@ class BraillePresentation(Presentation):
 
 		:returns: True if updates were processed, False otherwise.
 		"""
-		from braille import TextInfoRegion
 		from logHandler import log
 		from treeInterceptorHandler import TreeInterceptor
 
@@ -218,8 +214,6 @@ class BraillePresentation(Presentation):
 
 		:param region: The region to scroll to.
 		"""
-		from braille import TextInfoRegion
-
 		if region.brailleCursorPos is not None:
 			self._buffer.scrollTo(region, region.brailleCursorPos)
 		elif not isinstance(region, TextInfoRegion) or not region.obj.isTextSelectionAnchoredAtStart:
