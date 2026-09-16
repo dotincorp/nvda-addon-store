@@ -186,6 +186,16 @@ class TestDriverLibrarySession(unittest.TestCase):
 
 	_driverModule = "addon.brailleDisplayDrivers.dotPad.driver"
 
+	def _readyDriver(self):
+		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
+
+		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
+		driver._libraryWorker = MagicMock(name="worker")
+		driver._tda = MagicMock(name="tda")
+		driver._callbackServer = MagicMock(name="callbacks")
+		driver._libraryReady = True
+		return driver
+
 	def _setUp(self) -> tuple[object, MagicMock]:
 		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
 
@@ -255,31 +265,24 @@ class TestDriverLibrarySession(unittest.TestCase):
 		submitted = [c.args[0] for c in worker.submit.call_args_list]
 		self.assertNotIn(driverMod._addFocusedControlOnWorker, submitted)
 
-	def test_setup_waits_for_the_released_worker_first(self) -> None:
+	def test_holding_hybrid_switches_without_restoring_it(self) -> None:
 		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
 
-		released = MagicMock(name="releasedWorker")
-		released.join.return_value = True
-		with patch.object(driverMod, "_releasedLibraryWorker", released):
-			self._setUp()
-			self.assertIsNone(driverMod._releasedLibraryWorker)
-		released.join.assert_called_once_with(driverMod.LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS)
+		driver, worker = self._setUp()
+		worker.submit.reset_mock()
+		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=True):
+			driver.showLibraryBraille(restoreHybrid=False)
+		submitted = [c.args[0] for c in worker.submit.call_args_list]
+		self.assertEqual(submitted[0], driverMod._showBrailleOnWorker)
+		self.assertNotIn(driverMod._setHybridModeOnWorker, submitted)
 
 	def test_teardown_disables_events_then_stops_without_waiting(self) -> None:
 		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
-		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
 
-		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
-		worker = MagicMock(name="worker")
-		tda = MagicMock(name="tda")
-		driver._libraryWorker = worker
-		driver._tda = tda
-		driver._callbackServer = MagicMock(name="callbacks")
-		driver._libraryReady = True
-
-		with patch.object(driverMod, "_releasedLibraryWorker", None):
-			driver._teardownLibrarySingleton()
-			self.assertIs(driverMod._releasedLibraryWorker, worker)
+		driver = self._readyDriver()
+		worker = driver._libraryWorker
+		tda = driver._tda
+		driver._teardownLibrarySingleton()
 
 		self.assertEqual(
 			[name for name, _args, _kwargs in worker.method_calls],
@@ -290,11 +293,7 @@ class TestDriverLibrarySession(unittest.TestCase):
 	def test_mode_result_from_a_released_worker_is_dropped(self) -> None:
 		from concurrent.futures import Future
 
-		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
-
-		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
-		driver._libraryWorker = MagicMock(name="currentWorker")
-		driver._libraryModes = None
+		driver = self._readyDriver()
 		future: Future[tuple[bool, bool]] = Future()
 		future.set_result((True, True))
 		with patch(f"{self._driverModule}._simulatedDisplay") as simMod:

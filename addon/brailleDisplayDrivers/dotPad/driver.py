@@ -134,8 +134,6 @@ TERMINATE_DRAIN_TIMEOUT_SECONDS: float = 3.0
 #: CONNECTION_POLL_SECONDS, so this only expires if it is stuck in a write that will not
 #: return -- which must not hold the main thread.
 TERMINATE_JOIN_TIMEOUT_SECONDS: float = 2.0
-#: Budget for a released library worker to finish its queue before the next library is set up.
-LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS: float = 2.0
 
 # Auto refresh
 AUTO_REFRESH_NUM: int = 3
@@ -153,22 +151,6 @@ BOARD_INFORMATION_TIMEOUT_SECONDS: float = 1.0
 #: Longest single wait inside that budget. BLE signals a read before the data is parsed, so a
 #: response that arrives during one wait is only seen when the next one ends.
 BOARD_INFORMATION_POLL_SECONDS: float = 0.05
-
-
-_releasedLibraryWorker: LibraryWorker | None = None
-"""The worker the last driver stopped, until the next library setup has waited for it."""
-
-
-def _awaitReleasedLibraryWorker() -> None:
-	"""Wait, bounded, for the previous driver's library worker to exit."""
-	global _releasedLibraryWorker
-	worker = _releasedLibraryWorker
-	_releasedLibraryWorker = None
-	if worker is not None and not worker.join(LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS):
-		log.debugWarning(
-			"Previous library worker did not exit within %ss; setting up anyway",
-			LIBRARY_WORKER_JOIN_TIMEOUT_SECONDS,
-		)
 
 
 def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
@@ -197,7 +179,7 @@ def _setBrailleTablesOnWorker(tda: object, tableName: str) -> None:
 		)
 
 
-def _setRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = None) -> None:
+def _setRegisterEventsOnWorker(tda: object, worker: LibraryWorker) -> None:
 	"""Submit ``RegisterEvents(True)`` to the library on the worker thread.
 
 	Module-level (vs a closure) so the library worker's submit queue captures a
@@ -210,8 +192,7 @@ def _setRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = None)
 	"""
 	try:
 		tda.setRegisterEvents(True)  # type: ignore[attr-defined]
-		if worker is not None:
-			worker.noteUiaEventsEnabled()
+		worker.noteUiaEventsEnabled()
 	except Exception:
 		log.warning(
 			"dotPad: setRegisterEvents(True) failed; library-driven braille "
@@ -238,7 +219,7 @@ def _addFocusedControlOnWorker(tda: object) -> None:
 		log.warning("Rendering the focused control failed", exc_info=True)
 
 
-def _disableRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = None) -> None:
+def _disableRegisterEventsOnWorker(tda: object, worker: LibraryWorker) -> None:
 	"""Submit ``RegisterEvents(False)`` to the library on the worker thread.
 
 	Counterpart to :func:`_setRegisterEventsOnWorker`, submitted when the driver releases the
@@ -246,8 +227,7 @@ def _disableRegisterEventsOnWorker(tda: object, worker: LibraryWorker | None = N
 	"""
 	try:
 		tda.setRegisterEvents(False)  # type: ignore[attr-defined]
-		if worker is not None:
-			worker.noteUiaEventsDisabled()
+		worker.noteUiaEventsDisabled()
 	except Exception:
 		log.warning("dotPad: setRegisterEvents(False) failed", exc_info=True)
 
@@ -1242,13 +1222,9 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._tda: TactileDisplayAPI | None = None
 		self._callbackServer: TactileDisplayCallbacks | None = None
 		self._libraryReady: bool = False
-		# NVDA re-runs __init__ on the same object when the same driver is selected again, so
-		# nothing from the previous connection may be assumed absent.
+		# NVDA re-runs __init__ on the same object when the same driver is selected again, and the
+		# library setup below may run before this connection's device name arrives.
 		self._deviceName = ""
-		self._libraryModes = None
-		self._libraryModesUnsupported = False
-		self._libraryModeQueryPending = False
-		self._libraryModeQueryRerun = False
 		self._maxRefreshes = {}
 		self._queuedPacketsSenderThread = threading.Thread(target=self._queuedPacketsSender, daemon=True)
 		self._queuedPacketsSenderThread.start()
@@ -1373,7 +1349,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# pipeline for output we never use.
 			totalBrailleCellCount = 0
 			lineCount = 0
-			displayName = str(getattr(self, "_deviceName", "") or "DotPad")
+			displayName = self._deviceName or "DotPad"
 			args = (displayName, tactileDotsX, tactileDotsY, totalBrailleCellCount, lineCount)
 			log.debug("dotPad: setting up library singleton with args=%s", args)
 
@@ -1385,7 +1361,6 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# logging is internal.
 			iniPatcher.patchTactileDisplayAPIIni()
 
-			_awaitReleasedLibraryWorker()
 			worker = LibraryWorker()
 			worker.start(startTimeoutS=5.0)
 
@@ -1446,8 +1421,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			# A new instance reports graphics mode until told otherwise, which would let hybrid
 			# print claim the display before anything was drawn. Switching to braille before the
 			# first mode query makes that report describe what is on the pins.
-			worker.submit(_showBrailleOnWorker, tda)
-			self.applyHybridSetting()
+			self.showLibraryBraille()
 			log.debug("dotPad: library singleton ready (SimulateDisplay registered)")
 			log.info("dotPad: TactileDisplayAPI library %s", tda.libraryDescription)
 		except Exception:
@@ -1467,11 +1441,9 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		"""Release the TactileDisplayAPI library singleton.
 
 		Drains in-flight callbacks, turns the library's events off, drops references and stops
-		the worker without waiting: this runs on NVDA's main thread, where the worker's last
-		library calls tripped the freeze watchdog. The next library setup waits for it instead,
-		so two instances still never overlap. Idempotent.
+		the worker without waiting: this runs on NVDA's main thread. The next worker's ``start``
+		waits for this one instead. Idempotent.
 		"""
-		global _releasedLibraryWorker
 		if self._callbackServer is not None:
 			try:
 				self._callbackServer.setShuttingDown()
@@ -1487,14 +1459,32 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 		self._libraryReady = False
 		self._libraryModes = None
 		self._libraryModesUnsupported = False
+		self._libraryModeQueryPending = False
+		self._libraryModeQueryRerun = False
 		if worker is not None:
 			try:
 				if tda is not None:
 					worker.submit(_disableRegisterEventsOnWorker, tda, worker)
 				worker.stop()
-				_releasedLibraryWorker = worker
 			except Exception:
 				log.exception("dotPad: stopping the library worker raised; continuing")
+
+	def showLibraryBraille(self, restoreHybrid: bool = True) -> None:
+		"""Switch the library to braille for the object at the cursor.
+
+		:param restoreHybrid: Put the hybrid setting back straight after, which the switch clears
+			while events are on. Pass False to keep braille on this object for now, and call
+			:meth:`applyHybridSetting` once the user has moved on.
+		"""
+		worker = self._libraryWorker
+		tda = self._tda
+		if worker is None or tda is None or not self._libraryReady:
+			return
+		worker.submit(_showBrailleOnWorker, tda)
+		if restoreHybrid:
+			self.applyHybridSetting()
+		else:
+			self.requestLibraryModeRefresh()
 
 	def applyHybridSetting(self) -> None:
 		"""Apply the configured hybrid print and braille setting to the library, then ask for its mode.

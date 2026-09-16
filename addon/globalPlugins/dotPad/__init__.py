@@ -191,24 +191,12 @@ class DotPadGlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def _applyHybridPrintAndBraille(self) -> None:
 		"""Re-apply the persisted hybrid print+braille setting to the running library.
 
-		Fire-and-forget on the library worker (no main-thread block), guarded like
-		``onToggleShowBrailleOnScreen``. No-op when no DotPad driver is active or the
-		library is not ready — the value is applied on the next driver init instead.
-		Reads the freshly-cached value, so callers must ``updateConfigCache()`` first.
+		No-op when no DotPad driver is active; the value is applied on the next driver init
+		instead. Reads the freshly-cached value, so callers must ``updateConfigCache()`` first.
 		"""
 		driver = self._getActiveDotPadDriver()
-		if driver is None:
-			return
-		if not driver._libraryReady:  # pyright: ignore[reportPrivateUsage]
-			return
-		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
-		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
-		if worker is None or tda is None:
-			log.debugWarning("dotPad: library ready but worker / wrapper missing; hybrid mode call skipped")
-			return
-		enable = configuration.getHybridPrintAndBraille(fromCache=True)
-		worker.submit(tda.setHybridPrintAndBrailleMode, enable)
-		driver.requestLibraryModeRefresh()
+		if driver is not None:
+			driver.applyHybridSetting()
 
 	def onAutoRefreshChange(self):
 		# Update configuration cache when settings are saved

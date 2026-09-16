@@ -46,42 +46,22 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		self.assertIsInstance(presentation._gestureMap, dict)
 
 	def test_init_switches_the_library_to_braille_and_restores_hybrid(self) -> None:
-		"""``__init__`` submits the braille switch, then has the driver put the hybrid setting back.
-
-		Events are the driver's, so nothing here touches them."""
-		from addon.presentations.braille import LibraryBraillePresentation
-		from addon.tactileDisplayAPI.comInterface import BrailleInputOperation
-
-		display = MagicMock(name="display")
-		driver = _makeReadyDriver()
-		with patch(
-			"addon.presentations.braille._getActiveDotPadDriver",
-			return_value=driver,
-		):
-			LibraryBraillePresentation(display)
-
-		driver._libraryWorker.submitAndReport.assert_called_once()
-		args = driver._libraryWorker.submitAndReport.call_args.args
-		self.assertIs(args[0], driver._tda.executeOperation)
-		self.assertEqual(args[1], BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)
-		driver._libraryWorker.submit.assert_not_called()
-		driver._tda.setRegisterEvents.assert_not_called()
-		driver.applyHybridSetting.assert_called_once_with()
-
-	def test_init_skips_bootstrap_when_library_not_ready(self) -> None:
-		"""Bootstrap is a defensive no-op when the driver / library aren't ready."""
+		"""``__init__`` has the driver switch to braille with hybrid restored; nothing else."""
 		from addon.presentations.braille import LibraryBraillePresentation
 
-		display = MagicMock(name="display")
 		driver = _makeReadyDriver()
-		driver._libraryReady = False
-		with patch(
-			"addon.presentations.braille._getActiveDotPadDriver",
-			return_value=driver,
-		):
-			LibraryBraillePresentation(display)
+		with patch("addon.presentations.braille._getActiveDotPadDriver", return_value=driver):
+			LibraryBraillePresentation(MagicMock(name="display"))
+
+		driver.showLibraryBraille.assert_called_once_with(restoreHybrid=True)
 		driver._libraryWorker.submit.assert_not_called()
 		driver._libraryWorker.submitAndReport.assert_not_called()
+
+	def test_init_without_driver_does_nothing(self) -> None:
+		from addon.presentations.braille import LibraryBraillePresentation
+
+		with patch("addon.presentations.braille._getActiveDotPadDriver", return_value=None):
+			LibraryBraillePresentation(MagicMock(name="display"))  # must not raise
 
 	def test_name_is_libraryBraille(self) -> None:
 		"""Distinct name so the renderer's transition hooks can tell presentations apart."""
@@ -111,25 +91,32 @@ class TestLibraryBraillePresentationHybridHold(unittest.TestCase):
 			presentation = LibraryBraillePresentation(MagicMock(name="display"))
 		return presentation, driver
 
+	def _cycle(self, presentation, driver, navigator: object) -> None:
+		with (
+			patch.object(presentation, "_getActiveDriver", return_value=driver),
+			patch("api.getNavigatorObject", return_value=navigator),
+		):
+			self.assertFalse(presentation.handleCoreCycle())
+
+	def test_leaving_print_switches_without_restoring_hybrid(self) -> None:
+		_presentation, driver = self._leaveHybridPrint(MagicMock(name="field"))
+		driver.showLibraryBraille.assert_called_once_with(restoreHybrid=False)
+
 	def test_hybrid_is_held_while_on_the_field(self) -> None:
 		field = MagicMock(name="field")
 		presentation, driver = self._leaveHybridPrint(field)
-		driver.applyHybridSetting.assert_not_called()
-		with (
-			patch.object(presentation, "_getActiveDriver", return_value=driver),
-			patch("api.getNavigatorObject", return_value=field),
-		):
-			self.assertFalse(presentation.handleCoreCycle())
+		self._cycle(presentation, driver, field)
+		# NVDA mints a new object per event; an equal one is still the same field.
+		sameField = MagicMock(name="sameField")
+		sameField.__eq__.return_value = True
+		self._cycle(presentation, driver, sameField)
 		driver.applyHybridSetting.assert_not_called()
 
 	def test_hybrid_returns_on_the_next_field(self) -> None:
 		presentation, driver = self._leaveHybridPrint(MagicMock(name="field"))
-		with (
-			patch.object(presentation, "_getActiveDriver", return_value=driver),
-			patch("api.getNavigatorObject", return_value=MagicMock(name="nextField")),
-		):
-			presentation.handleCoreCycle()
-			presentation.handleCoreCycle()
+		nextField = MagicMock(name="nextField")
+		self._cycle(presentation, driver, nextField)
+		self._cycle(presentation, driver, nextField)
 		driver.applyHybridSetting.assert_called_once_with()
 
 

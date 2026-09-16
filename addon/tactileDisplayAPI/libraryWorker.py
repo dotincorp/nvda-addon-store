@@ -71,7 +71,7 @@ import traceback
 from concurrent.futures import Future
 from queue import Empty as QueueEmpty
 from queue import Queue
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, ClassVar, TypeVar
 
 import winKernel
 import winUser
@@ -93,6 +93,9 @@ _COINIT_APARTMENTTHREADED: int = 0x2
 # Backstop timeout for the idle wait, in seconds. Liveness insurance only — the
 # worker wakes on the queue event or on an incoming message.
 _WAIT_BACKSTOP_S: float = 1.0
+
+#: Longest ``start`` waits for the previously stopped worker to finish its queue and exit.
+PREDECESSOR_JOIN_TIMEOUT_S: float = 2.0
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds
 # at most a few thousand pending messages even under heavy load; capping
@@ -250,7 +253,13 @@ class LibraryWorker:
 	    result = worker.submitAndAwait(worker.tda.connect, 1, timeout=2.0)
 	    # ... more submits ...
 	    worker.stop()                                     # non-blocking
+
+	Library instances share state inside the DLL, so ``start`` first waits (bounded) for the
+	last stopped worker to exit; ``stop`` itself never waits, since it runs on NVDA's main thread.
 	"""
+
+	_lastStopped: ClassVar[LibraryWorker | None] = None
+	"""The most recently stopped worker, until the next ``start`` has waited for it."""
 
 	def __init__(self) -> None:
 		self._queue: Queue[_QueueItem] = Queue()
@@ -300,6 +309,13 @@ class LibraryWorker:
 		  eventually die with the process.
 		- Any other exception raised inside ``_run`` before readiness is propagated.
 		"""
+		predecessor = LibraryWorker._lastStopped
+		LibraryWorker._lastStopped = None
+		if predecessor is not None and not predecessor.join(PREDECESSOR_JOIN_TIMEOUT_S):
+			log.debugWarning(
+				"Previous library worker did not exit within %ss; starting anyway",
+				PREDECESSOR_JOIN_TIMEOUT_S,
+			)
 		self._thread = threading.Thread(
 			target=self._run,
 			name="DotPadLibraryWorker",
@@ -524,6 +540,7 @@ class LibraryWorker:
 		log.debug("Library worker stop requested")
 		self._queue.put(None)
 		self._signalQueue()
+		LibraryWorker._lastStopped = self
 
 	def join(self, timeout: float) -> bool:
 		"""Wait for the worker thread to exit after :meth:`stop`.

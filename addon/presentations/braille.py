@@ -364,7 +364,7 @@ class LibraryBraillePresentation(Presentation):
 	"""
 
 	def __init__(self, display: Display) -> None:
-		"""Initialize a library-driven braille presentation and bootstrap the library.
+		"""Initialize a library-driven braille presentation and switch the library to braille.
 
 		:param display: The display to render to. Stored for future use; the
 			library writes the multi-line area autonomously so we don't need
@@ -375,46 +375,27 @@ class LibraryBraillePresentation(Presentation):
 		self._hasReplayed = False
 		self._hybridHeldFor: NVDAObject | None = None
 		"""The field the user left hybrid print on, until the navigator moves away from it."""
+		self._lastNavigator: NVDAObject | None = None
+		"""The navigator instance last compared with the held field."""
 		self._showBraille()
 
 	def _showBraille(self) -> None:
-		"""Switch the library to braille for the object at the cursor, keeping hybrid mode set.
+		"""Switch the library to braille, keeping hybrid mode set.
 
 		Needed whenever this presentation takes over, since the library may still be drawing a
-		tactile image or hybrid print. The switch also turns hybrid mode off in the library, so the
-		setting is put back: at once, or when leaving hybrid print, only once the user moves on,
-		since print would otherwise return on the field they asked to read in braille. The
-		library's session, events included, is the driver's. Silent no-op when the driver or
-		library isn't available.
+		tactile image or hybrid print. Leaving hybrid print holds the setting back until the user
+		moves on, since print would otherwise return on the field they asked to read in braille.
 		"""
 		driver = self._getActiveDriver()
-		if driver is None or not getattr(driver, "_libraryReady", False):
+		if driver is None:
 			return
-		worker = driver._libraryWorker  # pyright: ignore[reportPrivateUsage]
-		tda = driver._tda  # pyright: ignore[reportPrivateUsage]
-		if worker is None or tda is None:
-			return
-
-		def onSwitchSuccess(_result: object) -> None:
-			log.debug("LibraryBraillePresentation: text-mode switch succeeded")
-
-		def onSwitchFailure(exc: BaseException) -> None:
-			log.warning("LibraryBraillePresentation: text-mode switch failed: %r", exc)
-
-		worker.submitAndReport(
-			tda.executeOperation,
-			BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE,
-			timeout=1.0,
-			onSuccess=onSwitchSuccess,
-			onFailure=onSwitchFailure,
-		)
 		modes = driver.libraryModes
-		if modes is not None and modes.graphics and modes.hybrid:
+		leavingPrint = modes is not None and modes.graphics and modes.hybrid
+		if leavingPrint:
 			import api
 
-			self._hybridHeldFor = api.getNavigatorObject()
-		else:
-			driver.applyHybridSetting()
+			self._hybridHeldFor = self._lastNavigator = api.getNavigatorObject()
+		driver.showLibraryBraille(restoreHybrid=not leavingPrint)
 
 	def handleCoreCycle(self) -> bool:
 		"""Give hybrid mode back once the navigator has left the field it was held for."""
@@ -423,15 +404,20 @@ class LibraryBraillePresentation(Presentation):
 			return False
 		import api
 
+		navigator = api.getNavigatorObject()
+		# NVDA makes a new object per event, so a same instance means nothing has moved.
+		if navigator is self._lastNavigator:
+			return False
+		self._lastNavigator = navigator
 		try:
-			if api.getNavigatorObject() == held:
+			if navigator == held:
 				return False
 		except Exception:
 			# A field that has gone away raises from __eq__; the user has left it either way.
 			log.debug("Comparing with the field hybrid mode was held for raised", exc_info=True)
-		self._hybridHeldFor = None
+		self._hybridHeldFor = self._lastNavigator = None
 		driver = self._getActiveDriver()
-		if driver is not None and getattr(driver, "_libraryReady", False):
+		if driver is not None:
 			driver.applyHybridSetting()
 		return False
 

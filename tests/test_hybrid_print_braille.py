@@ -87,27 +87,16 @@ def _makePlugin():
 class TestOnSaveLiveApply(unittest.TestCase):
 	"""On settings save, the setting is re-applied live to a running driver (US3/FR-008)."""
 
-	def test_applies_saved_value_to_ready_driver(self):
-		"""With a ready DotPad driver, submit setHybridPrintAndBrailleMode(savedValue)."""
+	def test_applies_saved_value_to_active_driver(self):
+		"""With a DotPad driver active, the driver re-applies the saved setting."""
 		from addon.globalPlugins.dotPad import DotPadGlobalPlugin
 
 		plugin = _makePlugin()
-		config.conf[configuration.CONFIG_SECTION_NAME][
-			configuration.HYBRID_PRINT_AND_BRAILLE_SETTING_NAME
-		] = True
-		configuration.updateConfigCache()
-
 		mockDriver = MagicMock()
-		mockDriver._libraryReady = True
-		mockDriver._libraryWorker = MagicMock()
-		mockDriver._tda = MagicMock()
 		with patch.object(DotPadGlobalPlugin, "_getActiveDotPadDriver", return_value=mockDriver):
 			plugin._applyHybridPrintAndBraille()
 
-		self.assertTrue(mockDriver._libraryWorker.submit.called)
-		submitArgs = mockDriver._libraryWorker.submit.call_args
-		self.assertIs(submitArgs.args[0], mockDriver._tda.setHybridPrintAndBrailleMode)
-		self.assertIs(submitArgs.args[1], True)
+		mockDriver.applyHybridSetting.assert_called_once_with()
 
 	def test_no_driver_makes_no_library_call(self):
 		"""With no DotPad active, the live-apply path is a clean no-op."""
