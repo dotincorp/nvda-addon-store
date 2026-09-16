@@ -8,7 +8,7 @@
 The library-driven multi-line braille presentation is a near-passive
 marker: ``render()`` returns ``None``, ``terminate()`` clears the
 library's display, and ``scrollBack/Forward()`` submit
-``ExecuteOperation(PAN_VIEWPORT_UP / DOWN)``. The library does the
+``ExecuteOperation(PanLeft / PanRight)``. The library does the
 actual rendering autonomously via ``RegisterEvents(true)``.
 
 """
@@ -127,7 +127,13 @@ class TestLibraryBraillePresentationTerminate(unittest.TestCase):
 
 
 class TestLibraryBraillePresentationScroll(unittest.TestCase):
-	"""FR-003a: F1/F4 scrolling via ``ExecuteOperation(PAN_VIEWPORT_UP/DOWN)``."""
+	"""FR-003a: F1/F4 scrolling via ``ExecuteOperation(PanLeft/PanRight)``.
+
+	The braille-text pan, not the ``PanViewport*`` family: the shipped
+	``[DotPad320X Keys]`` map gives f1-f4 the tactile-graphic viewport and the pan keys
+	``PanLeft``/``PanRight``, and on hardware a viewport op in text mode returns in 1-3ms
+	without the library emitting a frame.
+	"""
 
 	def _assertScrollSubmits(self, scrollMethodName: str, expectedOpName: str) -> None:
 		from addon.tactileDisplayAPI.comInterface import BrailleInputOperation
@@ -145,10 +151,10 @@ class TestLibraryBraillePresentationScroll(unittest.TestCase):
 		self.assertEqual(args[1], getattr(BrailleInputOperation, expectedOpName))
 
 	def test_scrollBack_submits_pan_viewport_up(self) -> None:
-		self._assertScrollSubmits("scrollBack", "PAN_VIEWPORT_UP")
+		self._assertScrollSubmits("scrollBack", "PAN_LEFT")
 
 	def test_scrollForward_submits_pan_viewport_down(self) -> None:
-		self._assertScrollSubmits("scrollForward", "PAN_VIEWPORT_DOWN")
+		self._assertScrollSubmits("scrollForward", "PAN_RIGHT")
 
 	def test_scroll_noop_when_driver_unavailable(self) -> None:
 		"""No driver → no worker submission."""

@@ -359,7 +359,7 @@ class LibraryBraillePresentation(Presentation):
 	Its job is to (a) let the byte gate know library bytes should pass
 	through (the gate's ``isinstance`` check picks this class up),
 	(b) forward F1/F4 scrolling intent via
-	``ExecuteOperation(PAN_VIEWPORT_UP/DOWN)``, and (c) clear the
+	``ExecuteOperation(PAN_LEFT/PAN_RIGHT)``, and (c) clear the
 	library's display state on teardown.
 	"""
 
@@ -477,12 +477,12 @@ class LibraryBraillePresentation(Presentation):
 		simulatedDisplay.replayLastPayload()
 
 	def scrollBack(self) -> bool:
-		"""Pan the library's viewport up by one display height (F1)."""
-		return self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_UP)
+		"""Show the previous screenful of the library's braille text (F1)."""
+		return self._submitOperation(BrailleInputOperation.PAN_LEFT)
 
 	def scrollForward(self) -> bool:
-		"""Pan the library's viewport down by one display height (F4)."""
-		return self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_DOWN)
+		"""Show the next screenful of the library's braille text (F4)."""
+		return self._submitOperation(BrailleInputOperation.PAN_RIGHT)
 
 	def terminate(self) -> None:
 		"""Submit ``Clear()`` on the worker to wipe the library's content.
