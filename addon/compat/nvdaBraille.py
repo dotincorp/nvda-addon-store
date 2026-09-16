@@ -5,16 +5,10 @@
 
 """The NVDA braille names the add-on uses, resolved wherever the running version keeps them.
 
-NVDA 2026.3 split ``braille`` into a package and left deprecation shims on the old
-module. Every access through a shim logs a warning *with a full stack trace*, and
-``DisplayDimensions`` sits on NVDA's buffer window arithmetic, which runs on every
-braille update: one 25-minute session logged 8002 of them, 15.7MB of log, plus the cost
-of building each traceback on the update path.
-
-The add-on supports 2026.1 through 2026.3 (``buildVars.addon_minimumNVDAVersion``), so it
-cannot simply import from the new locations. Each name is taken from its 2026.3 home and
-falls back to the pre-split one, which is not deprecated on those versions and so is
-silent there too.
+NVDA 2026.3 split ``braille`` into a package and left deprecation shims on the old module,
+which log a warning with a full stack trace on every access. The add-on supports 2026.1
+through 2026.3 (``buildVars.addon_minimumNVDAVersion``), so each name is taken from its
+2026.3 home and falls back to the pre-split one, which is not deprecated there.
 
 .. note::
 	**Delete this module** and import from NVDA directly once
