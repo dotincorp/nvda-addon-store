@@ -432,7 +432,7 @@ class LibraryBraillePresentation(Presentation):
 		self._hybridHeldFor = None
 		driver = self._getActiveDriver()
 		if driver is not None and getattr(driver, "_libraryReady", False):
-			driver.applyHybridSetting(renderFocus=True)
+			driver.applyHybridSetting()
 		return False
 
 	@property

@@ -230,18 +230,30 @@ class TestDriverLibrarySession(unittest.TestCase):
 		self.assertLess(braille, hybrid)
 		self.assertLess(hybrid, query)
 
-	def test_restoring_hybrid_for_a_new_field_renders_the_focus(self) -> None:
+	def test_restoring_hybrid_renders_the_focus(self) -> None:
+		"""The setting alone leaves the braille frame of an already focused text field on the pins."""
 		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
 
 		driver, worker = self._setUp()
 		worker.submit.reset_mock()
 		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=True):
-			driver.applyHybridSetting(renderFocus=True)
+			driver.applyHybridSetting()
 		submitted = [c.args[0] for c in worker.submit.call_args_list]
 		self.assertEqual(
 			submitted[:2],
 			[driverMod._setHybridModeOnWorker, driverMod._addFocusedControlOnWorker],
 		)
+
+	def test_hybrid_off_renders_nothing_extra(self) -> None:
+		"""With hybrid off the braille switch has already rendered the focus."""
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		driver, worker = self._setUp()
+		worker.submit.reset_mock()
+		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=False):
+			driver.applyHybridSetting()
+		submitted = [c.args[0] for c in worker.submit.call_args_list]
+		self.assertNotIn(driverMod._addFocusedControlOnWorker, submitted)
 
 	def test_teardown_disables_events_then_stops_and_waits(self) -> None:
 		from addon.brailleDisplayDrivers.dotPad import driver as driverMod

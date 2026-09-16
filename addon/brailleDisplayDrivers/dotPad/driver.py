@@ -1481,14 +1481,12 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			except Exception:
 				log.exception("dotPad: stopping the library worker raised; continuing")
 
-	def applyHybridSetting(self, renderFocus: bool = False) -> None:
+	def applyHybridSetting(self) -> None:
 		"""Apply the configured hybrid print and braille setting to the library, then ask for its mode.
 
 		With events on, the library's switch to braille also turns hybrid mode off, so this follows
-		every such switch that should leave the setting in force.
-
-		:param renderFocus: Also render the focused control, for when focus has already moved to a
-			text field that should now show print.
+		every such switch that should leave the setting in force. The setting alone redraws nothing:
+		the focused control stays in braille until the next event, so it is rendered again here.
 		"""
 		worker = self._libraryWorker
 		tda = self._tda
@@ -1496,7 +1494,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			return
 		enabled = configuration.getHybridPrintAndBraille(fromCache=True)
 		worker.submit(_setHybridModeOnWorker, tda, enabled)
-		if renderFocus and enabled:
+		if enabled:
 			worker.submit(_addFocusedControlOnWorker, tda)
 		self.requestLibraryModeRefresh()
 

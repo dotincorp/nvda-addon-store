@@ -130,7 +130,7 @@ class TestLibraryBraillePresentationHybridHold(unittest.TestCase):
 		):
 			presentation.handleCoreCycle()
 			presentation.handleCoreCycle()
-		driver.applyHybridSetting.assert_called_once_with(renderFocus=True)
+		driver.applyHybridSetting.assert_called_once_with()
 
 
 class TestLibraryBraillePresentationTerminate(unittest.TestCase):
