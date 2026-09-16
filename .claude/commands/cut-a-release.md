@@ -124,8 +124,19 @@ Commit whatever Steps 1-2 changed — for a dev or beta that is only the
 what's-new text, if it needed touching at all — and get it onto `main` first,
 through a pull request.
 
-Then Actions → **Manual release** → Run workflow from `main`, and fill in the
-version and release type.
+Then trigger the **Manual release** workflow yourself — do not hand this step to
+the user:
+
+```powershell
+gh workflow run manualRelease.yaml -R dotincorp/nvda-addon-store --ref main `
+  -f version=<version> -f releaseType=<dev|beta|stable>
+gh run list -R dotincorp/nvda-addon-store --workflow manualRelease.yaml --limit 1
+gh run watch <run-id> -R dotincorp/nvda-addon-store --exit-status
+gh release view <version> -R dotincorp/nvda-addon-store --json tagName,isPrerelease,assets
+```
+
+Report the run URL and confirm the release has the `.nvda-addon` asset and the
+expected prerelease flag.
 
 The workflow validates the type and version before it builds, so a bad version
 fails without publishing anything. Only a stable carries its
