@@ -67,6 +67,7 @@ Changes destined for the next release.
 - Choosing Dot Pad in NVDA's braille display list no longer pauses while it looks for Bluetooth displays. A display in range is normally offered as soon as it advertises, rather than after a fixed wait; the wait now only applies when there is nothing to find.
 - Table mode no longer causes noticeable cursoring lag in browse mode. Moving through a web page or virtual document with table mode available previously cost around 240 ms per keypress; it is now roughly 5-10 ms.
 - Multi-line braille on the tactile area now leaves a single empty dot-row between lines (was two), matching the library's built-in graphic mode so the line spacing stays consistent regardless of which rendering path is active. More braille lines fit on the display as a result. Inter-line spacing is now defined once (the display's vertical cell spacing) and shared by the primary braille, table, and screen-capture renderers.
+- In hybrid mode, F2+F4 now shows the text field you are on in braille. Hybrid mode stays on, so the next text field shows print again.
 
 ### Fixed
 - F1 and F4 now move the view through braille the Dot Pad library renders. They were sending the tactile-graphics viewport command, which does nothing while the display is showing text.
@@ -74,6 +75,8 @@ Changes destined for the next release.
 - A display connected over Bluetooth no longer disconnects by itself. When the Dot Pad sent two messages at once, the add-on discarded both and could wait for a confirmation it had already received until it gave up on the display.
 - Bluetooth now works on NVDA 2026.3 beta 1. That build is missing one of the Windows Bluetooth components it needs, so scanning failed as soon as a display was found; the add-on supplies the missing component from its own copy until NVDA ships it.
 - A Bluetooth connection that cannot be established now fails promptly instead of appearing to hang.
+- With hybrid mode on, the 300-cell area no longer stays blank after connecting, and F2+F3 shows the tactile image again instead of doing nothing. Before, only pressing F1+F3 and then F2+F4 brought braille back.
+- F2+F3 now shows the tactile image of the focused object when multi-line braille comes from NVDA as well.
 - The display is now reliably cleared when disconnecting over USB. A slow row could previously abort clearing the rest, so a display could be left showing whatever was last written after switching displays or exiting NVDA.
 - Connecting a display automatically no longer announces that the TactileDisplayAPI library is unavailable. The library finishes starting a moment after the display is ready, and that moment was being reported as a failure on every automatic connection.
 - Plugging in the USB cable while connected over Bluetooth now switches to USB. The Dot Pad accepts a Bluetooth connection while USB is plugged in but does not output anything over it, so this previously left the display silent until it was reconnected by hand.

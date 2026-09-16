@@ -25,21 +25,9 @@ Threading-ownership model:
   an MTA worker (no pump) receives no events and library-driven braille goes
   dark. STA + pump is therefore required for the autonomous-braille feature.
 
-  The hazard STA + pump created historically: a long *synchronous* library call
-  (``ExecuteOperation``) blocks the thread, so the pump stops; if UIA events are
-  live at that moment they pile up unserviced and the library's internal
-  queue/heap state corrupts — a ``STATUS_HEAP_CORRUPTION`` fail-fast was observed
-  in a crash dump. The mitigation lives in the *caller*: events are enabled only
-  for library-driven-braille steady state and are turned OFF around the blocking
-  bootstrap and around graphics/explicit ``ExecuteOperation`` calls, so a blocking
-  call never runs while events compete for the starved pump. (An MTA experiment
-  confirmed the crash is the events-while-blocking collision: with events not
-  delivered, ``ExecuteOperation`` ran fine — but MTA is not a usable fix, since
-  no events means no autonomous braille. Splitting the library across two
-  instances — one events-only, one calls-only — was also tried and reproduces
-  the same crash: both instances share the library's internal state.) See the
-  driver's ``enableLibraryUiaEvents`` / ``disableLibraryUiaEvents`` and
-  ``presentations.braille``.
+  The driver turns events on when it sets the library up and off when it releases
+  it; see ``BrailleDisplayDriver._setupLibrarySingleton`` and
+  ``_teardownLibrarySingleton``.
 
 - The main thread submits work items via ``submit`` (returns a Future),
   ``submitAndAwait`` (synchronous helper for non-main-thread callers — blocks
@@ -83,7 +71,7 @@ import traceback
 from concurrent.futures import Future
 from queue import Empty as QueueEmpty
 from queue import Queue
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, ClassVar, TypeVar
 
 import winKernel
 import winUser
@@ -105,6 +93,9 @@ _COINIT_APARTMENTTHREADED: int = 0x2
 # Backstop timeout for the idle wait, in seconds. Liveness insurance only — the
 # worker wakes on the queue event or on an incoming message.
 _WAIT_BACKSTOP_S: float = 1.0
+
+#: Longest ``start`` waits for the previously stopped worker to finish its queue and exit.
+PREDECESSOR_JOIN_TIMEOUT_S: float = 2.0
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds
 # at most a few thousand pending messages even under heavy load; capping
@@ -262,7 +253,13 @@ class LibraryWorker:
 	    result = worker.submitAndAwait(worker.tda.connect, 1, timeout=2.0)
 	    # ... more submits ...
 	    worker.stop()                                     # non-blocking
+
+	Library instances share state inside the DLL, so ``start`` first waits (bounded) for the
+	last stopped worker to exit; ``stop`` itself never waits, since it runs on NVDA's main thread.
 	"""
+
+	_lastStopped: ClassVar[LibraryWorker | None] = None
+	"""The most recently stopped worker, until the next ``start`` has waited for it."""
 
 	def __init__(self) -> None:
 		self._queue: Queue[_QueueItem] = Queue()
@@ -292,8 +289,8 @@ class LibraryWorker:
 		# from "the worker has not made any progress since I submitted".
 		self._completedOpCount: int = 0
 		# Whether the library's autonomous UIA/MSAA subscription is currently
-		# on (``RegisterEvents(True/False)``). Surfaced in diagnostics because
-		# a blocking call while this is on is the heap-corruption hazard.
+		# on (``RegisterEvents(True/False)``). Surfaced in diagnostics, since
+		# a hang with events on can involve the library's own UIA work.
 		self._uiaEventsEnabled: bool = False
 
 	def start(self, *, startTimeoutS: float = 5.0) -> None:
@@ -312,6 +309,13 @@ class LibraryWorker:
 		  eventually die with the process.
 		- Any other exception raised inside ``_run`` before readiness is propagated.
 		"""
+		predecessor = LibraryWorker._lastStopped
+		LibraryWorker._lastStopped = None
+		if predecessor is not None and not predecessor.join(PREDECESSOR_JOIN_TIMEOUT_S):
+			log.debugWarning(
+				"Previous library worker did not exit within %ss; starting anyway",
+				PREDECESSOR_JOIN_TIMEOUT_S,
+			)
 		self._thread = threading.Thread(
 			target=self._run,
 			name="DotPadLibraryWorker",
@@ -441,8 +445,7 @@ class LibraryWorker:
 		"""Record that the library's autonomous UIA subscription is now on.
 
 		Called by the driver after ``RegisterEvents(True)`` returns. Surfaced
-		in :meth:`captureDiagnostics`; a blocking call while this is on is the
-		heap-corruption hazard the caller is responsible for avoiding.
+		in :meth:`captureDiagnostics`.
 		"""
 		with self._stateLock:
 			self._uiaEventsEnabled = True
@@ -537,6 +540,19 @@ class LibraryWorker:
 		log.debug("Library worker stop requested")
 		self._queue.put(None)
 		self._signalQueue()
+		LibraryWorker._lastStopped = self
+
+	def join(self, timeout: float) -> bool:
+		"""Wait for the worker thread to exit after :meth:`stop`.
+
+		:param timeout: Longest wait, in seconds.
+		:returns: True if the thread has exited (or never started).
+		"""
+		thread = self._thread
+		if thread is None:
+			return True
+		thread.join(timeout)
+		return not thread.is_alive()
 
 	def _run(self) -> None:
 		"""Worker thread main loop. STA COM init → wrapper construction →

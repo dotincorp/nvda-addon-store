@@ -108,6 +108,26 @@ class TestStartStopLifecycle(unittest.TestCase):
 			self.assertFalse(worker._thread.is_alive())
 
 
+class TestPredecessorHandoff(unittest.TestCase):
+	"""start() waits for the last stopped worker, so two library instances never overlap."""
+
+	def test_start_joins_the_last_stopped_worker(self) -> None:
+		from addon.tactileDisplayAPI import libraryWorker as workerModule
+		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
+
+		with _stubbedComEnvironment():
+			first = LibraryWorker()
+			first.start(startTimeoutS=2.0)
+			first.stop()
+			self.assertIs(LibraryWorker._lastStopped, first)
+			second = LibraryWorker()
+			with patch.object(first, "join", wraps=first.join) as join:
+				second.start(startTimeoutS=2.0)
+			join.assert_called_once_with(workerModule.PREDECESSOR_JOIN_TIMEOUT_S)
+			self.assertIsNone(LibraryWorker._lastStopped)
+			second.stop()
+
+
 class TestThreadIsDaemon(unittest.TestCase):
 	"""The worker thread MUST be daemon — dies with the process if leaked."""
 

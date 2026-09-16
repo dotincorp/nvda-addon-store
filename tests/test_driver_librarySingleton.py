@@ -181,8 +181,8 @@ class TestRendererIsBuiltLast(unittest.TestCase):
 		self.assertIs(driver._renderer, renderer.return_value)
 
 
-class TestDriverLibraryUiaEventsToggle(unittest.TestCase):
-	"""RegisterEvents is toggled by enable/disable methods, NOT at driver init."""
+class TestDriverLibrarySession(unittest.TestCase):
+	"""The driver turns events on at setup and off at teardown, and knows the library's mode first."""
 
 	_driverModule = "addon.brailleDisplayDrivers.dotPad.driver"
 
@@ -192,42 +192,11 @@ class TestDriverLibraryUiaEventsToggle(unittest.TestCase):
 		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
 		driver._libraryWorker = MagicMock(name="worker")
 		driver._tda = MagicMock(name="tda")
+		driver._callbackServer = MagicMock(name="callbacks")
 		driver._libraryReady = True
 		return driver
 
-	def test_enable_submits_register_events(self) -> None:
-		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
-
-		driver = self._readyDriver()
-		driver.enableLibraryUiaEvents()
-		driver._libraryWorker.submit.assert_called_once_with(
-			driverMod._setRegisterEventsOnWorker,
-			driver._tda,
-			driver._libraryWorker,
-		)
-
-	def test_disable_submits_unregister_events(self) -> None:
-		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
-
-		driver = self._readyDriver()
-		driver.disableLibraryUiaEvents()
-		driver._libraryWorker.submit.assert_called_once_with(
-			driverMod._disableRegisterEventsOnWorker,
-			driver._tda,
-			driver._libraryWorker,
-		)
-
-	def test_toggle_noop_when_library_not_ready(self) -> None:
-		driver = self._readyDriver()
-		driver._libraryReady = False
-		driver.enableLibraryUiaEvents()
-		driver.disableLibraryUiaEvents()
-		driver._libraryWorker.submit.assert_not_called()
-
-	def test_setup_does_not_enable_events_at_init(self) -> None:
-		"""``_setupLibrarySingleton`` must NOT submit RegisterEvents — events are
-		enabled only by the braille presentation after its bootstrap."""
-		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+	def _setUp(self) -> tuple[object, MagicMock]:
 		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
 
 		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
@@ -253,9 +222,84 @@ class TestDriverLibraryUiaEventsToggle(unittest.TestCase):
 			)
 			iniMod.patchTactileDisplayAPIIni.return_value = {}
 			driver._setupLibrarySingleton()
+		return driver, workerInstance
 
-		submittedFns = [c.args[0] for c in workerInstance.submit.call_args_list if c.args]
-		self.assertNotIn(driverMod._setRegisterEventsOnWorker, submittedFns)
+	def test_setup_order_ends_in_braille_with_hybrid_set_before_the_first_mode_query(self) -> None:
+		"""A new instance reports graphics mode, so the first report must follow the braille switch.
+
+		With events on, that switch turns hybrid mode off, so the setting is applied after it."""
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		_driver, worker = self._setUp()
+		submitted = [c.args[0] for c in worker.submit.call_args_list if c.args]
+		events = submitted.index(driverMod._setRegisterEventsOnWorker)
+		braille = submitted.index(driverMod._showBrailleOnWorker)
+		hybrid = submitted.index(driverMod._setHybridModeOnWorker)
+		query = submitted.index(driverMod._queryLibraryModesOnWorker)
+		self.assertLess(events, braille)
+		self.assertLess(braille, hybrid)
+		self.assertLess(hybrid, query)
+
+	def test_restoring_hybrid_renders_the_focus(self) -> None:
+		"""The setting alone leaves the braille frame of an already focused text field on the pins."""
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		driver, worker = self._setUp()
+		worker.submit.reset_mock()
+		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=True):
+			driver.applyHybridSetting()
+		submitted = [c.args[0] for c in worker.submit.call_args_list]
+		self.assertEqual(
+			submitted[:2],
+			[driverMod._setHybridModeOnWorker, driverMod._addFocusedControlOnWorker],
+		)
+
+	def test_hybrid_off_renders_nothing_extra(self) -> None:
+		"""With hybrid off the braille switch has already rendered the focus."""
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		driver, worker = self._setUp()
+		worker.submit.reset_mock()
+		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=False):
+			driver.applyHybridSetting()
+		submitted = [c.args[0] for c in worker.submit.call_args_list]
+		self.assertNotIn(driverMod._addFocusedControlOnWorker, submitted)
+
+	def test_holding_hybrid_switches_without_restoring_it(self) -> None:
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		driver, worker = self._setUp()
+		worker.submit.reset_mock()
+		with patch.object(driverMod.configuration, "getHybridPrintAndBraille", return_value=True):
+			driver.showLibraryBraille(restoreHybrid=False)
+		submitted = [c.args[0] for c in worker.submit.call_args_list]
+		self.assertEqual(submitted[0], driverMod._showBrailleOnWorker)
+		self.assertNotIn(driverMod._setHybridModeOnWorker, submitted)
+
+	def test_teardown_disables_events_then_stops_without_waiting(self) -> None:
+		from addon.brailleDisplayDrivers.dotPad import driver as driverMod
+
+		driver = self._readyDriver()
+		worker = driver._libraryWorker
+		tda = driver._tda
+		driver._teardownLibrarySingleton()
+
+		self.assertEqual(
+			[name for name, _args, _kwargs in worker.method_calls],
+			["submit", "stop"],
+		)
+		worker.submit.assert_called_once_with(driverMod._disableRegisterEventsOnWorker, tda, worker)
+
+	def test_mode_result_from_a_released_worker_is_dropped(self) -> None:
+		from concurrent.futures import Future
+
+		driver = self._readyDriver()
+		future: Future[tuple[bool, bool]] = Future()
+		future.set_result((True, True))
+		with patch(f"{self._driverModule}._simulatedDisplay") as simMod:
+			driver._onLibraryModesQueried(MagicMock(name="releasedWorker"), future)
+		self.assertIsNone(driver._libraryModes)
+		simMod.onLibraryModes.assert_not_called()
 
 
 class TestIniPatcherOrdering(unittest.TestCase):

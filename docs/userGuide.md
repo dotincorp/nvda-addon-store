@@ -154,7 +154,7 @@ The buttons that move the view over the table are listed under "Button map refer
 
 By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window. Hybrid mode needs "Source for multi-line braille content" to be set to the TactileDisplayAPI library.
 
-While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 to F4 move the view, F2+F3 and F1+F4 zoom, and all four function keys together invert the image. F2+F4 does nothing there, because the print stays for as long as hybrid mode is on. When the Dot Pad shows braille again, for example on a button, the standard buttons return.
+While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 to F4 move the view, F2+F3 and F1+F4 zoom, and all four function keys together invert the image. Press F2+F4 to read the field you are on in braille instead; hybrid mode stays on, so the next text field you move to shows print again. When the Dot Pad shows braille again, for example on a button, the standard buttons return.
 
 ### Tactile Graphs in Microsoft Word
 

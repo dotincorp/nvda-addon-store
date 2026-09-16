@@ -522,17 +522,6 @@ class HybridPrintPresentation(GraphicPresentation):
 	def terminate(self) -> None:
 		"""Nothing to clear: the library draws whatever comes next."""
 
-	@script(
-		# Translators: description of the braille chord that does nothing in hybrid print mode.
-		description=_("Does nothing: print stays in text fields while hybrid mode is on"),
-		category=SCRCAT_BRAILLE,
-		gesture="br(dotPad):f2+f4",
-	)
-	def script_suppressDismissal(self, _gesture: inputCore.InputGesture) -> None:
-		# Unbound, the chord reaches the driver's dismissal, which switches the bindings to
-		# braille while the library keeps drawing print.
-		pass
-
 
 class HybridPrintProvider(PresentationProvider):
 	"""Claims the tactile area while the library reports drawing hybrid print.
