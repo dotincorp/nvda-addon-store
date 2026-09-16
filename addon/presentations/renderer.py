@@ -378,22 +378,22 @@ class PresentationRenderer(AutoPropertyObject):
 	def scrollBack(self) -> None:
 		"""Scroll the active presentation backward.
 
-		Delegates to the PresentationManager which handles the appropriate
-		scrolling behavior based on the active presentation type.
-		Rendering is deferred to the next coreCycle.
+		Delegates to the PresentationManager, which handles the appropriate scrolling
+		behaviour for the active presentation type. Rendering is deferred to the next
+		coreCycle, and only asked for when the presentation says it scrolled: the ones
+		that decline are the ones whose content we do not draw, so a render would walk
+		the manager and produce nothing.
 		"""
-		self._presentationManager.scrollBack()
-		self.requestRender()
+		if self._presentationManager.scrollBack():
+			self.requestRender()
 
 	def scrollForward(self) -> None:
 		"""Scroll the active presentation forward.
 
-		Delegates to the PresentationManager which handles the appropriate
-		scrolling behavior based on the active presentation type.
-		Rendering is deferred to the next coreCycle.
+		The forward counterpart of :meth:`scrollBack`, with the same render rule.
 		"""
-		self._presentationManager.scrollForward()
-		self.requestRender()
+		if self._presentationManager.scrollForward():
+			self.requestRender()
 
 	def requestRender(self) -> None:
 		"""Redraw the active presentation on the next core cycle.

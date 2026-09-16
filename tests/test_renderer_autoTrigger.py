@@ -173,5 +173,36 @@ class TestRemovedNotification(unittest.TestCase):
 		)
 
 
+class TestScrollOnlyRendersWhenSomethingScrolled(unittest.TestCase):
+	"""A presentation that declines to scroll is one whose content the renderer does not
+	draw, so asking for a render would walk the manager and produce nothing."""
+
+	def _renderer(self, scrolled: bool):
+		from addon.presentations.renderer import PresentationRenderer
+
+		renderer = PresentationRenderer.__new__(PresentationRenderer)
+		renderer._presentationManager = MagicMock(name="manager")
+		renderer._presentationManager.scrollBack.return_value = scrolled
+		renderer._presentationManager.scrollForward.return_value = scrolled
+		renderer.requestRender = MagicMock(name="requestRender")
+		return renderer
+
+	def test_a_scroll_that_happened_asks_for_a_render(self) -> None:
+		renderer = self._renderer(scrolled=True)
+
+		renderer.scrollBack()
+		renderer.scrollForward()
+
+		self.assertEqual(2, renderer.requestRender.call_count)
+
+	def test_a_scroll_that_did_not_happen_does_not(self) -> None:
+		renderer = self._renderer(scrolled=False)
+
+		renderer.scrollBack()
+		renderer.scrollForward()
+
+		renderer.requestRender.assert_not_called()
+
+
 if __name__ == "__main__":
 	unittest.main()
