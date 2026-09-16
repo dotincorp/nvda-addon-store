@@ -131,8 +131,7 @@ class TestLibraryBraillePresentationScroll(unittest.TestCase):
 
 	The braille-text pan, not the ``PanViewport*`` family: the shipped
 	``[DotPad320X Keys]`` map gives f1-f4 the tactile-graphic viewport and the pan keys
-	``PanLeft``/``PanRight``, and on hardware a viewport op in text mode returns in 1-3ms
-	without the library emitting a frame.
+	``PanLeft``/``PanRight``.
 	"""
 
 	def _assertScrollSubmits(self, scrollMethodName: str, expectedOpName: str) -> None:
@@ -150,10 +149,10 @@ class TestLibraryBraillePresentationScroll(unittest.TestCase):
 		self.assertIs(args[0], driver._tda.executeOperation)
 		self.assertEqual(args[1], getattr(BrailleInputOperation, expectedOpName))
 
-	def test_scrollBack_submits_pan_viewport_up(self) -> None:
+	def test_scrollBack_submits_pan_left(self) -> None:
 		self._assertScrollSubmits("scrollBack", "PAN_LEFT")
 
-	def test_scrollForward_submits_pan_viewport_down(self) -> None:
+	def test_scrollForward_submits_pan_right(self) -> None:
 		self._assertScrollSubmits("scrollForward", "PAN_RIGHT")
 
 	def test_scroll_noop_when_driver_unavailable(self) -> None:

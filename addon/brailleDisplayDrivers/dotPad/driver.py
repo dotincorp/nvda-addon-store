@@ -1957,10 +1957,9 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 				graphic=graphicDisplayDescriptor,
 			)
 			log.debug("Board information: %s", info)
-			# Published after the displays and whatever the outcome: the connect probe waits
-			# on this attribute, and setting it before the displays exist handed callers a
-			# driver whose graphicDisplay was still None. A display that failed to build is
-			# still better than a port the probe gives up on.
+			# The connect probe waits on this attribute, so it stands for "the displays this
+			# board reports exist". Published in a ``finally`` because a display that failed
+			# to build is still better than a port the probe gives up on.
 			try:
 				self._buildDisplays(info)
 			finally:
@@ -2065,7 +2064,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			super()._handleAck()
 
 	def _buildDisplays(self, info: BoardInformation) -> None:
-		"""Create the text and graphic displays, and the renderer, the board reports.
+		"""Create the text and graphic displays the board reports.
 
 		Takes the board information as an argument rather than reading
 		``self._boardInformation``, which is only published once this has returned.
@@ -2104,10 +2103,9 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	def _createRenderer(self) -> None:
 		"""Build the presentation renderer for the graphic display, if there is one.
 
-		Deliberately after ``_boardInformation`` is published, not before: this loads the
-		presentations package and builds an initial presentation, which took over a second
-		on first use and so outlived the connect probe's deadline when the probe waited for
-		it. The probe only needs the displays.
+		Called after ``_boardInformation`` is published, never before: this loads the
+		presentations package and builds an initial presentation, and the connect probe
+		waiting on that attribute has a one-second deadline. It only needs the displays.
 		"""
 		if self.graphicDisplay is None:
 			return
