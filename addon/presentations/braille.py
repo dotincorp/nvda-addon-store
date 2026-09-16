@@ -373,20 +373,19 @@ class LibraryBraillePresentation(Presentation):
 		super().__init__()
 		self._display = display
 		self._hasReplayed = False
-		# Bootstrap the library with the current focused control. Same
-		# defensive shape as scrollBack — silent no-op when the driver
-		# / library aren't available.
-		self._bootstrapFocusedControl()
+		self._hybridHeldFor: NVDAObject | None = None
+		"""The field the user left hybrid print on, until the navigator moves away from it."""
+		self._showBraille()
 
-	def _bootstrapFocusedControl(self) -> None:
-		"""Switch the library to text mode, render the focused control, then enable UIA events.
+	def _showBraille(self) -> None:
+		"""Switch the library to braille for the object at the cursor, keeping hybrid mode set.
 
-		1. ``ExecuteOperation(SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)`` switches the
-		   library to text mode.
-		2. ``AddFocusedControl()`` renders the control that already has focus: it
-		   never raises a UIA focus event, so the library would otherwise show
-		   nothing until focus moves.
-		3. ``RegisterEvents(True)`` lets the library follow focus from then on.
+		Needed whenever this presentation takes over, since the library may still be drawing a
+		tactile image or hybrid print. The switch also turns hybrid mode off in the library, so the
+		setting is put back: at once, or when leaving hybrid print, only once the user moves on,
+		since print would otherwise return on the field they asked to read in braille. The
+		library's session, events included, is the driver's. Silent no-op when the driver or
+		library isn't available.
 		"""
 		driver = self._getActiveDriver()
 		if driver is None or not getattr(driver, "_libraryReady", False):
@@ -409,20 +408,32 @@ class LibraryBraillePresentation(Presentation):
 			onSuccess=onSwitchSuccess,
 			onFailure=onSwitchFailure,
 		)
+		modes = driver.libraryModes
+		if modes is not None and modes.graphics and modes.hybrid:
+			import api
 
-		def onFocusFailure(exc: BaseException) -> None:
-			log.warning("Rendering the focused control failed: %r", exc)
+			self._hybridHeldFor = api.getNavigatorObject()
+		else:
+			driver.applyHybridSetting()
 
-		worker.submitAndReport(
-			tda.addFocusedControl,
-			timeout=1.0,
-			onSuccess=lambda _result: None,
-			onFailure=onFocusFailure,
-		)
-		driver.enableLibraryUiaEvents()
-		log.debug(
-			"LibraryBraillePresentation: bootstrap submitted (text-mode switch, focused control, UIA events)",
-		)
+	def handleCoreCycle(self) -> bool:
+		"""Give hybrid mode back once the navigator has left the field it was held for."""
+		held = self._hybridHeldFor
+		if held is None:
+			return False
+		import api
+
+		try:
+			if api.getNavigatorObject() == held:
+				return False
+		except Exception:
+			# A field that has gone away raises from __eq__; the user has left it either way.
+			log.debug("Comparing with the field hybrid mode was held for raised", exc_info=True)
+		self._hybridHeldFor = None
+		driver = self._getActiveDriver()
+		if driver is not None and getattr(driver, "_libraryReady", False):
+			driver.applyHybridSetting(renderFocus=True)
+		return False
 
 	@property
 	def name(self) -> str:
@@ -498,10 +509,6 @@ class LibraryBraillePresentation(Presentation):
 		if worker is None or tda is None:
 			return
 		try:
-			# Turn the autonomous UIA subscription OFF first, so any later
-			# explicit blocking ExecuteOperation (graphics pan/zoom, the next
-			# braille bootstrap) runs events-off. FIFO: this precedes clear().
-			driver.disableLibraryUiaEvents()
 			worker.submit(tda.clear)
 		except Exception:
 			log.exception("LibraryBraillePresentation: clear submission raised; continuing")

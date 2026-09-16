@@ -155,7 +155,7 @@ class PresentationManager:
 			return
 
 		# Rebuilding is not free: a presentation's constructor can carry real
-		# work, as ``LibraryBraillePresentation``'s blocking library bootstrap does.
+		# work, as ``LibraryBraillePresentation``'s switch of the library to braille does.
 		if activePresentation is not None and matchingProvider is activeProvider:
 			if activeStillValid is None:
 				activeStillValid = self._stillValid(activePresentation, triggerReason) is True

@@ -79,9 +79,9 @@ class TestHybridPrintPresentation(unittest.TestCase):
 		driver._libraryWorker.submitAndReport.assert_not_called()
 		driver._libraryWorker.submit.assert_not_called()
 
-	def test_dismiss_chord_is_swallowed(self) -> None:
-		script = self.presentation._gestureMap["br(dotpad):f2+f4"]
-		self.assertEqual(script.__name__, "script_suppressDismissal")
+	def test_dismiss_chord_reaches_the_driver(self) -> None:
+		"""Unbound here, f2+f4 falls through to the driver's dismissal, as in every other presentation."""
+		self.assertNotIn("br(dotpad):f2+f4", self.presentation._gestureMap)
 
 	def test_keeps_graphic_bindings(self) -> None:
 		for gestureId, _operation in _EXPECTED_BINDINGS:
@@ -147,6 +147,21 @@ class TestManagerFollowsTheLibrary(unittest.TestCase):
 		self.modes = _HYBRID_BRAILLE
 		self.manager.update(navigator, TriggerReason.LIBRARY_MODE_CHANGE)
 		self.assertIsInstance(self.manager.activePresentation, _StubBraillePresentation)
+
+	def test_dismissal_holds_for_the_field_but_not_the_next_one(self) -> None:
+		"""Leaving print with f2+f4 keeps hybrid mode: the next text field gets print again."""
+		field = MagicMock(name="field")
+		self.manager.update(field, TriggerReason.LIBRARY_MODE_CHANGE)
+		self.assertIsInstance(self.manager.activePresentation, HybridPrintPresentation)
+
+		self.manager.dismissActivePresentation(field)
+		self.manager.update(field, TriggerReason.LIBRARY_MODE_CHANGE)
+		self.assertIsInstance(self.manager.activePresentation, _StubBraillePresentation)
+		self.manager.update(field, TriggerReason.CARET_MOVE)
+		self.assertIsInstance(self.manager.activePresentation, _StubBraillePresentation)
+
+		self.manager.update(MagicMock(name="nextField"), TriggerReason.LIBRARY_MODE_CHANGE)
+		self.assertIsInstance(self.manager.activePresentation, HybridPrintPresentation)
 
 
 if __name__ == "__main__":

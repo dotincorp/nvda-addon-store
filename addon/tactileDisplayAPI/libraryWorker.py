@@ -25,21 +25,9 @@ Threading-ownership model:
   an MTA worker (no pump) receives no events and library-driven braille goes
   dark. STA + pump is therefore required for the autonomous-braille feature.
 
-  The hazard STA + pump created historically: a long *synchronous* library call
-  (``ExecuteOperation``) blocks the thread, so the pump stops; if UIA events are
-  live at that moment they pile up unserviced and the library's internal
-  queue/heap state corrupts — a ``STATUS_HEAP_CORRUPTION`` fail-fast was observed
-  in a crash dump. The mitigation lives in the *caller*: events are enabled only
-  for library-driven-braille steady state and are turned OFF around the blocking
-  bootstrap and around graphics/explicit ``ExecuteOperation`` calls, so a blocking
-  call never runs while events compete for the starved pump. (An MTA experiment
-  confirmed the crash is the events-while-blocking collision: with events not
-  delivered, ``ExecuteOperation`` ran fine — but MTA is not a usable fix, since
-  no events means no autonomous braille. Splitting the library across two
-  instances — one events-only, one calls-only — was also tried and reproduces
-  the same crash: both instances share the library's internal state.) See the
-  driver's ``enableLibraryUiaEvents`` / ``disableLibraryUiaEvents`` and
-  ``presentations.braille``.
+  The driver turns events on when it sets the library up and off when it releases
+  it; see ``BrailleDisplayDriver._setupLibrarySingleton`` and
+  ``_teardownLibrarySingleton``.
 
 - The main thread submits work items via ``submit`` (returns a Future),
   ``submitAndAwait`` (synchronous helper for non-main-thread callers — blocks
@@ -292,8 +280,8 @@ class LibraryWorker:
 		# from "the worker has not made any progress since I submitted".
 		self._completedOpCount: int = 0
 		# Whether the library's autonomous UIA/MSAA subscription is currently
-		# on (``RegisterEvents(True/False)``). Surfaced in diagnostics because
-		# a blocking call while this is on is the heap-corruption hazard.
+		# on (``RegisterEvents(True/False)``). Surfaced in diagnostics, since
+		# a hang with events on can involve the library's own UIA work.
 		self._uiaEventsEnabled: bool = False
 
 	def start(self, *, startTimeoutS: float = 5.0) -> None:
@@ -441,8 +429,7 @@ class LibraryWorker:
 		"""Record that the library's autonomous UIA subscription is now on.
 
 		Called by the driver after ``RegisterEvents(True)`` returns. Surfaced
-		in :meth:`captureDiagnostics`; a blocking call while this is on is the
-		heap-corruption hazard the caller is responsible for avoiding.
+		in :meth:`captureDiagnostics`.
 		"""
 		with self._stateLock:
 			self._uiaEventsEnabled = True
@@ -537,6 +524,18 @@ class LibraryWorker:
 		log.debug("Library worker stop requested")
 		self._queue.put(None)
 		self._signalQueue()
+
+	def join(self, timeout: float) -> bool:
+		"""Wait for the worker thread to exit after :meth:`stop`.
+
+		:param timeout: Longest wait, in seconds.
+		:returns: True if the thread has exited (or never started).
+		"""
+		thread = self._thread
+		if thread is None:
+			return True
+		thread.join(timeout)
+		return not thread.is_alive()
 
 	def _run(self) -> None:
 		"""Worker thread main loop. STA COM init → wrapper construction →

@@ -32,6 +32,7 @@ def _makeReadyDriver():
 	driver._libraryReady = True
 	driver._libraryWorker = MagicMock(name="worker")
 	driver._tda = MagicMock(name="tda")
+	driver.libraryModes = None
 	return driver
 
 
@@ -44,8 +45,10 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		self.assertTrue(hasattr(presentation, "_gestureMap"))
 		self.assertIsInstance(presentation._gestureMap, dict)
 
-	def test_init_bootstraps_text_mode_then_focus_then_enables_events(self) -> None:
-		"""``__init__`` submits the text-mode switch and ``AddFocusedControl``, then enables events."""
+	def test_init_switches_the_library_to_braille_and_restores_hybrid(self) -> None:
+		"""``__init__`` submits the braille switch, then has the driver put the hybrid setting back.
+
+		Events are the driver's, so nothing here touches them."""
 		from addon.presentations.braille import LibraryBraillePresentation
 		from addon.tactileDisplayAPI.comInterface import BrailleInputOperation
 
@@ -57,17 +60,13 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		):
 			LibraryBraillePresentation(display)
 
-		self.assertEqual(driver._libraryWorker.submitAndReport.call_count, 2)
-		calls = driver._libraryWorker.submitAndReport.call_args_list
-		self.assertIs(calls[0].args[0], driver._tda.executeOperation)
-		self.assertEqual(
-			calls[0].args[1],
-			BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE,
-		)
-		self.assertIs(calls[1].args[0], driver._tda.addFocusedControl)
-		submittedFns = [c.args[0] for c in calls]
-		self.assertNotIn(driver._tda.showMultilineText, submittedFns)
-		driver.enableLibraryUiaEvents.assert_called_once_with()
+		driver._libraryWorker.submitAndReport.assert_called_once()
+		args = driver._libraryWorker.submitAndReport.call_args.args
+		self.assertIs(args[0], driver._tda.executeOperation)
+		self.assertEqual(args[1], BrailleInputOperation.SHOW_OBJECT_AT_CURSOR_AS_BRAILLE)
+		driver._libraryWorker.submit.assert_not_called()
+		driver._tda.setRegisterEvents.assert_not_called()
+		driver.applyHybridSetting.assert_called_once_with()
 
 	def test_init_skips_bootstrap_when_library_not_ready(self) -> None:
 		"""Bootstrap is a defensive no-op when the driver / library aren't ready."""
@@ -96,6 +95,44 @@ class TestLibraryBraillePresentationBasics(unittest.TestCase):
 		self.assertIsNone(result)
 
 
+class TestLibraryBraillePresentationHybridHold(unittest.TestCase):
+	"""Leaving hybrid print keeps braille on that field and gives hybrid back on the next one."""
+
+	def _leaveHybridPrint(self, field: object):
+		from addon.presentations.braille import LibraryBraillePresentation
+		from addon.tactileDisplayAPI.libraryModes import LibraryModes
+
+		driver = _makeReadyDriver()
+		driver.libraryModes = LibraryModes(graphics=True, hybrid=True, serial=3)
+		with (
+			patch("addon.presentations.braille._getActiveDotPadDriver", return_value=driver),
+			patch("api.getNavigatorObject", return_value=field),
+		):
+			presentation = LibraryBraillePresentation(MagicMock(name="display"))
+		return presentation, driver
+
+	def test_hybrid_is_held_while_on_the_field(self) -> None:
+		field = MagicMock(name="field")
+		presentation, driver = self._leaveHybridPrint(field)
+		driver.applyHybridSetting.assert_not_called()
+		with (
+			patch.object(presentation, "_getActiveDriver", return_value=driver),
+			patch("api.getNavigatorObject", return_value=field),
+		):
+			self.assertFalse(presentation.handleCoreCycle())
+		driver.applyHybridSetting.assert_not_called()
+
+	def test_hybrid_returns_on_the_next_field(self) -> None:
+		presentation, driver = self._leaveHybridPrint(MagicMock(name="field"))
+		with (
+			patch.object(presentation, "_getActiveDriver", return_value=driver),
+			patch("api.getNavigatorObject", return_value=MagicMock(name="nextField")),
+		):
+			presentation.handleCoreCycle()
+			presentation.handleCoreCycle()
+		driver.applyHybridSetting.assert_called_once_with(renderFocus=True)
+
+
 class TestLibraryBraillePresentationTerminate(unittest.TestCase):
 	"""``terminate()`` clears the library's content."""
 
@@ -106,9 +143,6 @@ class TestLibraryBraillePresentationTerminate(unittest.TestCase):
 		with patch.object(presentation, "_getActiveDriver", return_value=driver):
 			presentation.terminate()
 		driver._libraryWorker.submit.assert_called_once_with(driver._tda.clear)
-		# Leaving library-braille mode turns the autonomous UIA subscription off
-		# so later explicit blocking ExecuteOperation calls run events-off.
-		driver.disableLibraryUiaEvents.assert_called_once_with()
 
 	def test_terminate_noop_when_driver_unavailable(self) -> None:
 		"""No driver → silent return, no exception."""
