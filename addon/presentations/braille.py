@@ -302,19 +302,21 @@ class BraillePresentation(Presentation):
 		self._lastReviewPos = None
 
 	def isStillValid(self, triggerReason: TriggerReason | None = None) -> bool:
-		"""Invalidate when the user has switched to library-driven source.
+		"""Invalidate when a different braille presentation now applies.
 
-		``PresentationManager.update()`` re-picks via providers when this
-		returns ``False``, so a config change applied via the settings
-		panel takes effect on the next focus / review event instead of
-		requiring a full NVDA restart.
+		``PresentationManager.update()`` re-picks via providers when this returns
+		``False``, so a config change applied via the settings panel takes effect on the
+		next focus / review event instead of requiring a full NVDA restart. While library
+		mode is selected but unavailable, this one still applies and stays valid — saying
+		otherwise rebuilt the buffer on every navigation event, and with it the window the
+		user had just scrolled to.
 		"""
 		try:
-			return getBrailleSource() == BrailleSource.NVDA
+			return _selectedBrailleClass() is type(self)
 		except Exception:
 			# Defensive — never block the manager's update loop on a config
 			# read failure. Stay valid; the next cycle will retry.
-			log.debug("BraillePresentation: getBrailleSource raised", exc_info=True)
+			log.debug("BraillePresentation: choosing the braille class raised", exc_info=True)
 			return True
 
 	@property
@@ -357,7 +359,7 @@ class LibraryBraillePresentation(Presentation):
 	Its job is to (a) let the byte gate know library bytes should pass
 	through (the gate's ``isinstance`` check picks this class up),
 	(b) forward F1/F4 scrolling intent via
-	``ExecuteOperation(PAN_VIEWPORT_UP/DOWN)``, and (c) clear the
+	``ExecuteOperation(PAN_LEFT/PAN_RIGHT)``, and (c) clear the
 	library's display state on teardown.
 	"""
 
@@ -427,25 +429,17 @@ class LibraryBraillePresentation(Presentation):
 		return "libraryBraille"
 
 	def isStillValid(self, triggerReason: TriggerReason | None = None) -> bool:
-		"""Invalidate when the user has switched back to NVDA source or
-		when the library becomes unavailable.
+		"""Invalidate when a different braille presentation now applies.
 
-		``PresentationManager.update()`` re-picks via providers when this
-		returns ``False``, so a config change applied via the settings
-		panel takes effect on the next focus / review event without
-		requiring a full NVDA restart. Also invalidates when the library
-		singleton has gone unhealthy mid-session — that path falls back
-		to ``BraillePresentation`` via the provider's library-not-ready
-		branch.
+		Covers both a switch back to NVDA source and the library singleton going
+		unhealthy mid-session; either way the provider re-picks and
+		``BraillePresentation`` takes over.
 		"""
 		try:
-			if getBrailleSource() != BrailleSource.LIBRARY:
-				return False
+			return _selectedBrailleClass() is type(self)
 		except Exception:
-			log.debug("LibraryBraillePresentation: getBrailleSource raised", exc_info=True)
+			log.debug("LibraryBraillePresentation: choosing the braille class raised", exc_info=True)
 			return True  # stay valid; retry next cycle
-		driver = _getActiveDotPadDriver()
-		return driver is not None and bool(getattr(driver, "_libraryReady", False))
 
 	def render(self, display: Display) -> DpTactileGraphicsBuffer | None:
 		"""Replay the library's last frame once, then leave the area to it.
@@ -483,12 +477,12 @@ class LibraryBraillePresentation(Presentation):
 		simulatedDisplay.replayLastPayload()
 
 	def scrollBack(self) -> bool:
-		"""Pan the library's viewport up by one display height (F1)."""
-		return self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_UP)
+		"""Show the previous screenful of the library's braille text (F1)."""
+		return self._submitOperation(BrailleInputOperation.PAN_LEFT)
 
 	def scrollForward(self) -> bool:
-		"""Pan the library's viewport down by one display height (F4)."""
-		return self._submitOperation(BrailleInputOperation.PAN_VIEWPORT_DOWN)
+		"""Show the next screenful of the library's braille text (F4)."""
+		return self._submitOperation(BrailleInputOperation.PAN_RIGHT)
 
 	def terminate(self) -> None:
 		"""Submit ``Clear()`` on the worker to wipe the library's content.
@@ -579,26 +573,28 @@ class BrailleProvider(PresentationProvider):
 		return True
 
 	def _doCreatePresentation(self, obj: NVDAObject, display: Display) -> Presentation:
-		"""Construct the braille presentation for the requested source."""
-		source = getBrailleSource()
-		if source == BrailleSource.NVDA:
-			return BraillePresentation(display)
-		# source == BrailleSource.LIBRARY
+		"""Construct whichever braille presentation applies, saying once when library
+		mode was asked for and could not be honoured."""
+		if _selectedBrailleClass() is LibraryBraillePresentation:
+			return LibraryBraillePresentation(display)
+		if getBrailleSource() == BrailleSource.LIBRARY:
+			self._reportLibraryUnavailable()
+		return BraillePresentation(display)
+
+	def _reportLibraryUnavailable(self) -> None:
+		"""Announce, at most once per driver, that library mode is not being honoured."""
 		driver = _getActiveDotPadDriver()
 		reason = _libraryUnavailableReason(driver)
 		if reason is None:
-			return LibraryBraillePresentation(display)
+			return
 		if getattr(driver, "_librarySetupPending", False):
 			# The driver is still in __init__ and the library has not finished starting.
 			# Render NVDA-driven for now -- the next update picks up the library -- but
 			# say nothing: this is startup ordering, not a failure. Only observable when
 			# the driver is constructed off the main thread, i.e. on automatic detection.
 			log.debug("BrailleProvider: library still starting; rendering NVDA-driven for now")
-			return BraillePresentation(display)
-		# Library mode requested but unavailable — fall back to NVDA-driven
-		# rendering and announce once per driver lifetime.
+			return
 		self._announceFallbackOnce(driver, reason)
-		return BraillePresentation(display)
 
 	def forceForObject(
 		self,
@@ -658,6 +654,20 @@ class BrailleProvider(PresentationProvider):
 			)
 		except Exception:
 			log.exception("BrailleProvider: ui.message dispatch failed; continuing")
+
+
+def _selectedBrailleClass() -> type[Presentation]:
+	"""The braille presentation that applies right now.
+
+	The one place that decides between NVDA-driven and library-driven braille. Asked both
+	when the provider constructs a presentation and when an existing one is asked whether
+	it is still the right class, so the two cannot drift apart.
+	"""
+	if getBrailleSource() != BrailleSource.LIBRARY:
+		return BraillePresentation
+	if _libraryUnavailableReason(_getActiveDotPadDriver()) is not None:
+		return BraillePresentation
+	return LibraryBraillePresentation
 
 
 def _libraryUnavailableReason(driver: Any) -> str | None:

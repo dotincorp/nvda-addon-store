@@ -153,6 +153,34 @@ class TestDriverLibrarySingleton(unittest.TestCase):
 		driver._teardownLibrarySingleton()
 
 
+class TestRendererIsBuiltLast(unittest.TestCase):
+	"""``_createRenderer`` runs at the end of ``__init__``, after the library setup."""
+
+	def test_it_builds_only_with_a_graphic_display(self) -> None:
+		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
+
+		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
+		driver._renderer = None
+		driver.graphicDisplay = None
+
+		driver._createRenderer()
+
+		self.assertIsNone(driver._renderer)
+
+	def test_it_builds_the_renderer_for_the_graphic_display(self) -> None:
+		from addon.brailleDisplayDrivers.dotPad.driver import BrailleDisplayDriver
+
+		driver = BrailleDisplayDriver.__new__(BrailleDisplayDriver)
+		driver._renderer = None
+		driver.graphicDisplay = MagicMock(name="graphicDisplay")
+
+		with patch("addon.presentations.PresentationRenderer") as renderer:
+			driver._createRenderer()
+
+		renderer.assert_called_once_with(driver.graphicDisplay)
+		self.assertIs(driver._renderer, renderer.return_value)
+
+
 class TestDriverLibraryUiaEventsToggle(unittest.TestCase):
 	"""RegisterEvents is toggled by enable/disable methods, NOT at driver init."""
 
