@@ -4,7 +4,7 @@
 
 Dot Pad için NVDA eklentisi, NVDA’nın Dot Pad üzerinde braille ve dokunsal grafikleri en iyi şekilde görüntülemesini sağlayan araçtır. Bu eklentiyi yüklemeniz gerekir: eklenti olmadan NVDA, Dot Pad’in çok satırlı ve dokunsal grafik özelliklerinden yararlanamaz.
 
-## Why You Need the Add-on
+## Bu eklentiye neden ihtiyacınız var
 
 Geleneksel olarak ekran okuyucular braille ekranına tek satırlık metin gönderir. Ekranı kaydırmak, ekranı o satırın bölümlerini gösterecek şekilde yeniden konumlandırır (çünkü bir ekran genellikle bilgisayar ekranındaki görsel bir satırdan çok daha az karakter gösterir) ve ardından imleci belgedeki bir sonraki veya önceki satıra hareket ettirir ve bir sonraki ekranın metin değerini gösterir. Çok satırlı braille ekran dünyasında, ekrana yalnızca bir satır metin göndermek ve bunu ekranın birden fazla satırına sarmak yeterli değildir; bu da potansiyel olarak ekranın geri kalanını boş bırakır. Bunun yerine, ekran okuyucunun ekrana sığabileceği kadar çok paragraf metni alması gerekir. Daha sonra, ekranı kaydırırken, imlecin, sonraki metin alımının, metin içinde ileri veya geri kaydırma yaparak, bir kitap okumak gibi, okuma deneyiminin sürekli olmasını sağlayacak şekilde hareket etmesini sağlamalıdır. Bu, Braille'in, basılı karakterlerle bire bir karşılık gelen bilgisayar braille kodu kullanılarak gösterilip gösterilmediğine veya kullanıcının, bir sembolün birden fazla yazdırma karakterini temsil edebildiği kısaltılmış Braille'i görüntülemeyi seçip seçmediğine bakılmaksızın gerçekleşmelidir. Her iki durumda da, braille ekranındaki bir metin satırına karşılık gelen şey, neredeyse hiçbir zaman ekrandaki aynı yazdırma satırına karşılık gelmeyecektir. Bu sorun çok satırlı braille bağlamında daha da kötüleşiyor. Eklenti, metin alma, biçimlendirme, çeviri ve kaydırma işlemlerini, NVDA ile Dot Pad'de okurken kullanıcı deneyiminin en iyi şekilde gerçekleştirilmesini sağlar.
 
@@ -90,22 +90,23 @@ Uzun basmak, söz konusu düğmelerin 1,5 saniye veya daha uzun süre basılı t
 
 - Sol Kaydırma Tuşu (Üçgen): 20 hücreli alandaki braille metninde geriye doğru ilerleyin.
 - Sağ Kaydırma Tuşu (Üçgen): 20 hücreli alandaki braille metni boyunca ileri doğru kaydırın.
-- F1 Key: Scroll back in the multiline braille area, pan the tactile graphic left, show the previous screenful of table columns, or move to the previous chart data point.
-- F4 Key: Scroll forward in the multiline braille area, pan the tactile graphic right, show the next screenful of table columns, or move to the next chart data point.
-- F2 Key: In a tactile graphic, scroll the graphic up. In a table, show the previous screenful of rows.
-- F3 Key: In a tactile graphic, scroll the graphic down. In a table, show the next screenful of rows.
+- F1 Tuşu: Çok satırlı Braille alanında geriye doğru kaydırır, dokunsal grafiği sola kaydırır, önceki ekran dolusu tablo sütununu gösterir veya önceki grafik veri noktasına gider.
+- F4 Tuşu: Çok satırlı Braille alanında ileri kaydırma, dokunsal grafiği sağa kaydırma, tablonun sonraki sütunlarını gösterme veya bir sonraki grafik veri noktasına geçme işlevini yerine getirir.
+- F2 Tuşu: Dokunmatik grafiklerde, grafiği yukarı kaydırır. Tablolarda, önceki ekran dolusu satırı gösterir.
+- F3 Tuşu: Dokunmatik grafiklerde, grafiği aşağı kaydırır. Tablolarda, sonraki ekran dolusu satırı gösterir.
 
 ### Çoklu Tuş Komutları
 
-- Left Pan + F1 Key: Move the viewport left a few dots in graphics mode, or one column in table mode.
-- Right Pan + F4 Key: Move the viewport right a few dots in graphics mode, or one column in table mode.
-- F1+F2: Move the viewport up a few dots in graphics mode, or one row in table mode.
-- F3+F4: Move the viewport down a few dots in graphics mode, or one row in table mode.
+- Sol Kaydırma + F1 Tuşu: Grafik modunda görüntü alanını birkaç nokta sola, tablo modunda ise bir sütun sola kaydırır.
+- Sağ Kaydırma + F4 Tuşu: Grafik modunda görüntü alanını birkaç nokta sağa, tablo modunda ise bir sütun sağa kaydırır.
+- F1+F2: Grafik modunda görüntü alanını birkaç nokta yukarı, tablo modunda ise bir satır yukarı hareket ettirir.
+- F3+F4: Grafik modunda görüntü alanını birkaç nokta aşağı, tablo modunda ise bir satır aşağı kaydırır.
 - F1+F3: Harfi, emojiyi, grafiği veya seçimi dokunsal bir görüntüye dönüştürür. Ekran görüntüsü alma modu için uzun basın.
-- F2+F4: When showing a tactile image or a table, return to braille mode.
-- F2+F3: When showing a tactile image, zoom in (magnify the image). When no tactile image is showing, this also converts the letter, emoji, graphic or selection to a tactile image. Long press to force table mode, which scans the parent objects for a table.
+- F2+F4: Dokunsal bir görüntü veya tablo gösterilirken, Braille moduna geri döner.
+- F2+F3: Dokunsal bir görüntü gösterilirken, görüntüyü yakınlaştırır (büyütür). Dokunsal bir görüntü gösterilmediğinde, bu işlem harfi, emojiyi, grafiği veya seçimi dokunsal bir görüntüye dönüştürür. Uzun basarak tablo modu zorlanır; bu, üst nesneleri tablo için tarar.
 - F1+F4: Dokunsal bir görüntü gösterirken uzaklaştırın (görüntüyü küçültün).
 - F1+F2+F3+F4: Dokunsal bir görüntüyü gösterirken ters çevirin: boşlukların olduğu yerde noktaları, noktaların olduğu yerde boşlukları gösterin.
+- Left Pan + Right Pan: Refresh the display, to restore dots that did not raise or lower correctly. When showing a tactile image, this also recenters the image. The Dot Pad X refreshes by itself, so there this does nothing outside tactile graphics mode.
 
 ## NVDA Braille Ayarları
 
@@ -141,17 +142,19 @@ F1 ile F4 tuşlarının veya kaydırma tuşlarının işlevlerini değiştirmek 
 
 Bu eklenti, Windows ortamına doğrudan kesintisiz, gerçek zamanlı dokunsal grafikler sunmak üzere Dot’un Dokunsal Ekran API kütüphanesini içerir ve görme engelli kullanıcıların sayfa düzeni şekillerini, diyagramları ve biçimlendirme yapısını fiziksel olarak hissetmelerini sağlar.
 
-### Table Mode
+### Tablo Kipi
 
-When your cursor lands on a table, the 300-cell display switches to a tactile grid: you feel the cell borders and the columns lining up, rather than a run of braille. The 20-cell braille display keeps showing the text of the cell you are on. This works in Microsoft Excel, in tables on web pages, and in tables in documents.
+İmleciniz bir tabloya geldiğinde, 300 hücrelik ekran dokunsal bir ızgaraya dönüşür: Braille alfabesiyle yazılmış metin yerine, hücre kenarlarını ve sütunların hizalanmasını hissedersiniz. 20 hücrelik Braille ekranı ise bulunduğunuz hücrenin metnini göstermeye devam eder. Bu özellik Microsoft Excel'de, web sayfalarındaki tablolarda ve belgelerdeki tablolarda çalışır.
 
-Table mode starts on its own. If you are on a table but the display has not switched, long press F2+F3 to force it: this looks outward from your cursor for a table to show. Press F2+F4 to go back to braille output.
+Tablo Kipi otomatik olarak başlar. Tablo üzerindeyken ekran henüz geçiş yapmadıysa, geçişi zorlamak için F2+F3 tuşlarına uzun basın: bu işlem, imlecinizin bulunduğu yerden dışarı doğru bir Tablo arar. Braille çıktısına geri dönmek için F2+F4 tuşlarına basın.
 
-The buttons that move the view over the table are listed under "Button map reference, table mode" below.
+Tablo üzerinde görünümü hareket ettiren düğmeler, aşağıda "Düğme haritası referansı, tablo modu" başlığı altında listelenmiştir.
 
 ### Dokunsal Harf ve Şekil İşleme (Hibrit Mod)
 
-NVDA Ayarları’ndaki Dot Pad ayarları altında yer alan “Baskı ve braille’i birlikte göster (hibrit mod)” seçeneğini etkinleştirdiğinizde, belgeler veya düzenleme kutuları gibi aktif metin imlecinin bulunduğu alanlarda, braille karakterleri yerine grafik moduna benzer şekilde 300 hücrelik alanda dokunsal baskı olarak gerçek fiziksel harf şekilleri gösterilir. NVDA, ayrı 20 hücrelik metin pencerenizde normal braille gösterimini sürdürür.
+By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window. Hybrid mode needs "Source for multi-line braille content" to be set to the TactileDisplayAPI library.
+
+While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 to F4 move the view, F2+F3 and F1+F4 zoom, and all four function keys together invert the image. Press F2+F4 to read the field you are on in braille instead; hybrid mode stays on, so the next text field you move to shows print again. When the Dot Pad shows braille again, for example on a button, the standard buttons return.
 
 ### Microsoft Word'de Dokunsal Grafikler
 
@@ -191,7 +194,7 @@ Grafik modu, Dot Pad’in manuel olarak girilen koordinatlara gerek kalmadan sis
 
 Düğmelerin işlevlerinin bağlama göre değiştiğini fark edeceksiniz. Sunum iş akışı, imlecinizin hareketine göre fiziksel düğmelerin atamalarını değiştirir.
 
-Braille sunumunun devralınması: Metni düzenlemek için bir ok tuşuna bastığınızda, iş akışınıza müdahale edilmesini önlemek için grafik modundan otomatik olarak çıkılır. Görünüm kaydırma ve yakınlaştırma hareketleri sınırsızdır ve ekranın yerini braille sunumu devralır.
+Braille presentation takeover: When the Dot Pad leaves graphic mode, for example because you press an arrow key to edit text, the viewport pan and zoom gestures are unbound and braille presentation takes over the display. Hybrid mode is the exception: while it shows print in a text field, the tactile graphics buttons stay.
 
 Düğme haritası referansı, standart kip:
 
@@ -206,31 +209,31 @@ Düğme haritası referansı, dokunsal grafik modu. İnceleme kipi açıkça dok
 
 - F2+F3: Dokunsal grafiği veya matematik grafiğini yakınlaştırın.
 - F1+F4: Dokunsal grafikten veya matematik grafiğinden uzaklaştırın.
-- F1 Key: Pan the tactile graphic view one display to the left.
-- F4 Key: Pan the tactile graphic view one display to the right.
-- F2 Key: Pan the tactile graphic view one display up.
-- F3 Key: Pan the tactile graphic view one display down.
-- Long press any of the four keys above to jump the view straight to that edge of the graphic: F1 to the left edge, F4 to the right edge, F2 to the top edge, and F3 to the bottom edge.
+- F1 Tuşu: Dokunsal grafik görünümünü bir ekran sola kaydırır.
+- F4 Tuşu: Dokunsal grafik görünümünü bir ekran sağa kaydırır.
+- F2 Tuşu: Dokunsal grafik görünümünü bir ekran yukarı kaydırır.
+- F3 Tuşu: Dokunsal grafik görünümünü bir ekran aşağı kaydırır.
+- Yukarıdaki dört tuştan herhangi birine uzun süre basarak görünümü doğrudan grafiğin o kenarına atlayabilirsiniz: F1 sol kenara, F4 sağ kenara, F2 üst kenara ve F3 alt kenara.
 - Sol Kaydırma + F1 Tuşu: Dokunsal grafik görünümünü birkaç nokta sola kaydırır.
 - Sağ Kaydırma + F4 Tuşu: Dokunsal grafik görünümünü birkaç nokta sağa kaydırır.
 - F1+F2: Dokunsal grafik görünümünü birkaç nokta yukarı kaydırır.
 - F3+F4: Dokunsal grafik görünümünü birkaç nokta aşağı kaydırır.
-- Sol Kaydırma + Sağ Kaydırma Tuşları, aynı anda basıldığında: Dokunsal grafik görünümünü varsayılan, ortalanmış sunuma sıfırlayın.
+- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation. On the Dot Pad 320A this also refreshes the display.
 
-Button map reference, table mode. When a table is shown on the 300-cell display, the buttons move the view over the table. The keys match tactile graphics mode, so the same movements apply in both:
+Düğme haritası referansı, tablo modu. 300 hücreli ekranda bir tablo gösterildiğinde, düğmeler görünümü tablo üzerinde hareket ettirir. Tuşlar dokunsal grafik moduyla eşleştiğinden, her ikisinde de aynı hareketler geçerlidir:
 
-- F1 Key: Show the previous screenful of columns.
-- F4 Key: Show the next screenful of columns.
-- F2 Key: Show the previous screenful of rows.
-- F3 Key: Show the next screenful of rows.
-- Long press any of the four keys above to jump straight to that edge of the table: F1 to the first column, F4 to the last column, F2 to the first row, and F3 to the last row. In a spreadsheet, the edges are the last row and column that contain data, not the end of the sheet itself.
-- Left Pan + F1 Key: Move the view one column to the left.
-- Right Pan + F4 Key: Move the view one column to the right.
-- F1+F2: Move the view up one row.
-- F3+F4: Move the view down one row.
-- F2+F4: Return to braille output. You can keep moving through the cells of the same table in braille. Table mode comes back when you leave for another table, and tactile graphics mode still starts on its own when you move to an image.
+- F1 Tuşu: Önceki ekran dolusu sütunu gösterir.
+- F4 Tuşu: Sonraki ekran dolusu sütunu gösterir.
+- F2 Tuşu: Önceki ekran dolusu satırı gösterir.
+- F3 Tuşu: Sonraki ekran dolusu satırı gösterir.
+- Yukarıdaki dört tuştan herhangi birine uzun süre basarak tablonun o ucuna doğrudan atlayabilirsiniz: F1 ilk sütuna, F4 son sütuna, F2 ilk satıra ve F3 son satıra. Elektronik tabloda uçlar, sayfanın sonu değil, veri içeren son satır ve sütundur.
+- Sol Kaydırma + F1 Tuşu: Görünümü bir sütun sola kaydırır.
+- Sağ Kaydırma + F4 Tuşu: Görünümü bir sütun sağa kaydırır.
+- F1+F2: Görünümü bir satır yukarı kaydırır.
+- F3+F4: Görünümü bir satır aşağı kaydırır.
+- F2+F4: Braille çıktısına geri döner. Aynı tablonun hücreleri arasında braille olarak dolaşmaya devam edebilirsiniz. Başka bir tabloya geçtiğinizde tablo modu geri döner ve bir resme geçtiğinizde dokunsal grafik modu otomatik olarak başlar.
 
-Moving the view does not move your cursor unless you ask it to. The "After scrolling a table, move the navigator object" setting in the Dot Pad settings panel can move it to the first or the centre cell of the new view instead. Moving your cursor the other way round does bring the view with it: if you move out of the visible part of the table, the view follows in that direction only, so moving down keeps your place across the row.
+Görünümü hareket ettirmek, siz istemediğiniz sürece imlecinizi hareket ettirmez. Nokta Paneli ayarları panelindeki "Bir tabloyu kaydırdıktan sonra dolaşım nesnesini taşı" ayarı, imleci yeni görünümün ilk veya orta hücresine taşıyabilir. İmlecinizi ters yönde hareket ettirmek ise görünümü de beraberinde getirir: tablonun görünür kısmının dışına çıkarsanız, görünüm yalnızca o yönde hareket eder, bu nedenle aşağı doğru hareket etmek satır boyunca yerinizi korur.
 
 ## Dot Pad Ekran Görüntüleyici
 
@@ -240,9 +243,9 @@ Araçlar menüsünden de erişilebilen NVDA braille görüntüleyicinin yalnızc
 
 ## Yardım Alma
 
-For problems with the add-on, including bugs and feature requests, please use the [issue tracker](https://github.com/dotincorp/nvda-addon-store/issues). An NVDA log at debug level is usually essential: set the logging level in NVDA's Privacy and Security settings, reproduce the problem, then attach the log. Please review the log before attaching it, as logs record window titles and spoken text. Do not attach crash dumps (nvda_crash.dmp) to a public issue: they contain a raw image of NVDA's memory, which can include the contents of documents you had open. If a crash dump is needed, say so in the issue and it will be arranged privately.
+Eklentiyle ilgili sorunlar, hatalar ve özellik istekleri için lütfen [sorun takip sistemini](https://github.com/dotincorp/nvda-addon-store/issues) kullanın. Genellikle hata ayıklama düzeyinde bir NVDA günlüğü gereklidir: NVDA'nın Gizlilik ve Güvenlik ayarlarında günlük kaydı düzeyini ayarlayın, sorunu yeniden oluşturun ve ardından günlüğü ekleyin. Günlükler pencere başlıklarını ve konuşulan metni kaydettiği için lütfen eklemeden önce günlüğü inceleyin. Çökme dökümlerini (nvda_crash.dmp) herkese açık bir soruna eklemeyin: bunlar, açık olan belgelerin içeriğini içerebilen NVDA'nın belleğinin ham bir görüntüsünü içerir. Çökme dökümüne ihtiyaç duyulursa, bunu sorunda belirtin. Özel olarak düzenlenecektir.
 
-For help with the Dot Pad hardware itself, please contact [Dot Inc.](https://dotincorp.com/)
+Dot Pad donanımıyla ilgili yardım için lütfen [Dot Inc.](https://dotincorp.com/) ile iletişime geçin.
 
 ## Lisans
 
