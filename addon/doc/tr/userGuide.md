@@ -106,7 +106,7 @@ Uzun basmak, söz konusu düğmelerin 1,5 saniye veya daha uzun süre basılı t
 - F2+F3: Dokunsal bir görüntü gösterilirken, görüntüyü yakınlaştırır (büyütür). Dokunsal bir görüntü gösterilmediğinde, bu işlem harfi, emojiyi, grafiği veya seçimi dokunsal bir görüntüye dönüştürür. Uzun basarak tablo modu zorlanır; bu, üst nesneleri tablo için tarar.
 - F1+F4: Dokunsal bir görüntü gösterirken uzaklaştırın (görüntüyü küçültün).
 - F1+F2+F3+F4: Dokunsal bir görüntüyü gösterirken ters çevirin: boşlukların olduğu yerde noktaları, noktaların olduğu yerde boşlukları gösterin.
-- Left Pan + Right Pan: Refresh the display, to restore dots that did not raise or lower correctly. When showing a tactile image, this also recenters the image. The Dot Pad X refreshes by itself, so there this does nothing outside tactile graphics mode.
+- Sola Kaydırma + Sağa Kaydırma: Ekranı yenileyerek, doğru şekilde yükselmeyen veya alçalmayan noktaları düzeltir. Dokunsal bir görüntü gösterilirken, bu işlem aynı zamanda görüntüyü yeniden ortalar. Dot Pad X kendi kendine yenilenir; bu nedenle, dokunsal grafik kipi dışında bu işlem hiçbir işe yaramaz.
 
 ## NVDA Braille Ayarları
 
@@ -152,9 +152,9 @@ Tablo üzerinde görünümü hareket ettiren düğmeler, aşağıda "Düğme har
 
 ### Dokunsal Harf ve Şekil İşleme (Hibrit Mod)
 
-By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window. Hybrid mode needs "Source for multi-line braille content" to be set to the TactileDisplayAPI library.
+NVDA Ayarları’ndaki Dot Pad ayarları altında yer alan “Baskı ve braille’i birlikte göster (hibrit mod)” seçeneğini etkinleştirdiğinizde, belgeler veya düzenleme kutuları gibi metin imlecinin aktif olduğu alanlarda, braille karakterleri yerine grafik moduna benzer şekilde 300 hücrelik alanda dokunsal baskı olarak gerçek fiziksel harf şekilleri gösterilir. NVDA, ayrı 20 hücreli metin pencerenizde normal braille yazdırmaya devam eder. Hibrit modun çalışabilmesi için “Çok satırlı braille içeriği kaynağı” ayarının TactileDisplayAPI li olarak ayarlanması gerekir.
 
-While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 to F4 move the view, F2+F3 and F1+F4 zoom, and all four function keys together invert the image. Press F2+F4 to read the field you are on in braille instead; hybrid mode stays on, so the next text field you move to shows print again. When the Dot Pad shows braille again, for example on a button, the standard buttons return.
+Dot Pad’de normal yazı gösterilirken, tuşlar dokunsal grafik modunda olduğu gibi çalışır: F1 ile F4 arasında görsel alanı kaydırır, F2+F3 ve F1+F4 ile yakınlaştırma yapılır ve dört işlev tuşuna aynı anda basıldığında görüntü ters çevrilir. Bulunduğunuz alanı Braille ile okumak için F2+F4 tuşlarına basın; hibrit mod aktif kalır, böylece bir sonraki metin alanına geçtiğinizde tekrar normal yazı gösterilir. Dot Pad tekrar Braille gösterirken (örneğin bir düğmede), standart düğmeler geri gelir.
 
 ### Microsoft Word'de Dokunsal Grafikler
 
@@ -194,7 +194,7 @@ Grafik modu, Dot Pad’in manuel olarak girilen koordinatlara gerek kalmadan sis
 
 Düğmelerin işlevlerinin bağlama göre değiştiğini fark edeceksiniz. Sunum iş akışı, imlecinizin hareketine göre fiziksel düğmelerin atamalarını değiştirir.
 
-Braille presentation takeover: When the Dot Pad leaves graphic mode, for example because you press an arrow key to edit text, the viewport pan and zoom gestures are unbound and braille presentation takes over the display. Hybrid mode is the exception: while it shows print in a text field, the tactile graphics buttons stay.
+Braille sunumunun devralınması: Dot Pad grafik modundan çıktığında (örneğin, metni düzenlemek için bir ok tuşuna bastığınızda), görüntü alanındaki kaydırma ve yakınlaştırma hareketlerinin bağları kaldırılır ve ekran, Braille sunumuna geçer. Hibrit mod ise bir istisnadır: metin alanında basılı metin gösterilirken, dokunsal grafik düğmeleri ekranda kalır.
 
 Düğme haritası referansı, standart kip:
 
@@ -218,7 +218,7 @@ Düğme haritası referansı, dokunsal grafik modu. İnceleme kipi açıkça dok
 - Sağ Kaydırma + F4 Tuşu: Dokunsal grafik görünümünü birkaç nokta sağa kaydırır.
 - F1+F2: Dokunsal grafik görünümünü birkaç nokta yukarı kaydırır.
 - F3+F4: Dokunsal grafik görünümünü birkaç nokta aşağı kaydırır.
-- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation. On the Dot Pad 320A this also refreshes the display.
+- Sol Kaydırma + Sağ Kaydırma tuşlarına aynı anda basıldığında: Dokunsal grafik görünümünü varsayılan, ortalanmış duruma sıfırlar. Dot Pad 320A modelinde bu işlem aynı zamanda ekranı da yeniler.
 
 Düğme haritası referansı, tablo modu. 300 hücreli ekranda bir tablo gösterildiğinde, düğmeler görünümü tablo üzerinde hareket ettirir. Tuşlar dokunsal grafik moduyla eşleştiğinden, her ikisinde de aynı hareketler geçerlidir:
 
