@@ -70,6 +70,7 @@ Changes destined for the next release.
 - In hybrid mode, F2+F4 now shows the text field you are on in braille. Hybrid mode stays on, so the next text field shows print again.
 
 ### Fixed
+- NVDA no longer risks crashing when it and the Dot Pad library translate braille at the same moment. Both used the braille translator at once, which it does not support.
 - F1 and F4 now move the view through braille the Dot Pad library renders. They were sending the tactile-graphics viewport command, which does nothing while the display is showing text.
 - The multi-line display now works from the moment NVDA starts. Over USB it could come up without the TactileDisplayAPI library, so the 300-cell area was driven by NVDA instead and F1 and F4 lost your place again on the next key press. Reconnecting the display was the only way out.
 - A display connected over Bluetooth no longer disconnects by itself. When the Dot Pad sent two messages at once, the add-on discarded both and could wait for a confirmation it had already received until it gave up on the display.
