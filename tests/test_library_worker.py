@@ -639,8 +639,7 @@ class TestWatchdog(unittest.TestCase):
 				time.sleep(0.4)
 				self.assertLessEqual(worker._queue.qsize(), 1)
 				hangEvent.set()
-				time.sleep(0.1)
-				self.assertEqual(worker._queue.qsize(), 0)
+				self.assertEqual(worker.submit(lambda: "recovered").result(timeout=2.0), "recovered")
 			finally:
 				hangEvent.set()
 				worker.stop()
