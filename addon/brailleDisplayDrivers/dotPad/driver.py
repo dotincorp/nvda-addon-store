@@ -1362,7 +1362,7 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			iniPatcher.patchTactileDisplayAPIIni()
 
 			worker = LibraryWorker()
-			worker.start(startTimeoutS=5.0)
+			worker.start(startTimeoutS=5.0, watchdog=True)
 
 			def setupOnWorker():
 				tda = worker.tda
@@ -1417,7 +1417,10 @@ class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 			)
 			# Events stay on for the whole session, whatever the braille source: the library
 			# follows focus on its own, and its tactile-image operation draws nothing without them.
-			worker.submit(_setRegisterEventsOnWorker, tda, worker)
+			if configuration.getLibraryEvents(fromCache=True):
+				worker.submit(_setRegisterEventsOnWorker, tda, worker)
+			else:
+				log.warning("dotPad: library event tracking is off (diagnostic setting)")
 			# A new instance reports graphics mode until told otherwise, which would let hybrid
 			# print claim the display before anything was drawn. Switching to braille before the
 			# first mode query makes that report describe what is on the pins.

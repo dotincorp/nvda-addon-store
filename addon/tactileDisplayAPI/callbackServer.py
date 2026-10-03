@@ -63,11 +63,14 @@ from logHandler import log
 from .comInterface import ITactileDisplayCallbacks
 
 if TYPE_CHECKING:
+	from ..utils import louisLock
 	from ..utils.logOnce import warnFailureOnce
 else:
 	import addonHandler
 
-	warnFailureOnce = addonHandler.getCodeAddon().loadModule("utils.logOnce").warnFailureOnce
+	_addon = addonHandler.getCodeAddon()
+	louisLock = _addon.loadModule("utils.louisLock")
+	warnFailureOnce = _addon.loadModule("utils.logOnce").warnFailureOnce
 
 
 # S_OK is 0; comtypes uses HRESULT internally. Render callbacks always
@@ -210,6 +213,8 @@ class TactileDisplayCallbacks(COMObject):
 		:param renderBraille: invoked on ``BrailleDisplayUpdated``. Same shape.
 		"""
 		super().__init__()
+		# GetTranslation runs liblouis off NVDA's main thread from here on.
+		louisLock.install()
 		self._renderTactile = renderTactile
 		self._renderBraille = renderBraille
 		self._shuttingDown = False
