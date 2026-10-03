@@ -617,5 +617,38 @@ class TestCaptureDiagnosticsReportsCurrentOp(unittest.TestCase):
 				worker.stop()
 
 
+class TestWatchdog(unittest.TestCase):
+	"""The watchdog heartbeats a stalled worker without flooding its queue, and exits on stop."""
+
+	def test_stall_queues_one_heartbeat_and_watchdog_exits_on_stop(self) -> None:
+		from addon.tactileDisplayAPI import libraryWorker
+		from addon.tactileDisplayAPI.libraryWorker import LibraryWorker
+
+		hangEvent = threading.Event()
+
+		with (
+			_stubbedComEnvironment(),
+			patch.object(libraryWorker, "WATCHDOG_INTERVAL_S", 0.02),
+			patch.object(libraryWorker, "WATCHDOG_TIMEOUT_S", 0.05),
+			patch.object(libraryWorker, "WATCHDOG_RELOG_AT_S", (0.1,)),
+		):
+			worker = LibraryWorker()
+			worker.start(startTimeoutS=2.0, watchdog=True)
+			try:
+				worker.submit(hangEvent.wait)
+				time.sleep(0.4)
+				self.assertLessEqual(worker._queue.qsize(), 1)
+				hangEvent.set()
+				time.sleep(0.1)
+				self.assertEqual(worker._queue.qsize(), 0)
+			finally:
+				hangEvent.set()
+				worker.stop()
+			time.sleep(0.1)
+			self.assertFalse(
+				any(t.name == "DotPadLibraryWatchdog" and t.is_alive() for t in threading.enumerate()),
+			)
+
+
 if __name__ == "__main__":
 	unittest.main()

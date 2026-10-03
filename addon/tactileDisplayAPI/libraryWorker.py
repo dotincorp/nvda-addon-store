@@ -69,6 +69,7 @@ import threading
 import time
 import traceback
 from concurrent.futures import Future
+from concurrent.futures import wait as waitForFutures
 from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import Any, Callable, ClassVar, TypeVar
@@ -96,6 +97,18 @@ _WAIT_BACKSTOP_S: float = 1.0
 
 #: Longest ``start`` waits for the previously stopped worker to finish its queue and exit.
 PREDECESSOR_JOIN_TIMEOUT_S: float = 2.0
+
+#: How often the watchdog sends the worker a heartbeat.
+WATCHDOG_INTERVAL_S: float = 2.0
+#: How long a heartbeat may go unanswered before the worker counts as stalled.
+WATCHDOG_TIMEOUT_S: float = 3.0
+#: Seconds into a stall at which the worker's stack is logged again, to show whether it moves.
+WATCHDOG_RELOG_AT_S: tuple[float, ...] = (10.0, 30.0, 60.0, 120.0)
+
+
+def _heartbeat() -> None:
+	"""Queued by the watchdog; its only job is to complete."""
+
 
 # Defensive cap on per-call message drains. A real Win32 message queue holds
 # at most a few thousand pending messages even under heavy load; capping
@@ -274,6 +287,7 @@ class LibraryWorker:
 		# goes through ``submit`` so the call runs on the worker's STA
 		# apartment.
 		self.tda: TactileDisplayAPI | None = None
+		self._stopped = threading.Event()
 
 		# --- Diagnostics (all guarded by _stateLock) ---
 		self._stateLock = threading.Lock()
@@ -293,7 +307,7 @@ class LibraryWorker:
 		# a hang with events on can involve the library's own UIA work.
 		self._uiaEventsEnabled: bool = False
 
-	def start(self, *, startTimeoutS: float = 5.0) -> None:
+	def start(self, *, startTimeoutS: float = 5.0, watchdog: bool = False) -> None:
 		"""Spawn the worker thread; block until the wrapper is ready or init fails.
 
 		On success, ``self.tda`` is the live wrapper instance and subsequent
@@ -308,6 +322,9 @@ class LibraryWorker:
 		  likely means COM init itself is hung. The worker thread is left to
 		  eventually die with the process.
 		- Any other exception raised inside ``_run`` before readiness is propagated.
+
+		:param watchdog: Also start a thread that heartbeats the worker and logs its stack
+			at WARNING whenever it stops answering, however the stall came about.
 		"""
 		predecessor = LibraryWorker._lastStopped
 		LibraryWorker._lastStopped = None
@@ -330,6 +347,42 @@ class LibraryWorker:
 		if self._startError is not None:
 			raise self._startError
 		log.debug("Library worker started (thread=%s)", self._thread.name)
+		if watchdog:
+			threading.Thread(target=self._watchdog, name="DotPadLibraryWatchdog", daemon=True).start()
+
+	def _watchdog(self) -> None:
+		"""Heartbeat the worker; log its stack when a heartbeat goes unanswered.
+
+		The per-call timeouts only see stalls in submitted work. The library also runs
+		its own code on this thread from the message pump (event and hook callbacks),
+		and a stall there is otherwise invisible.
+		"""
+		while not self._stopped.wait(WATCHDOG_INTERVAL_S):
+			sentAt = time.monotonic()
+			heartbeat = self.submit(_heartbeat)
+			if waitForFutures([heartbeat], timeout=WATCHDOG_TIMEOUT_S).done:
+				continue
+			log.warning(
+				"Library worker has not answered a heartbeat for %.1fs\n%s",
+				time.monotonic() - sentAt,
+				self.captureDiagnostics(),
+			)
+			pendingRelogs = list(WATCHDOG_RELOG_AT_S)
+			while not self._stopped.is_set():
+				if waitForFutures([heartbeat], timeout=1.0).done:
+					log.warning(
+						"Library worker answered again after %.1fs",
+						time.monotonic() - sentAt,
+					)
+					break
+				stalledFor = time.monotonic() - sentAt
+				if pendingRelogs and stalledFor >= pendingRelogs[0]:
+					pendingRelogs.pop(0)
+					log.warning(
+						"Library worker still stalled after %.0fs\n%s",
+						stalledFor,
+						self.captureDiagnostics(),
+					)
 
 	def _signalQueue(self) -> None:
 		"""Wake the worker out of its idle wait after a queue put."""
@@ -538,6 +591,7 @@ class LibraryWorker:
 		is enqueued but never observed.
 		"""
 		log.debug("Library worker stop requested")
+		self._stopped.set()
 		self._queue.put(None)
 		self._signalQueue()
 		LibraryWorker._lastStopped = self
@@ -589,6 +643,8 @@ class LibraryWorker:
 			except Exception:
 				pass
 			return
+		# Lets a native stack capture (py-spy, procdump) be matched to this thread.
+		log.info("Library worker native thread id: %s", threading.get_native_id())
 		# 2. Signal readiness.
 		self._readyEvent.set()
 		# 3. Drain the queue, pumping Win32 messages between iterations.
