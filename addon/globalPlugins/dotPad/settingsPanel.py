@@ -192,6 +192,15 @@ class DotPadSettingsPanel(SettingsPanel):
 		)
 		self.useSystemLibraryCheckBox.SetValue(configuration.getUseSystemLibrary())
 
+		self.libraryEventsCheckBox = advancedGroup.addItem(
+			wx.CheckBox(
+				advancedGroupBox,
+				# Translators: Label for a diagnostic checkbox in the Advanced group.
+				label=_("Let the TactileDisplayAPI library &track focus (diagnostic, applies after restart)"),
+			),
+		)
+		self.libraryEventsCheckBox.SetValue(configuration.getLibraryEvents())
+
 		# Disable auto-refresh controls if D3 hardware is connected
 		if self._hasHardwareAutoRefresh:
 			self.autoRefreshList.Enable(False)
@@ -309,6 +318,9 @@ class DotPadSettingsPanel(SettingsPanel):
 		config.conf[configuration.CONFIG_SECTION_NAME][  # type: ignore
 			configuration.USE_SYSTEM_LIBRARY_SETTING_NAME
 		] = self.useSystemLibraryCheckBox.GetValue()
+		config.conf[configuration.CONFIG_SECTION_NAME][  # type: ignore
+			configuration.LIBRARY_EVENTS_SETTING_NAME
+		] = self.libraryEventsCheckBox.GetValue()
 
 		self.post_onSave.notify()
 

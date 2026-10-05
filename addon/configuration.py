@@ -130,6 +130,8 @@ VIEWER_ON_SCREEN_SETTING_NAME = "viewerOnScreen"
 USE_SYSTEM_LIBRARY_SETTING_NAME = "useSystemLibrary"
 HYBRID_PRINT_AND_BRAILLE_SETTING_NAME = "hybridPrintAndBraille"
 MULTILINE_BRAILLE_SPACING_SETTING_NAME = "multilineBrailleSpacing"
+# Diagnostic only: lets a tester take the library's own focus tracking out of the picture.
+LIBRARY_EVENTS_SETTING_NAME = "diagLibraryEvents"
 # Written by installTasks.onInstall; see addon/installTasks.py.
 AUTO_DETECT_PROMPT_SHOWN_SETTING_NAME = "autoDetectPromptShown"
 CURSOR_BLINK_PROMPT_SHOWN_SETTING_NAME = "cursorBlinkPromptShown"
@@ -146,6 +148,7 @@ CONFIG_SPEC = {
 	USE_SYSTEM_LIBRARY_SETTING_NAME: "boolean(default=False)",
 	HYBRID_PRINT_AND_BRAILLE_SETTING_NAME: "boolean(default=False)",
 	MULTILINE_BRAILLE_SPACING_SETTING_NAME: "integer(default=0, min=0, max=2)",
+	LIBRARY_EVENTS_SETTING_NAME: "boolean(default=True)",
 	AUTO_DETECT_PROMPT_SHOWN_SETTING_NAME: "boolean(default=False)",
 	CURSOR_BLINK_PROMPT_SHOWN_SETTING_NAME: "boolean(default=False)",
 }
@@ -194,6 +197,10 @@ def getViewerOnScreen(fromCache: bool = False) -> bool:
 
 def getUseSystemLibrary(fromCache: bool = False) -> bool:
 	return bool(_getSetting(USE_SYSTEM_LIBRARY_SETTING_NAME, fromCache))
+
+
+def getLibraryEvents(fromCache: bool = False) -> bool:
+	return bool(_getSetting(LIBRARY_EVENTS_SETTING_NAME, fromCache))
 
 
 def getHybridPrintAndBraille(fromCache: bool = False) -> bool:
