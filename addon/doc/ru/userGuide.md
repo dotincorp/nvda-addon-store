@@ -106,7 +106,7 @@ F1+F3: преобразовать букву, эмодзи, графику ил�
 - F2+F3: При отображении тактильного изображения увеличивает масштаб (приближает изображение). Если тактильное изображение не отображается, это также преобразует букву, эмодзи, графическое изображение или выделенный фрагмент в тактильное изображение. Длительное нажатие активирует режим таблицы, который сканирует родительские объекты на наличие таблицы.
 - F1+F4: При отображении тактильного изображения уменьшает масштаб (суживает изображение).
 - F1+F2+F3+F4: При отображении тактильного изображения инвертирует его: показывает точки там, где были пробелы, и пробелы там, где были точки.
-- Left Pan + Right Pan: Refresh the display, to restore dots that did not raise or lower correctly. When showing a tactile image, this also recenters the image. The Dot Pad X refreshes by itself, so there this does nothing outside tactile graphics mode.
+- Панорамирование Влево + Панорамирование Вправо: Обновляет изображение, чтобы восстановить точки, которые не поднимались или не опускались должным образом. При отображении тактильного изображения это также центрирует изображение. Dot Pad X обновляется автоматически, поэтому вне режима тактильной графики это ничего не меняет.
 
 ## Брайлевские настройки NVDA
 
@@ -152,9 +152,9 @@ NVDA управляет механизмом преобразования тек
 
 ### Тактильное отображение букв и форм (гибридный режим)
 
-By enabling the opt-in setting "Show print and braille together (hybrid mode)" under the Dot Pad settings in NVDA Settings, fields with an active text cursor, such as documents or edit boxes, will show actual physical letter shapes as tactile print on the 300-cell area, similar to graphic mode, rather than braille characters. NVDA continues to drive normal braille on your separate 20-cell text window. Hybrid mode needs "Source for multi-line braille content" to be set to the TactileDisplayAPI library.
+Включив параметр "Показывать печатный текст и брайль вместе (гибридный режим)" в настройках Dot Pad в параметрах NVDA, поля с активным текстовым курсором, такие как документы или поля редактирования, будут отображать фактические физические формы букв в виде тактильного печатного текста в области 300 ячеек, аналогично графическому режиму, вместо символов брайля. NVDA продолжит использовать обычный брайль в отдельном текстовом окне на 20 ячеек. Для гибридного режима необходимо установить параметр "Источник многострочного содержимого Брайля" в библиотеку TactileDisplayAPI.
 
-While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 to F4 move the view, F2+F3 and F1+F4 zoom, and all four function keys together invert the image. Press F2+F4 to read the field you are on in braille instead; hybrid mode stays on, so the next text field you move to shows print again. When the Dot Pad shows braille again, for example on a button, the standard buttons return.
+В то время как на Dot Pad отображается текст, кнопки работают так же, как в режиме тактильной графики: От F1 до F4 перемещают изображение, F2+F3 и F1+F4 изменяют масштаб, а все четыре функциональные клавиши одновременно инвертируют изображение. Нажмите F2+F4, чтобы прочитать текст в поле, на котором вы находитесь, по брайлю; гибридный режим остаётся включенным, поэтому следующее текстовое поле, на которое вы перейдёте, снова будет отображать текст. Когда Dot Pad снова отобразит брайль, например, на кнопке, стандартные кнопки вернутся в исходное состояние.
 
 ### Тактильные графики в Microsoft Word
 
@@ -194,7 +194,7 @@ While the Dot Pad shows print, the buttons work as in tactile graphics mode: F1 
 
 Вы заметите, что функции кнопок зависят от контекста. Конвейер отображения изменяет привязки физических кнопок в зависимости от действий курсора.
 
-Braille presentation takeover: When the Dot Pad leaves graphic mode, for example because you press an arrow key to edit text, the viewport pan and zoom gestures are unbound and braille presentation takes over the display. Hybrid mode is the exception: while it shows print in a text field, the tactile graphics buttons stay.
+Преобразование отображения текста в формат брайля: когда Dot Pad выходит из графического режима, например, из-за нажатия стрелки для редактирования текста, жесты панорамирования и масштабирования области просмотра отменяются, и на экране появляется отображение текста по брайлю. Исключением является гибридный режим: хотя в текстовом поле отображается печатный текст, тактильные графические кнопки остаются активными.
 
 Справочник по карте кнопок, стандартный режим:
 
@@ -218,7 +218,7 @@ Braille presentation takeover: When the Dot Pad leaves graphic mode, for example
 - Правое панорамирование + клавиша F4: панорамировать вид тактильной графики вправо на несколько точек.
 - F1+F2: панорамировать вид тактильной графики вверх на несколько точек.
 - F3+F4: панорамировать вид тактильной графики вниз на несколько точек.
-- Left Pan + Right Pan Keys, pressed simultaneously: Reset the tactile graphics view back to the default, centered presentation. On the Dot Pad 320A this also refreshes the display.
+- Одновременное нажатие Панорамирования Влево + Панорамирования Вправо: возвращает тактильное графическое отображение к стандартному, центрированному виду. На Dot Pad 320A это также обновляет дисплей.
 
 Справочник по карте кнопок, табличный режим. Когда таблица отображается на 300-ячеечном дисплее, кнопки перемещают изображение над таблицей. Клавиши соответствуют тактильному графическому режиму, поэтому в обоих режимах применяются одни и те же движения:
 
