@@ -1111,7 +1111,7 @@ class Display(AutoPropertyObject):
 
 class BrailleDisplayDriver(braille.BrailleDisplayDriver, ScriptableObject):
 	name = "dotPad"
-	description = _("DotPad")
+	description = _("Dot Pad")
 	supportsAutomaticDetection = True
 	isThreadSafe = True
 	receivesAckPackets = True
