@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Changes destined for the next release.
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Known Issues
+- Math content (Word equations, MathPlayer, MathML in browser virtual buffers) does not render correctly on the multi-line tactile area when the **Multi-line braille source** setting is "TactileDisplayAPI library" (the default). The library's autonomous focus tracker reads UIA / IAccessible2, which doesn't expose MathML markup; the library's bundled MathCAT is plotting-only and has no MathML→braille code path (vendor docs, v1.17). Feature branch `021-math-braille-routing` explored routing math focus through NVDA's MathCAT via a presentation switch, but hardware testing revealed the library doesn't emit fresh `TactileDisplayUpdated` callbacks after we suppress its outputs during math focus, leaving the multi-line area blank for surrounding text after a math equation — worse than the original regression for typical reading sessions. Deferred pending either a vendor-side MathML braille entry point or a deeper architectural change. **Workaround**: NVDA → Settings → Dot Pad → Multi-line braille source → "NVDA review cursor". In that mode NVDA's own braille pipeline (which already handles math via NVDA's bundled MathCAT) drives the multi-line area for all content including math.
+- Tactile graphic pan/zoom gestures (single-key short and long-press, F-key chord combinations, `panLeft+panRight` chord) do not appear in NVDA's Input Gestures dialog (NVDA+N → Preferences → Input gestures), even when a graphic is active. Input help mode (NVDA+1) correctly announces them and dispatch works as documented. NVDA's dialog enumerates a fixed set of objects and does not traverse our presentation hierarchy; this is best resolved upstream by adding a registration point in NVDA for additional scriptable objects. To rebind a gesture for now, edit `%APPDATA%\nvda\gestures.ini` directly.
+- Multi-line braille language follows the user's Windows display language, not NVDA's UI language: the bundled TactileDisplayAPI library v1.17 selects its per-locale ini via `GetUserDefaultUILanguage` (a registry-backed Win32 call), which is not overridable per-thread or per-process. The addon explicitly sets `SetThreadLocale` / `SetThreadPreferredUILanguages` on the library worker thread, but the library does not consult those values. Until the library starts honouring thread/process locale (requested upstream), users see NVDA-translated abbreviations only when their Windows display language matches their NVDA UI language. Workaround for users who want non-English abbreviations: change the Windows display language (Settings → Time & Language → Language → Windows display language) and sign out/in.
+
+### Changes for developers
+
+Developer-facing changes — the TactileDisplayAPI COM layer, the build and release
+machinery, and the presentation framework — are recorded separately in
+[`docs/developer-changelog.md`](docs/developer-changelog.md). They are not part of
+the release notes users see.
+
+## [1.0.0] - 2026-10-13
+
+### Added
 - In hybrid mode, text fields showing print use the tactile graphics buttons, so you can pan and zoom the print. Controls shown in braille keep the standard buttons.
 - Tactile graphics mode now ends when the Dot Pad actually leaves it, rather than on every cursor movement.
 - Pressing Left Pan and Right Pan together refreshes the display on the Dot Pad 320A, restoring dots that did not raise or lower correctly. In tactile graphics mode the same keys still recenter the image, and now refresh it as well. The Dot Pad X refreshes by itself and is unaffected.
@@ -70,6 +90,7 @@ Changes destined for the next release.
 - In hybrid mode, F2+F4 now shows the text field you are on in braille. Hybrid mode stays on, so the next text field shows print again.
 
 ### Fixed
+- The display is now listed as "Dot Pad" in NVDA's braille display list, rather than "DotPad".
 - F1 and F4 now move the view through braille the Dot Pad library renders. They were sending the tactile-graphics viewport command, which does nothing while the display is showing text.
 - The multi-line display now works from the moment NVDA starts. Over USB it could come up without the TactileDisplayAPI library, so the 300-cell area was driven by NVDA instead and F1 and F4 lost your place again on the next key press. Reconnecting the display was the only way out.
 - A display connected over Bluetooth no longer disconnects by itself. When the Dot Pad sent two messages at once, the add-on discarded both and could wait for a confirmation it had already received until it gave up on the display.
