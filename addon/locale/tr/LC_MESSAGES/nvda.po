@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nvdaaddons\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2026-09-21 00:04+0000\n"
-"PO-Revision-Date: 2026-10-04 09:59\n"
+"POT-Creation-Date: 2026-10-19 00:07+0000\n"
+"PO-Revision-Date: 2026-10-19 00:15\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "Language: tr_TR\n"
@@ -93,9 +93,14 @@ msgstr "Dot Pad hücreleri yavaş yenilenir, bu nedenle yanıp sönen braille im
 msgid "Dot Pad: blinking cursor"
 msgstr "Dot Pad: yanıp sönen imleç"
 
+#. Translators: The label for the Dot Pad settings panel.
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
 #: addon\brailleDisplayDrivers\dotPad\driver.py:1114
-msgid "DotPad"
-msgstr "DotPad"
+#: addon\globalPlugins\dotPad\settingsPanel.py:44 buildVars.py:33
+msgid "Dot Pad"
+msgstr "Dot Pad"
 
 #: addon\brailleDisplayDrivers\dotPad\driver.py:1195
 #, python-format
@@ -164,14 +169,6 @@ msgstr "İnceleme nesnesini TactileDisplayAPI aracılığıyla dokunsal grafik o
 #: addon\brailleDisplayDrivers\dotPad\driver.py:2601
 msgid "Displays the review object as braille via the active braille presentation"
 msgstr "İnceleme nesnesini, etkin olan braille görüntüleme yöntemi aracılığıyla braille olarak görüntüler"
-
-#. Translators: The label for the Dot Pad settings panel.
-#. Add-on summary, usually the user visible name of the addon.
-#. Translators: Summary for this add-on
-#. to be shown on installation and add-on information found in Add-ons Manager.
-#: addon\globalPlugins\dotPad\settingsPanel.py:44 buildVars.py:33
-msgid "Dot Pad"
-msgstr "Dot Pad"
 
 #. type: ignore
 #. Translators: The label for the auto refresh settings group.
