@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en">
-<file id="userGuide.md" original="https://raw.githubusercontent.com/dotincorp/nvda-addon-store/63e190ceb5e3fed2d54204034e471c62b82da5a5/docs/userGuide.md">
+<file id="userGuide.md" original="https://raw.githubusercontent.com/dotincorp/nvda-addon-store/25cc82b808fbee1302956bd72e218f9e3e96738a/docs/userGuide.md">
 <skeleton>
 # $(ID:2aa53b96-9234-4f54-bae8-cb0fe2a53823)
 
@@ -254,6 +254,7 @@ $(ID:d49435fb-683c-4670-8930-04ad2af943ca)
 ## $(ID:21123549-695d-4493-8e2d-d01d55ee689c)
 
 $(ID:80e5aaf8-c5c2-4d30-a03e-887ab68cba85)
+
 </skeleton>
 <unit id="2aa53b96-9234-4f54-bae8-cb0fe2a53823">
 <notes>
