@@ -117,7 +117,7 @@ dev = [
 ]
 # Wheels vendored into addon/_vendor by build_vendor.py. Not installed by `uv sync`.
 vendor = [
-    "bleak==3.0.2",
+    "bleak==3.1.0",
 ]
 
 [tool.pyright]
